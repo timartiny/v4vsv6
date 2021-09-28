@@ -14,9 +14,9 @@ type AddressResult struct {
 // responded to queries for a particular domain, including A and AAAA record
 // requests
 type DomainResolverResult struct {
-	Domain          string          `json:"domain"`
-	ResolverIP      string          `json:"resolver_ip"`
-	ResolverCountry string          `json:"resolver_country"`
-	AResults        []AddressResult `json:"a_results,omitempty"`
-	AAAAResults     []AddressResult `json:"aaaa_results,omitempty"`
+	Domain          string           `json:"domain"`
+	ResolverIP      string           `json:"resolver_ip"`
+	ResolverCountry string           `json:"resolver_country"`
+	AResults        []*AddressResult `json:"a_results,omitempty"`
+	AAAAResults     []*AddressResult `json:"aaaa_results,omitempty"`
 }
