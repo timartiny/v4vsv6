@@ -17,19 +17,20 @@ Thus we first need to make a file containing those lines.
 
 ```
 usage: domain_resolver_pairs.py [-h]
-                                domain_json_file resolver_file cartesian_file
+                                domain_json_file resolver_file
+                                v4_cartesian_file v6_cartesian_file
 
 positional arguments:
-  domain_json_file  Path to the file containing JSON object on each domain
-  resolver_file     Path to the file containing resolvers
-  cartesian_file    Path to the file to write the cartesian product
+  domain_json_file   Path to the file containing JSON object on each domain
+  resolver_file      Path to the file containing resolvers
+  v4_cartesian_file  Path to the file to write the cartesian product, with v4
+                     resolvers
+  v6_cartesian_file  Path to the file to write the cartesian product, with v6
+                     resolvers
 
 optional arguments:
-  -h, --help        show this help message and exit
+  -h, --help         show this help message and exit
 ```
-
-Sample files are in the [data](data/) directory that can run this:
-
 ```
-./domain_resolver_pairs.py data/satellite-v4-and-v6-and-tls-sept22.json data/aug-30-2-single-resolvers-country-correct-sorted data/cartesian_file
+./domain_resolver_pairs.py data/satellite-v4-and-v6-and-tls-sept22.json data/aug-30-2-single-resolvers-country-correct-sorted data/v4_cartesian_file data/v6_cartesian_file
 ```

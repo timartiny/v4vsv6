@@ -27,17 +27,29 @@ def setup_args() -> argparse.Namespace:
         "domain_json_file", help="Path to the file containing JSON object on each domain"
     )
     parser.add_argument("resolver_file", help="Path to the file containing resolvers")
-    parser.add_argument("cartesian_file", help="Path to the file to write the cartesian product")
+    parser.add_argument(
+        "v4_cartesian_file",
+        help="Path to the file to write the cartesian product, with v4 resolvers"
+    )
+    parser.add_argument(
+        "v6_cartesian_file",
+        help="Path to the file to write the cartesian product, with v6 resolvers"
+    )
     return parser.parse_args()
 
-def cartesian_product(domain_file: str, resolver_file: str, output_file: str) -> None:
+def cartesian_product(
+    domain_file: str,
+    resolver_file: str,
+    v4_output_file: str,
+    v6_output_file: str
+) -> None:
     """
     This will open the output file and write to it, one line at a time a domain
     and a resolver, as long as both the v4 and v6 resolvers share the same country.
     """
-    print(f"Writing cartesian product to {output_file}")
+    print(f"Writing cartesian product to {v4_output_file} and {v6_output_file}")
 
-    with open(output_file, 'w') as write_file:
+    with open(v4_output_file, 'w') as v4_write_file, open(v6_output_file, 'w') as v6_write_file:
         with open(domain_file, 'r') as domain_json_file:
             for json_string in domain_json_file.readlines():
                 json_dict = json.loads(json_string)
@@ -47,10 +59,14 @@ def cartesian_product(domain_file: str, resolver_file: str, output_file: str) ->
                         if "!!" in resolvers_string:
                             continue
                         v6_address, v4_address, _ = resolvers_string.split("  ")
-                        write_file.write(f"{domain},{v6_address}\n")
-                        write_file.write(f"{domain},{v4_address}\n")
+                        v6_write_file.write(f"{domain},{v6_address}\n")
+                        v4_write_file.write(f"{domain},{v4_address}\n")
 
 if __name__ == "__main__":
     args = setup_args()
-    cartesian_product(args.domain_json_file, args.resolver_file, args.cartesian_file)
-
+    cartesian_product(
+        args.domain_json_file,
+        args.resolver_file,
+        args.v4_cartesian_file,
+        args.v6_cartesian_file,
+    )
