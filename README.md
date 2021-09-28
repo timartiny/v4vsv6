@@ -34,3 +34,47 @@ optional arguments:
 ```
 ./domain_resolver_pairs.py data/satellite-v4-and-v6-and-tls-sept22.json data/aug-30-2-single-resolvers-country-correct-sorted data/v4_cartesian_file data/v6_cartesian_file
 ```
+
+## ZDNS
+
+With the cartesian product of domains and resolvers added to files and grouped
+by address type of the resolver you can run 4 different ZDNS calls:
+
+```
+cat data/v4_cartesian_file | ./zdns A --output-file data/v4_cartesian_A_lookups.json
+cat data/v4_cartesian_file | ./zdns AAAA --output-file data/v4_cartesian_AAAA_lookups.json
+cat data/v6_cartesian_file | ./zdns A --local-addr "<v6 address>" --output-file data/v6_cartesian_A_lookups.json
+cat data/v6_cartesian_file | ./zdns AAAA --local-addr "<v6 address>"--output-file data/v6_cartesian_AAAA_lookups.json
+```
+
+The v6 lookups need to come from a v6 address. ZDNS does not automatically
+select the v6 address of the machine, you need to manually enter it.
+
+## Parse ZDNS data
+
+The first ZDNS command took 1 hour 10 minutes on zbuff, and generated 2.7G of
+data. A lot of it is repeated information, due to asking a lot of resolvers for
+the same domain records.
+
+A future step will require performing a TLS certificate lookup on all of the
+answers provided. `ZGrab2` accepts input in the form of "`<ip address>,
+<domain>`", so we want to make that list, while not adding any unnecessary
+duplication. To make that list we run:
+
+```
+cat v4_cartesian_A_lookups.json | jq '.name as $name | .data.answers[]? | select(.type=="A") | "\(.answer), \($name)"' > tmp
+sort -u tmp > v4_A_ip_domain_list.dat
+```
+
+The `jq` command took just over a minute to run and made a file with 9.3 M
+lines, just under 300 MB.
+
+The `sort` command took 7 seconds and made a file 1.1 K lines, 3.5 MB.
+
+
+
+
+
+
+
+
