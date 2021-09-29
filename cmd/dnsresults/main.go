@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"sort"
 
 	"github.com/alexflint/go-arg"
 	"github.com/timartiny/v4vsv6"
@@ -45,6 +46,8 @@ type ZDNSAnswer struct {
 	Answer  string `json:"answer,omitempty" groups:"short,normal,long,trace"`
 }
 
+type AddressResults []*v4vsv6.AddressResult
+
 func setupArgs() DNSResultsFlags {
 	var ret DNSResultsFlags
 	arg.MustParse(&ret)
@@ -52,7 +55,73 @@ func setupArgs() DNSResultsFlags {
 	return ret
 }
 
-func updateDomainResolverResults(drrm DomainResolverResultMap, path string) {
+func getAddressResultFromZDNS(zdnsLine ZDNSResult, resultType string) AddressResults {
+	ret := make(AddressResults, 0)
+	domainName := zdnsLine.Name
+	dataMap := zdnsLine.Data.(map[string]interface{})
+	resolverStr := dataMap["resolver"].(string)
+	// key := domainName + "-" + resolverStr
+	if zdnsLine.Status != "NOERROR" {
+		// had a DNS error, so we should put that here
+		singleAnswer := new(v4vsv6.AddressResult)
+		singleAnswer.Domain = domainName
+		singleAnswer.Error = zdnsLine.Status + ", " + zdnsLine.Error
+		ret = append(ret, singleAnswer)
+		return ret
+	}
+
+	interfaceAnswers, ok := zdnsLine.Data.(map[string]interface{})["answers"]
+	if !ok {
+		infoLogger.Printf(
+			"This results has NOERROR and no answers, domain: %s, "+
+				"resolver: %s\n",
+			domainName,
+			resolverStr,
+		)
+		keys := make([]string, len(dataMap))
+
+		i := 0
+		for k := range dataMap {
+			keys[i] = k
+			i++
+		}
+		sort.Strings(keys)
+		infoLogger.Printf("The data sections are: %v\n", keys)
+		singleAnswer := new(v4vsv6.AddressResult)
+		singleAnswer.Domain = domainName
+		singleAnswer.Error = "No DNS Answers"
+		ret = append(ret, singleAnswer)
+		return ret
+	}
+	zdnsAnswers := interfaceAnswers.([]interface{})
+	for _, interfaceAnswer := range zdnsAnswers {
+		tmpJSONString, _ := json.Marshal(interfaceAnswer)
+		var zdnsAnswer ZDNSAnswer
+		json.Unmarshal(tmpJSONString, &zdnsAnswer)
+		if zdnsAnswer.Type != "A" && zdnsAnswer.Type != "AAAA" {
+			continue
+		}
+		addressResult := new(v4vsv6.AddressResult)
+		addressResult.Domain = domainName
+		addressResult.IP = zdnsAnswer.Answer
+		if zdnsAnswer.Type != resultType {
+			infoLogger.Printf(
+				"Got different answer Type (%s) compared to expected type"+
+					" (%s). Domain: %s, resolver: %s\n",
+				zdnsAnswer.Type,
+				resultType,
+				domainName,
+				resolverStr,
+			)
+		}
+		addressResult.AddressType = zdnsAnswer.Type
+		ret = append(ret, addressResult)
+	}
+
+	return ret
+}
+
+func updateDomainResolverResults(drrm DomainResolverResultMap, path, resultType string) {
 	domainResolverResultsRaw, err := os.Open(path)
 	if err != nil {
 		errorLogger.Fatalf("error opening %s: %v\n", path, err)
@@ -65,27 +134,31 @@ func updateDomainResolverResults(drrm DomainResolverResultMap, path string) {
 		line := scanner.Text()
 		var zdnsLine ZDNSResult
 		json.Unmarshal([]byte(line), &zdnsLine)
+		// infoLogger.Printf("zdnsLine: %+v\n", zdnsLine)
+
+		results := getAddressResultFromZDNS(zdnsLine, resultType)
 
 		domainName := zdnsLine.Name
-
-		interfaceAnswers, ok := zdnsLine.Data.(map[string]interface{})["answers"]
-		if !ok {
-			// infoLogger.Printf("This results has no answers, domain: %s\n", domainName)
-			continue
+		dataMap := zdnsLine.Data.(map[string]interface{})
+		resolverStr := dataMap["resolver"].(string)
+		key := domainName + "-" + resolverStr
+		var drr v4vsv6.DomainResolverResult
+		if _, ok := drrm[key]; ok {
+			drr = drrm[key]
+		} else {
+			drr.Domain = domainName
+			drr.ResolverIP = resolverStr
 		}
-		zdnsAnswers := interfaceAnswers.([]interface{})
-		for _, interfaceAnswer := range zdnsAnswers {
-			tmpJSONString, _ := json.Marshal(interfaceAnswer)
-			var zdnsAnswer ZDNSAnswer
-			json.Unmarshal(tmpJSONString, &zdnsAnswer)
-			if zdnsAnswer.Type != "A" && zdnsAnswer.Type != "AAAA" {
-				continue
-			}
-			addressResult := new(v4vsv6.AddressResult)
-			addressResult.Domain = domainName
-			addressResult.IP = zdnsAnswer.Answer
-			addressResult.AddressType = zdnsAnswer.Type
-			errorLogger.Fatalf("%+v\n", addressResult)
+
+		if resultType == "A" {
+			drr.AResults = drr.AppendAResults(results)
+		} else if resultType == "AAAA" {
+			drr.AAAAResults = drr.AppendAAAAResults(results)
+		} else {
+			errorLogger.Fatalf(
+				"Invalid resultType: %s, use \"A\" or \"AAAA\"\n",
+				resultType,
+			)
 		}
 	}
 }
@@ -104,6 +177,6 @@ func main() {
 
 	args := setupArgs()
 	infoLogger.Printf("v4-a-raw file: %s\n", args.V4ARaw)
-	var domainResolverResultMap DomainResolverResultMap
-	updateDomainResolverResults(domainResolverResultMap, args.V4ARaw)
+	domainResolverResultMap := make(DomainResolverResultMap)
+	updateDomainResolverResults(domainResolverResultMap, args.V4ARaw, "A")
 }
