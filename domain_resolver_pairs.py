@@ -59,7 +59,7 @@ def cartesian_product(
                         if "!!" in resolvers_string:
                             continue
                         v6_address, v4_address, _ = resolvers_string.split("  ")
-                        v6_write_file.write(f"{domain},{v6_address}\n")
+                        v6_write_file.write(f"{domain},[{v6_address}]\n")
                         v4_write_file.write(f"{domain},{v4_address}\n")
 
 if __name__ == "__main__":
