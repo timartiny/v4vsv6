@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/alexflint/go-arg"
 	"github.com/timartiny/v4vsv6"
@@ -17,10 +18,11 @@ var (
 )
 
 type DNSResultsFlags struct {
-	V4ARaw string `arg:"--v4-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v4 addresses" required:"true" json:"v4_a_raw"`
+	V4ARaw                  string `arg:"--v4-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v4 addresses" json:"v4_a_raw"`
+	ResolverCountryCodeFile string `arg:"--resolver-country-code,required" help:"(Required) Path to the file with triplets of v6 address, v4 address, country code, to mark country code of resolvers." json:"resolver_country_code"`
 }
 
-type DomainResolverResultMap map[string]v4vsv6.DomainResolverResult
+type DomainResolverResultMap map[string]*v4vsv6.DomainResolverResult
 
 type ZDNSResult struct {
 	AlteredName string        `json:"altered_name,omitempty" groups:"short,normal,long,trace"`
@@ -55,6 +57,32 @@ func setupArgs() DNSResultsFlags {
 	return ret
 }
 
+func getResolverCountryCodeMap(rccm map[string]string, path string) {
+	resolverFile, err := os.Open(path)
+	if err != nil {
+		errorLogger.Fatalf("error opening %s: %v\n", path, err)
+	}
+	defer resolverFile.Close()
+
+	scanner := bufio.NewScanner(resolverFile)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "!!") {
+			// We aren't using resolvers where the country code for v6 and v4
+			// differ
+			continue
+		}
+		splitLine := strings.Split(line, "  ")
+		countryCode := strings.TrimSpace(splitLine[2])
+		ipv6Addr := strings.TrimSpace(splitLine[0])
+		ipv4Addr := strings.TrimSpace(splitLine[1])
+		rccm[ipv6Addr] = countryCode
+		rccm[ipv4Addr] = countryCode
+	}
+
+}
+
 func getAddressResultFromZDNS(zdnsLine ZDNSResult, resultType string) AddressResults {
 	ret := make(AddressResults, 0)
 	domainName := zdnsLine.Name
@@ -72,12 +100,12 @@ func getAddressResultFromZDNS(zdnsLine ZDNSResult, resultType string) AddressRes
 
 	interfaceAnswers, ok := zdnsLine.Data.(map[string]interface{})["answers"]
 	if !ok {
-		infoLogger.Printf(
-			"This results has NOERROR and no answers, domain: %s, "+
-				"resolver: %s\n",
-			domainName,
-			resolverStr,
-		)
+		// infoLogger.Printf(
+		// 	"This results has NOERROR and no answers, domain: %s, "+
+		// 		"resolver: %s\n",
+		// 	domainName,
+		// 	resolverStr,
+		// )
 		keys := make([]string, len(dataMap))
 
 		i := 0
@@ -86,7 +114,7 @@ func getAddressResultFromZDNS(zdnsLine ZDNSResult, resultType string) AddressRes
 			i++
 		}
 		sort.Strings(keys)
-		infoLogger.Printf("The data sections are: %v\n", keys)
+		// infoLogger.Printf("The data sections are: %v\n", keys)
 		singleAnswer := new(v4vsv6.AddressResult)
 		singleAnswer.Domain = domainName
 		singleAnswer.Error = "No DNS Answers"
@@ -121,7 +149,12 @@ func getAddressResultFromZDNS(zdnsLine ZDNSResult, resultType string) AddressRes
 	return ret
 }
 
-func updateDomainResolverResults(drrm DomainResolverResultMap, path, resultType string) {
+func updateDomainResolverResults(
+	drrm DomainResolverResultMap,
+	rccm map[string]string,
+	path,
+	resultType string,
+) {
 	domainResolverResultsRaw, err := os.Open(path)
 	if err != nil {
 		errorLogger.Fatalf("error opening %s: %v\n", path, err)
@@ -130,24 +163,35 @@ func updateDomainResolverResults(drrm DomainResolverResultMap, path, resultType 
 
 	scanner := bufio.NewScanner(domainResolverResultsRaw)
 
+	var lineNum int
 	for scanner.Scan() {
+		lineNum++
+		if lineNum%10000 == 0 {
+			infoLogger.Printf("On line %d\n", lineNum)
+		}
 		line := scanner.Text()
 		var zdnsLine ZDNSResult
 		json.Unmarshal([]byte(line), &zdnsLine)
-		// infoLogger.Printf("zdnsLine: %+v\n", zdnsLine)
 
 		results := getAddressResultFromZDNS(zdnsLine, resultType)
 
 		domainName := zdnsLine.Name
 		dataMap := zdnsLine.Data.(map[string]interface{})
-		resolverStr := dataMap["resolver"].(string)
+		resolverStr := strings.Split(dataMap["resolver"].(string), ":")[0]
 		key := domainName + "-" + resolverStr
-		var drr v4vsv6.DomainResolverResult
+		drr := new(v4vsv6.DomainResolverResult)
 		if _, ok := drrm[key]; ok {
 			drr = drrm[key]
 		} else {
 			drr.Domain = domainName
 			drr.ResolverIP = resolverStr
+			if _, ok := rccm[resolverStr]; !ok {
+				errorLogger.Printf(
+					"resolver %s is not in resolver country code map!\n",
+					resolverStr,
+				)
+			}
+			drr.ResolverCountry = rccm[resolverStr]
 		}
 
 		if resultType == "A" {
@@ -160,6 +204,8 @@ func updateDomainResolverResults(drrm DomainResolverResultMap, path, resultType 
 				resultType,
 			)
 		}
+
+		drrm[key] = drr
 	}
 }
 
@@ -176,7 +222,32 @@ func main() {
 	)
 
 	args := setupArgs()
-	infoLogger.Printf("v4-a-raw file: %s\n", args.V4ARaw)
+	infoLogger.Printf(
+		"Creating resolver -> country code map from %s\n",
+		args.ResolverCountryCodeFile,
+	)
+	resolverCountryCodeMap := make(map[string]string)
+	getResolverCountryCodeMap(
+		resolverCountryCodeMap,
+		args.ResolverCountryCodeFile,
+	)
+	infoLogger.Printf(
+		"Creating the domain resolver result map from v4-a-raw file: %s\n",
+		args.V4ARaw,
+	)
 	domainResolverResultMap := make(DomainResolverResultMap)
-	updateDomainResolverResults(domainResolverResultMap, args.V4ARaw, "A")
+	updateDomainResolverResults(domainResolverResultMap, resolverCountryCodeMap, args.V4ARaw, "A")
+	keys := make([]string, len(domainResolverResultMap))
+
+	i := 0
+	for k := range domainResolverResultMap {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	infoLogger.Printf(
+		"Sample results for: %s: %+v\n",
+		keys[0],
+		domainResolverResultMap[keys[0]],
+	)
 }
