@@ -47,6 +47,16 @@ cat data/v6_cartesian_file | ./zdns A --local-addr "<v6 address>" --output-file 
 cat data/v6_cartesian_file | ./zdns AAAA --local-addr "<v6 address>"--output-file data/v6_cartesian_AAAA_lookups.json
 ```
 
+The above commands took the following amounts of time, and created various
+amounts of data:
+
+`v4_cartesian_A_lookups.json`: 2.7 GB
+```
+real 10027.13
+user 3328.90
+sys 998.26
+```
+
 The v6 lookups need to come from a v6 address. ZDNS does not automatically
 select the v6 address of the machine, you need to manually enter it.
 
