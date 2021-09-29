@@ -79,6 +79,14 @@ sys 1014.58
 The v6 lookups need to come from a v6 address. ZDNS does not automatically
 select the v6 address of the machine, you need to manually enter it.
 
+Times for the v6 scans:
+```
+v6-A-Scan:
+    real 3256.31
+    user 1635.27
+    sys 396.85
+```
+
 ## Parse ZDNS data
 
 The first ZDNS command took 1 hour 10 minutes on zbuff, and generated 2.7G of
