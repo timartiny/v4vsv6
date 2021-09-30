@@ -57,6 +57,25 @@ user 3328.90
 sys 998.26
 ```
 
+`v4_cartesian_AAAA_lookups.json`: 2.9 GB
+```
+Missing time data
+```
+
+`v6_cartesian_A_lookups.json`: 2.5 GB
+```
+real 14387.00
+user 3083.54
+sys 988.57
+```
+
+`v6_cartesian_AAAA_lookups.json`: 2.7 GB
+```
+real 14580.41
+user 3184.37
+sys 1014.58
+```
+
 The v6 lookups need to come from a v6 address. ZDNS does not automatically
 select the v6 address of the machine, you need to manually enter it.
 
@@ -74,12 +93,34 @@ duplication. To make that list we run:
 ```
 cat v4_cartesian_A_lookups.json | jq '.name as $name | .data.answers[]? | select(.type=="A") | "\(.answer), \($name)"' > tmp
 sort -u tmp > v4_A_ip_domain_list.dat
+# Now the AAAA record version
+cat v4_cartesian_AAAA_lookups.json | jq -r '.name as $name | .data.answers[]? | select(.type=="AAAA") | "\(.answer), \($name)"' > tmp
+sort -u tmp > v4_AAAA_ip_domain_list.dat
 ```
 
-The `jq` command took just over a minute to run and made a file with 9.3 M
+The `jq` command took just over a minute to run and made a file with 9.8M
 lines, just under 300 MB.
 
-The `sort` command took 7 seconds and made a file 1.1 K lines, 3.5 MB.
+The `sort` command took about 10 seconds and made a file 100K lines (480K lines
+for v6), 3.5 MB (24 MB for v6 addresses).
+
+One last simplification, there will be duplicates of "ip, domain" pairs
+generated from v4 resolvers and v6 resolvers. So their lists should be combined
+and sorted into only unique pairs:
+
+```
+cat v4_A_ip_domain_list.dat v6_A_ip_domain_list.dat > tmp
+sort -u tmp > A_ip_domain_list.dat
+# v6 version
+cat v4_AAAA_ip_domain_list.dat v6_AAAA_ip_domain_list.dat > tmp
+sort -u tmp > AAAA_ip_domain_list.dat
+```
+
+These are very quick and result in two files:
+
+`A_ip_domain_list.dat`: 3.6MB with 120K lines
+
+`AAAA_ip_domain_list.dat`: 28MB with 560K lines.
 
 
 
