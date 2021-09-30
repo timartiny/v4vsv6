@@ -122,6 +122,28 @@ These are very quick and result in two files:
 
 `AAAA_ip_domain_list.dat`: 28MB with 560K lines.
 
+## ZGrab2 
+
+Once the A and AAAA request files are made we can run two Zgrab2 commands:
+```
+cat A_ip_domain_list.dat | zgrab2 --output-file data/A_tls_lookups.json tls
+cat AAAA_ip_domain_list.dat | zgrab2 --output-file data/AAAA_tls_lookups.json tls
+```
+
+`A_tls_lookups.json`: 2.2 GB
+```
+real 82.29
+user 498.01
+sys 22.25
+```
+
+`AAAA_tls_lookups.json`: 11 GB
+```
+real 547.18
+user 2254.74
+sys 102.45
+```
+
 
 
 
