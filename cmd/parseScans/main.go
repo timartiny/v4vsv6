@@ -105,7 +105,6 @@ func getAddressResultFromZDNS(
 	domainName := zdnsLine.Name
 	dataMap := zdnsLine.Data.(map[string]interface{})
 	resolverStr := dataMap["resolver"].(string)
-	// key := domainName + "-" + resolverStr
 	if zdnsLine.Status != "NOERROR" {
 		// had a DNS error, so we should put that here
 		singleAnswer := new(v4vsv6.AddressResult)
@@ -117,21 +116,6 @@ func getAddressResultFromZDNS(
 
 	interfaceAnswers, ok := zdnsLine.Data.(map[string]interface{})["answers"]
 	if !ok {
-		// infoLogger.Printf(
-		// 	"This results has NOERROR and no answers, domain: %s, "+
-		// 		"resolver: %s\n",
-		// 	domainName,
-		// 	resolverStr,
-		// )
-		// keys := make([]string, len(dataMap))
-
-		// i := 0
-		// for k := range dataMap {
-		// 	keys[i] = k
-		// 	i++
-		// }
-		// sort.Strings(keys)
-		// infoLogger.Printf("The data sections are: %v\n", keys)
 		singleAnswer := new(v4vsv6.AddressResult)
 		singleAnswer.Domain = domainName
 		singleAnswer.Error = "No DNS Answers"
@@ -146,21 +130,30 @@ func getAddressResultFromZDNS(
 		if zdnsAnswer.Type != "A" && zdnsAnswer.Type != "AAAA" {
 			continue
 		}
-		addressResult := new(v4vsv6.AddressResult)
-		addressResult.Domain = domainName
-		addressResult.IP = zdnsAnswer.Answer
-		if zdnsAnswer.Type != resultType {
-			infoLogger.Printf(
-				"Got different answer Type (%s) compared to expected type"+
-					" (%s). Domain: %s, resolver: %s\n",
-				zdnsAnswer.Type,
-				resultType,
+		tmpIP := net.ParseIP(zdnsAnswer.Answer)
+		if tmpIP == nil {
+			errorLogger.Printf(
+				"Got an Invalid IP from ZDNS: %s\n",
+				zdnsAnswer.Answer,
+			)
+			errorLogger.Printf(
+				"Came from resolver: %s, for domain: %s\n",
+				resolverStr,
+				domainName,
+			)
+			continue
+		}
+		ar, ok := ditarm[domainName+"-"+tmpIP.String()]
+		if !ok {
+			errorLogger.Printf("Got a ZDNS result that wasn't sent to Zgrab2!!\n")
+			errorLogger.Printf(
+				"Domain: %s, resolver: %s, answer: %s\n",
 				domainName,
 				resolverStr,
+				tmpIP.String(),
 			)
 		}
-		addressResult.AddressType = zdnsAnswer.Type
-		ret = append(ret, addressResult)
+		ret = append(ret, ar)
 	}
 
 	return ret
@@ -187,26 +180,23 @@ func writeDomainResolverResults(
 		var zdnsLine ZDNSResult
 		json.Unmarshal([]byte(line), &zdnsLine)
 
-		results := getAddressResultFromZDNS(zdnsLine, resultType)
+		results := getAddressResultFromZDNS(zdnsLine, ditarm)
 
-		// 	domainName := zdnsLine.Name
-		// 	dataMap := zdnsLine.Data.(map[string]interface{})
-		// 	resolverStr := strings.Split(dataMap["resolver"].(string), ":")[0]
+		domainName := zdnsLine.Name
+		dataMap := zdnsLine.Data.(map[string]interface{})
+		resolverStr := strings.Split(dataMap["resolver"].(string), ":")[0]
 		// 	key := domainName + "-" + resolverStr
-		// 	drr := new(v4vsv6.DomainResolverResult)
-		// 	if _, ok := drrm[key]; ok {
-		// 		drr = drrm[key]
-		// 	} else {
-		// 		drr.Domain = domainName
-		// 		drr.ResolverIP = resolverStr
-		// 		if _, ok := rccm[resolverStr]; !ok {
-		// 			errorLogger.Printf(
-		// 				"resolver %s is not in resolver country code map!\n",
-		// 				resolverStr,
-		// 			)
-		// 		}
-		// 		drr.ResolverCountry = rccm[resolverStr]
-		// 	}
+		drr := new(v4vsv6.DomainResolverResult)
+		drr.Domain = domainName
+		drr.ResolverIP = resolverStr
+		if _, ok := rccm[resolverStr]; !ok {
+			errorLogger.Printf(
+				"resolver %s is not in resolver country code map!\n",
+				resolverStr,
+			)
+		}
+		drr.ResolverCountry = rccm[resolverStr]
+		drr.RequestedAddressType = resultType
 
 		// 	if resultType == "A" {
 		// 		drr.AResults = drr.AppendAResults(results)
