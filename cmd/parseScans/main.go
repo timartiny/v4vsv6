@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/alexflint/go-arg"
@@ -21,10 +22,11 @@ var (
 )
 
 type ParseScansFlags struct {
-	// V4ARaw                  string `arg:"--v4-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v4 addresses" json:"v4_a_raw"`
-	// ResolverCountryCodeFile string `arg:"--resolver-country-code,required" help:"(Required) Path to the file with triplets of v6 address, v4 address, country code, to mark country code of resolvers." json:"resolver_country_code"`
-	ATLSFile    string `arg:"--a-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses" json:"a_tls_file"`
-	AAAATLSFile string `arg:"--aaaa-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses" json:"aaaa_tls_file"`
+	V4ARaw                  string `arg:"--v4-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v4 addresses" json:"v4_a_raw"`
+	ResolverCountryCodeFile string `arg:"--resolver-country-code,required" help:"(Required) Path to the file with triplets of v6 address, v4 address, country code, to mark country code of resolvers." json:"resolver_country_code"`
+	OutputFile              string `arg:"--output-file,required" help:"(Required) Path to write out the JSON resolver-domain-ip-tls structs" json:"output_file"`
+	ATLSFile                string `arg:"--a-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses" json:"a_tls_file"`
+	AAAATLSFile             string `arg:"--aaaa-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses" json:"aaaa_tls_file"`
 }
 
 type DomainResolverResultMap map[string]*v4vsv6.DomainResolverResult
@@ -63,157 +65,161 @@ func setupArgs() ParseScansFlags {
 	return ret
 }
 
-// func getResolverCountryCodeMap(rccm map[string]string, path string) {
-// 	resolverFile, err := os.Open(path)
-// 	if err != nil {
-// 		errorLogger.Fatalf("error opening %s: %v\n", path, err)
-// 	}
-// 	defer resolverFile.Close()
+// getResolverCountryCodeMap will read in the file of v6, v4, country code and
+// create a mapping for each resolver IP to which country code is listed.
+func getResolverCountryCodeMap(rccm map[string]string, path string) {
+	resolverFile, err := os.Open(path)
+	if err != nil {
+		errorLogger.Fatalf("error opening %s: %v\n", path, err)
+	}
+	defer resolverFile.Close()
 
-// 	scanner := bufio.NewScanner(resolverFile)
+	scanner := bufio.NewScanner(resolverFile)
 
-// 	for scanner.Scan() {
-// 		line := scanner.Text()
-// 		if strings.Contains(line, "!!") {
-// 			// We aren't using resolvers where the country code for v6 and v4
-// 			// differ
-// 			continue
-// 		}
-// 		splitLine := strings.Split(line, "  ")
-// 		countryCode := strings.TrimSpace(splitLine[2])
-// 		ipv6Addr := strings.TrimSpace(splitLine[0])
-// 		ipv4Addr := strings.TrimSpace(splitLine[1])
-// 		rccm[ipv6Addr] = countryCode
-// 		rccm[ipv4Addr] = countryCode
-// 	}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "!!") {
+			// We aren't using resolvers where the country code for v6 and v4
+			// differ
+			continue
+		}
+		splitLine := strings.Split(line, "  ")
+		countryCode := strings.TrimSpace(splitLine[2])
+		ipv6Addr := strings.TrimSpace(splitLine[0])
+		ipv4Addr := strings.TrimSpace(splitLine[1])
+		rccm[ipv6Addr] = countryCode
+		rccm[ipv4Addr] = countryCode
+	}
 
-// }
+}
 
-// func getAddressResultFromZDNS(zdnsLine ZDNSResult, resultType string) AddressResults {
-// 	ret := make(AddressResults, 0)
-// 	domainName := zdnsLine.Name
-// 	dataMap := zdnsLine.Data.(map[string]interface{})
-// 	resolverStr := dataMap["resolver"].(string)
-// 	// key := domainName + "-" + resolverStr
-// 	if zdnsLine.Status != "NOERROR" {
-// 		// had a DNS error, so we should put that here
-// 		singleAnswer := new(v4vsv6.AddressResult)
-// 		singleAnswer.Domain = domainName
-// 		singleAnswer.Error = zdnsLine.Status + ", " + zdnsLine.Error
-// 		ret = append(ret, singleAnswer)
-// 		return ret
-// 	}
+// getAddressResultFromZDNS will take a ZDNSResult, collect all the answers
+// given and return all of the AddressResult entries in the mapping. If no
+// address is provided it will return an AddressResult with the error part
+// filled out
+func getAddressResultFromZDNS(
+	zdnsLine ZDNSResult,
+	ditarm DomainIPToAddressResultMap,
+) AddressResults {
+	ret := make(AddressResults, 0)
+	domainName := zdnsLine.Name
+	dataMap := zdnsLine.Data.(map[string]interface{})
+	resolverStr := dataMap["resolver"].(string)
+	// key := domainName + "-" + resolverStr
+	if zdnsLine.Status != "NOERROR" {
+		// had a DNS error, so we should put that here
+		singleAnswer := new(v4vsv6.AddressResult)
+		singleAnswer.Domain = domainName
+		singleAnswer.Error = zdnsLine.Status + ", " + zdnsLine.Error
+		ret = append(ret, singleAnswer)
+		return ret
+	}
 
-// 	interfaceAnswers, ok := zdnsLine.Data.(map[string]interface{})["answers"]
-// 	if !ok {
-// 		// infoLogger.Printf(
-// 		// 	"This results has NOERROR and no answers, domain: %s, "+
-// 		// 		"resolver: %s\n",
-// 		// 	domainName,
-// 		// 	resolverStr,
-// 		// )
-// 		keys := make([]string, len(dataMap))
+	interfaceAnswers, ok := zdnsLine.Data.(map[string]interface{})["answers"]
+	if !ok {
+		// infoLogger.Printf(
+		// 	"This results has NOERROR and no answers, domain: %s, "+
+		// 		"resolver: %s\n",
+		// 	domainName,
+		// 	resolverStr,
+		// )
+		// keys := make([]string, len(dataMap))
 
-// 		i := 0
-// 		for k := range dataMap {
-// 			keys[i] = k
-// 			i++
-// 		}
-// 		sort.Strings(keys)
-// 		// infoLogger.Printf("The data sections are: %v\n", keys)
-// 		singleAnswer := new(v4vsv6.AddressResult)
-// 		singleAnswer.Domain = domainName
-// 		singleAnswer.Error = "No DNS Answers"
-// 		ret = append(ret, singleAnswer)
-// 		return ret
-// 	}
-// 	zdnsAnswers := interfaceAnswers.([]interface{})
-// 	for _, interfaceAnswer := range zdnsAnswers {
-// 		tmpJSONString, _ := json.Marshal(interfaceAnswer)
-// 		var zdnsAnswer ZDNSAnswer
-// 		json.Unmarshal(tmpJSONString, &zdnsAnswer)
-// 		if zdnsAnswer.Type != "A" && zdnsAnswer.Type != "AAAA" {
-// 			continue
-// 		}
-// 		addressResult := new(v4vsv6.AddressResult)
-// 		addressResult.Domain = domainName
-// 		addressResult.IP = zdnsAnswer.Answer
-// 		if zdnsAnswer.Type != resultType {
-// 			infoLogger.Printf(
-// 				"Got different answer Type (%s) compared to expected type"+
-// 					" (%s). Domain: %s, resolver: %s\n",
-// 				zdnsAnswer.Type,
-// 				resultType,
-// 				domainName,
-// 				resolverStr,
-// 			)
-// 		}
-// 		addressResult.AddressType = zdnsAnswer.Type
-// 		ret = append(ret, addressResult)
-// 	}
+		// i := 0
+		// for k := range dataMap {
+		// 	keys[i] = k
+		// 	i++
+		// }
+		// sort.Strings(keys)
+		// infoLogger.Printf("The data sections are: %v\n", keys)
+		singleAnswer := new(v4vsv6.AddressResult)
+		singleAnswer.Domain = domainName
+		singleAnswer.Error = "No DNS Answers"
+		ret = append(ret, singleAnswer)
+		return ret
+	}
+	zdnsAnswers := interfaceAnswers.([]interface{})
+	for _, interfaceAnswer := range zdnsAnswers {
+		tmpJSONString, _ := json.Marshal(interfaceAnswer)
+		var zdnsAnswer ZDNSAnswer
+		json.Unmarshal(tmpJSONString, &zdnsAnswer)
+		if zdnsAnswer.Type != "A" && zdnsAnswer.Type != "AAAA" {
+			continue
+		}
+		addressResult := new(v4vsv6.AddressResult)
+		addressResult.Domain = domainName
+		addressResult.IP = zdnsAnswer.Answer
+		if zdnsAnswer.Type != resultType {
+			infoLogger.Printf(
+				"Got different answer Type (%s) compared to expected type"+
+					" (%s). Domain: %s, resolver: %s\n",
+				zdnsAnswer.Type,
+				resultType,
+				domainName,
+				resolverStr,
+			)
+		}
+		addressResult.AddressType = zdnsAnswer.Type
+		ret = append(ret, addressResult)
+	}
 
-// 	return ret
-// }
+	return ret
+}
 
-// func updateDomainResolverResults(
-// 	drrm DomainResolverResultMap,
-// 	rccm map[string]string,
-// 	path,
-// 	resultType string,
-// ) {
-// 	domainResolverResultsRaw, err := os.Open(path)
-// 	if err != nil {
-// 		errorLogger.Fatalf("error opening %s: %v\n", path, err)
-// 	}
-// 	defer domainResolverResultsRaw.Close()
+// writeDomainResolverResults will read in ZDNS scan results and will write out
+// info on the resolver, domain to be resolved, for which record, and the
+// results to the provided file
+func writeDomainResolverResults(
+	ditarm DomainIPToAddressResultMap,
+	rccm map[string]string,
+	zdnsPath, outPath, resultType string,
+) {
+	zdnsFile, err := os.Open(zdnsPath)
+	if err != nil {
+		errorLogger.Fatalf("error opening %s: %v\n", zdnsPath, err)
+	}
+	defer zdnsFile.Close()
 
-// 	scanner := bufio.NewScanner(domainResolverResultsRaw)
+	scanner := bufio.NewScanner(zdnsFile)
 
-// 	var lineNum int
-// 	for scanner.Scan() {
-// 		lineNum++
-// 		if lineNum%10000 == 0 {
-// 			infoLogger.Printf("On line %d\n", lineNum)
-// 		}
-// 		line := scanner.Text()
-// 		var zdnsLine ZDNSResult
-// 		json.Unmarshal([]byte(line), &zdnsLine)
+	for scanner.Scan() {
+		line := scanner.Text()
+		var zdnsLine ZDNSResult
+		json.Unmarshal([]byte(line), &zdnsLine)
 
-// 		results := getAddressResultFromZDNS(zdnsLine, resultType)
+		results := getAddressResultFromZDNS(zdnsLine, resultType)
 
-// 		domainName := zdnsLine.Name
-// 		dataMap := zdnsLine.Data.(map[string]interface{})
-// 		resolverStr := strings.Split(dataMap["resolver"].(string), ":")[0]
-// 		key := domainName + "-" + resolverStr
-// 		drr := new(v4vsv6.DomainResolverResult)
-// 		if _, ok := drrm[key]; ok {
-// 			drr = drrm[key]
-// 		} else {
-// 			drr.Domain = domainName
-// 			drr.ResolverIP = resolverStr
-// 			if _, ok := rccm[resolverStr]; !ok {
-// 				errorLogger.Printf(
-// 					"resolver %s is not in resolver country code map!\n",
-// 					resolverStr,
-// 				)
-// 			}
-// 			drr.ResolverCountry = rccm[resolverStr]
-// 		}
+		// 	domainName := zdnsLine.Name
+		// 	dataMap := zdnsLine.Data.(map[string]interface{})
+		// 	resolverStr := strings.Split(dataMap["resolver"].(string), ":")[0]
+		// 	key := domainName + "-" + resolverStr
+		// 	drr := new(v4vsv6.DomainResolverResult)
+		// 	if _, ok := drrm[key]; ok {
+		// 		drr = drrm[key]
+		// 	} else {
+		// 		drr.Domain = domainName
+		// 		drr.ResolverIP = resolverStr
+		// 		if _, ok := rccm[resolverStr]; !ok {
+		// 			errorLogger.Printf(
+		// 				"resolver %s is not in resolver country code map!\n",
+		// 				resolverStr,
+		// 			)
+		// 		}
+		// 		drr.ResolverCountry = rccm[resolverStr]
+		// 	}
 
-// 		if resultType == "A" {
-// 			drr.AResults = drr.AppendAResults(results)
-// 		} else if resultType == "AAAA" {
-// 			drr.AAAAResults = drr.AppendAAAAResults(results)
-// 		} else {
-// 			errorLogger.Fatalf(
-// 				"Invalid resultType: %s, use \"A\" or \"AAAA\"\n",
-// 				resultType,
-// 			)
-// 		}
-
-// 		drrm[key] = drr
-// 	}
-// }
+		// 	if resultType == "A" {
+		// 		drr.AResults = drr.AppendAResults(results)
+		// 	} else if resultType == "AAAA" {
+		// 		drr.AAAAResults = drr.AppendAAAAResults(results)
+		// 	} else {
+		// 		errorLogger.Fatalf(
+		// 			"Invalid resultType: %s, use \"A\" or \"AAAA\"\n",
+		// 			resultType,
+		// 		)
+		// 	}
+	}
+}
 
 // verifyTLS will take a tls scan response and determine whether the information
 // provided is a valid TLS cert for the given domainName at the time of the scan
@@ -284,7 +290,6 @@ func verifyTLS(tlsScanResponse zgrab2.ScanResponse, domainName string) bool {
 // updateAddressResults will read into memory the results of a Zgrab2 scan and
 // store the conclusions in AddressResults indexed by domain-ip
 func updateAddressResults(ditarm DomainIPToAddressResultMap, path string) {
-
 	tlsResultsFile, err := os.Open(path)
 	if err != nil {
 		errorLogger.Fatalf("error opening %s: %v\n", path, err)
@@ -293,10 +298,16 @@ func updateAddressResults(ditarm DomainIPToAddressResultMap, path string) {
 
 	scanner := bufio.NewScanner(tlsResultsFile)
 
+	var numLines int
 	for scanner.Scan() {
 		var zgrabResult zgrab2.Grab
 		l := scanner.Text()
-		json.Unmarshal([]byte(l), &zgrabResult)
+		numLines++
+		err = json.Unmarshal([]byte(l), &zgrabResult)
+		if err != nil {
+			errorLogger.Printf("error unmarshaling line: %s, err: %v\n", l, err)
+			continue
+		}
 		ar := new(v4vsv6.AddressResult)
 		ar.Domain = zgrabResult.Domain
 		ar.IP = zgrabResult.IP
@@ -307,6 +318,8 @@ func updateAddressResults(ditarm DomainIPToAddressResultMap, path string) {
 			} else {
 				ar.AddressType = "A"
 			}
+		} else {
+			errorLogger.Printf("Got an invalid IP: %s\n", ar.IP)
 		}
 		tlsScanResponse, ok := zgrabResult.Data["tls"]
 		if !ok {
@@ -318,10 +331,36 @@ func updateAddressResults(ditarm DomainIPToAddressResultMap, path string) {
 		}
 		ar.Timestamp = tlsScanResponse.Timestamp
 		ar.SupportsTLS = verifyTLS(tlsScanResponse, zgrabResult.Domain)
-		key := ar.Domain + "-" + ar.IP
+		// use tmpIP to ensure same formatting of IP in key
+		key := ar.Domain + "-" + tmpIP.String()
+		if old, ok := ditarm[key]; ok {
+			errorLogger.Printf("key: %s already seen\n", key)
+			errorLogger.Printf("new.IP: %s, old.IP: %s\n", ar.IP, old.IP)
+			errorLogger.Printf(
+				"new.AddressType: %s, old.AddressType: %s\n",
+				ar.AddressType,
+				old.AddressType,
+			)
+			errorLogger.Printf(
+				"new.Domain: %s, old.Domain: %s\n",
+				ar.Domain,
+				old.Domain,
+			)
+			errorLogger.Printf(
+				"new.SupportsTLS: %t, old.SupportsTLS: %t\n",
+				ar.SupportsTLS,
+				old.SupportsTLS,
+			)
+			errorLogger.Printf(
+				"new.Error: %s, old.Error: %s\n",
+				ar.Error,
+				old.Error,
+			)
+		}
 		ditarm[key] = ar
 	}
 
+	infoLogger.Printf("Read %d lines from %s\n", numLines, path)
 }
 
 func main() {
@@ -345,25 +384,40 @@ func main() {
 	)
 	updateAddressResults(domainIPToAddressResultsMap, args.ATLSFile)
 	infoLogger.Printf(
+		"domainIPToAddressResultMap has %d entries\n",
+		len(domainIPToAddressResultsMap),
+	)
+
+	infoLogger.Printf(
 		"Loading in TLS data from v6 addresses from %s\n",
 		args.AAAATLSFile,
 	)
-	updateAddressResults(domainIPToAddressResultsMap, args.ATLSFile)
-	// infoLogger.Printf(
-	// 	"Creating resolver -> country code map from %s\n",
-	// 	args.ResolverCountryCodeFile,
-	// )
-	// resolverCountryCodeMap := make(map[string]string)
-	// getResolverCountryCodeMap(
-	// 	resolverCountryCodeMap,
-	// 	args.ResolverCountryCodeFile,
-	// )
-	// infoLogger.Printf(
-	// 	"Creating the domain resolver result map from v4-a-raw file: %s\n",
-	// 	args.V4ARaw,
-	// )
-	// domainResolverResultMap := make(DomainResolverResultMap)
-	// updateDomainResolverResults(domainResolverResultMap, resolverCountryCodeMap, args.V4ARaw, "A")
+	updateAddressResults(domainIPToAddressResultsMap, args.AAAATLSFile)
+	infoLogger.Printf(
+		"domainIPToAddressResultMap has %d entries\n",
+		len(domainIPToAddressResultsMap),
+	)
+
+	infoLogger.Printf(
+		"Creating resolver -> country code map from %s\n",
+		args.ResolverCountryCodeFile,
+	)
+	resolverCountryCodeMap := make(map[string]string)
+	getResolverCountryCodeMap(
+		resolverCountryCodeMap,
+		args.ResolverCountryCodeFile,
+	)
+	infoLogger.Printf(
+		"Writing resolvers (with v4 addresses) requesting A records data to %s\n",
+		args.OutputFile,
+	)
+	writeDomainResolverResults(
+		domainIPToAddressResultsMap,
+		resolverCountryCodeMap,
+		args.V4ARaw,
+		"A",
+		args.OutputFile,
+	)
 	// keys := make([]string, len(domainResolverResultMap))
 
 	// i := 0
