@@ -5,9 +5,8 @@ import (
 	"testing"
 )
 
-// TestAppendAResults will test DomainResolverResult.AppendAResults to ensure
-// it has the correct length of return values as well as there being no
-// duplicates
+// TestAppendResults will test DomainResolverResult.AppendResults to ensure it
+// has the correct length of return values as well as there being no duplicates
 func TestAppendAResults(t *testing.T) {
 	var drr DomainResolverResult
 	drr.Domain = "fake-domain"
@@ -18,7 +17,7 @@ func TestAppendAResults(t *testing.T) {
 		ar.Domain = "fake-domain"
 		ars = append(ars, ar)
 	}
-	drr.AResults = ars
+	drr.Results = ars
 
 	newArs := make([]*AddressResult, 0)
 	for i := 0; i < 1; i++ {
@@ -28,7 +27,7 @@ func TestAppendAResults(t *testing.T) {
 		newArs = append(newArs, ar)
 	}
 
-	newAs := drr.AppendAResults(newArs)
+	newAs := drr.AppendResults(newArs)
 	if len(newAs) != 5 {
 		t.Logf("newAs should have length 5, instead has length: %d\n", len(newAs))
 		t.Logf("entries of newAs are:\n")
@@ -37,7 +36,7 @@ func TestAppendAResults(t *testing.T) {
 		}
 		t.Fatalf("")
 	}
-	drr.AResults = newAs
+	drr.Results = newAs
 
 	oldArs := make([]*AddressResult, 0)
 	for i := 0; i < 4; i++ {
@@ -47,57 +46,8 @@ func TestAppendAResults(t *testing.T) {
 		oldArs = append(oldArs, ar)
 	}
 
-	oldAs := drr.AppendAResults(oldArs)
-	if len(oldAs) != len(drr.AResults) {
-		t.Fatalf("Appending old AddressResults shouldn't add anythign new\n")
-	}
-
-}
-
-// TestAppendAAAAResults will test DomainResolverResult.AppendAAAAResults to
-// ensure it has the correct length of return values as well as there being no
-// duplicates
-func TestAppendAAAAResults(t *testing.T) {
-	var drr DomainResolverResult
-	drr.Domain = "fake-domain"
-	ars := make([]*AddressResult, 0)
-	for i := 0; i < 4; i++ {
-		ar := new(AddressResult)
-		ar.IP = "2001:db8:3333:4444:5555:6666:7777:888" + fmt.Sprint(i)
-		ar.Domain = "fake-domain"
-		ars = append(ars, ar)
-	}
-	drr.AAAAResults = ars
-
-	newArs := make([]*AddressResult, 0)
-	for i := 0; i < 1; i++ {
-		ar := new(AddressResult)
-		ar.IP = "2001:db8:3333:4444:5555:6666:7777:000" + fmt.Sprint(i)
-		ar.Domain = "fake-domain"
-		newArs = append(newArs, ar)
-	}
-
-	newAs := drr.AppendAAAAResults(newArs)
-	if len(newAs) != 5 {
-		t.Logf("newAs should have length 5, instead has length: %d\n", len(newAs))
-		t.Logf("entries of newAs are:\n")
-		for _, ar := range newAs {
-			t.Logf("%+v\n", ar)
-		}
-		t.Fatalf("")
-	}
-	drr.AAAAResults = newAs
-
-	oldArs := make([]*AddressResult, 0)
-	for i := 0; i < 4; i++ {
-		ar := new(AddressResult)
-		ar.IP = "2001:db8:3333:4444:5555:6666:7777:888" + fmt.Sprint(i)
-		ar.Domain = "fake-domain"
-		oldArs = append(oldArs, ar)
-	}
-
-	oldAs := drr.AppendAAAAResults(oldArs)
-	if len(oldAs) != len(drr.AAAAResults) {
+	oldAs := drr.AppendResults(oldArs)
+	if len(oldAs) != len(drr.Results) {
 		t.Fatalf("Appending old AddressResults shouldn't add anythign new\n")
 	}
 
