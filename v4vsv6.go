@@ -6,7 +6,7 @@ type AddressResult struct {
 	AddressType string `json:"address_type,omitempty"`
 	Domain      string `json:"domain"`
 	SupportsTLS bool   `json:"supports_tls,omitempty"`
-	Timestamp   string `json:"timestamp"`
+	Timestamp   string `json:"timestamp,omitempty"`
 	Error       string `json:"error,omitempty"`
 }
 
@@ -14,11 +14,12 @@ type AddressResult struct {
 // responded to queries for a particular domain, including A and AAAA record
 // requests
 type DomainResolverResult struct {
-	Domain          string           `json:"domain"`
-	ResolverIP      string           `json:"resolver_ip"`
-	ResolverCountry string           `json:"resolver_country"`
-	AResults        []*AddressResult `json:"a_results,omitempty"`
-	AAAAResults     []*AddressResult `json:"aaaa_results,omitempty"`
+	Domain               string           `json:"domain"`
+	ResolverIP           string           `json:"resolver_ip"`
+	ResolverCountry      string           `json:"resolver_country"`
+	RequestedAddressType string           `json:"requested_address_type"`
+	AResults             []*AddressResult `json:"a_results,omitempty"`
+	AAAAResults          []*AddressResult `json:"aaaa_results,omitempty"`
 }
 
 // AppendAResults will take a slice of AddressResults and add non-duplicates to
