@@ -87,13 +87,9 @@ v6-A-Scan:
     sys 396.85
 ```
 
-## Parse ZDNS data
+## Prepare for ZGrab2
 
-The first ZDNS command took 1 hour 10 minutes on zbuff, and generated 2.7G of
-data. A lot of it is repeated information, due to asking a lot of resolvers for
-the same domain records.
-
-A future step will require performing a TLS certificate lookup on all of the
+The next step will require performing a TLS certificate lookup on all of the
 answers provided. `ZGrab2` accepts input in the form of "`<ip address>,
 <domain>`", so we want to make that list, while not adding any unnecessary
 duplication. To make that list we run:
@@ -152,10 +148,21 @@ user 2254.74
 sys 102.45
 ```
 
+## Parse Scans
 
+Full README in the [directory](cmd/parseScan).
 
+Sample usage:
 
+```
+cmd/parseScans$ go build -o parseScans main.go
+cmd/parseScans$ ./parseScans --a-tls-file ../../data/A_tls_lookups_sept_30.json --aaaa-tls-file ../../data/AAAA_tls_lookups_sept_30.json --resolver-country-code ../../data/aug-30-2-single-resolvers-country-correct-sorted --v4-a-raw ../../data/v4_cartesian_A_lookups_sept_29.json --v4-aaaa-raw ../../data/v4_cartesian_AAAA_lookups_sept_29.json --v6-a-raw ../../data/v6_cartesian_A_lookups_sept_29.json --v6-aaaa-raw ../../data/v6_cartesian_AAAA_lookups_sept_29.json --output-file ../../data/domain-resolver-results.json
+```
 
+This run took 20 minutes on my laptop and generated an output file of 7.6 GB
+formatted like:
 
-
-
+```
+{"domain":"bbc.co.uk","resolver_ip":"2002:4022:4e04::4022:4e04","resolver_country":"CA","requested_address_type":"AAAA","results":[{"ip":"2a04:4e42::81","address_type":"AAAA","domain":"bbc.co.uk","supports_tls":true,"timestamp":"2021-09-30T10:22:27-06:00"},{"ip":"2a04:4e42:200::81","address_type":"AAAA","domain":"bbc.co.uk","supports_tls":true,"timestamp":"2021-09-30T10:22:27-06:00"},{"ip":"2a04:4e42:400::81","address_type":"AAAA","domain":"bbc.co.uk","supports_tls":true,"timestamp":"2021-09-30T10:22:27-06:00"},{"ip":"2a04:4e42:600::81","address_type":"AAAA","domain":"bbc.co.uk","supports_tls":true,"timestamp":"2021-09-30T10:22:27-06:00"}]}
+{"domain":"bbc.co.uk","resolver_ip":"2002:aa34:7e25::aa34:7e25","resolver_country":"CA","requested_address_type":"AAAA","results":[{"ip":"2a04:4e42::81","address_type":"AAAA","domain":"bbc.co.uk","supports_tls":true,"timestamp":"2021-09-30T10:22:27-06:00"},{"ip":"2a04:4e42:200::81","address_type":"AAAA","domain":"bbc.co.uk","supports_tls":true,"timestamp":"2021-09-30T10:22:27-06:00"},{"ip":"2a04:4e42:400::81","address_type":"AAAA","domain":"bbc.co.uk","supports_tls":true,"timestamp":"2021-09-30T10:22:27-06:00"},{"ip":"2a04:4e42:600::81","address_type":"AAAA","domain":"bbc.co.uk","supports_tls":true,"timestamp":"2021-09-30T10:22:27-06:00"}]}
+```
