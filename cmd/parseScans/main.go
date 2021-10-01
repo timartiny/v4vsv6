@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/alexflint/go-arg"
@@ -23,6 +24,9 @@ var (
 
 type ParseScansFlags struct {
 	V4ARaw                  string `arg:"--v4-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v4 addresses" json:"v4_a_raw"`
+	V4AAAARaw               string `arg:"--v4-aaaa-raw,required" help:"(Required) Path to the file containing the ZDNS results for AAAA records from resolvers with v4 addresses" json:"v4_aaaa_raw"`
+	V6ARaw                  string `arg:"--v6-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v6 addresses" json:"v6_a_raw"`
+	V6AAAARaw               string `arg:"--v6-aaaa-raw,required" help:"(Required) Path to the file containing the ZDNS results for AAAA records from resolvers with v6 addresses" json:"v6_aaaa_raw"`
 	ResolverCountryCodeFile string `arg:"--resolver-country-code,required" help:"(Required) Path to the file with triplets of v6 address, v4 address, country code, to mark country code of resolvers." json:"resolver_country_code"`
 	OutputFile              string `arg:"--output-file,required" help:"(Required) Path to write out the JSON resolver-domain-ip-tls structs" json:"output_file"`
 	ATLSFile                string `arg:"--a-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses" json:"a_tls_file"`
@@ -67,7 +71,8 @@ func setupArgs() ParseScansFlags {
 
 // getResolverCountryCodeMap will read in the file of v6, v4, country code and
 // create a mapping for each resolver IP to which country code is listed.
-func getResolverCountryCodeMap(rccm map[string]string, path string) {
+func getResolverCountryCodeMap(rccm map[string]string, path string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	resolverFile, err := os.Open(path)
 	if err != nil {
 		errorLogger.Fatalf("error opening %s: %v\n", path, err)
@@ -159,14 +164,46 @@ func getAddressResultFromZDNS(
 	return ret
 }
 
-// writeDomainResolverResults will read in ZDNS scan results and will write out
-// info on the resolver, domain to be resolved, for which record, and the
-// results to the provided file
+// writeDomainResolverResults will write a particular DomainResolverResult to
+// the provided file, first turning it into JSON after it receives it from the
+// channel
 func writeDomainResolverResults(
+	drrChan <-chan *v4vsv6.DomainResolverResult,
+	path string,
+) {
+	outFile, err := os.Create(path)
+	if err != nil {
+		errorLogger.Fatalf("Error creating output file: %s, %v\n", path, err)
+	}
+	defer outFile.Close()
+
+	for drr := range drrChan {
+		bs, err := json.Marshal(drr)
+		if err != nil {
+			errorLogger.Printf("Error marshaling a drr: %v\n", err)
+		}
+		_, err = outFile.Write(bs)
+		if err != nil {
+			errorLogger.Printf("Error writing bytes of drr to file: %v\n", err)
+		}
+		_, err = outFile.WriteString("\n")
+		if err != nil {
+			errorLogger.Printf("Error writing newline to file: %v\n", err)
+		}
+	}
+}
+
+// createThenWriteDomainResolverResults will read in ZDNS scan results and will
+// write out info on the resolver, domain to be resolved, for which record, and
+// the results to the provided file
+func createThenWriteDomainResolverResults(
 	ditarm DomainIPToAddressResultMap,
 	rccm map[string]string,
-	zdnsPath, outPath, resultType string,
+	zdnsPath, resultType string,
+	drrChan chan<- *v4vsv6.DomainResolverResult,
+	wg *sync.WaitGroup,
 ) {
+	defer wg.Done()
 	zdnsFile, err := os.Open(zdnsPath)
 	if err != nil {
 		errorLogger.Fatalf("error opening %s: %v\n", zdnsPath, err)
@@ -184,8 +221,16 @@ func writeDomainResolverResults(
 
 		domainName := zdnsLine.Name
 		dataMap := zdnsLine.Data.(map[string]interface{})
-		resolverStr := strings.Split(dataMap["resolver"].(string), ":")[0]
-		// 	key := domainName + "-" + resolverStr
+		resolverFullStr := dataMap["resolver"].(string)
+		var resolverStr string
+		if strings.Count(resolverFullStr, ":") == 1 {
+			resolverStr = strings.Split(resolverFullStr, ":")[0]
+		} else {
+			resolverStr = strings.Split(
+				strings.Split(resolverFullStr, "]")[0],
+				"[",
+			)[1]
+		}
 		drr := new(v4vsv6.DomainResolverResult)
 		drr.Domain = domainName
 		drr.ResolverIP = resolverStr
@@ -197,17 +242,8 @@ func writeDomainResolverResults(
 		}
 		drr.ResolverCountry = rccm[resolverStr]
 		drr.RequestedAddressType = resultType
-
-		// 	if resultType == "A" {
-		// 		drr.AResults = drr.AppendAResults(results)
-		// 	} else if resultType == "AAAA" {
-		// 		drr.AAAAResults = drr.AppendAAAAResults(results)
-		// 	} else {
-		// 		errorLogger.Fatalf(
-		// 			"Invalid resultType: %s, use \"A\" or \"AAAA\"\n",
-		// 			resultType,
-		// 		)
-		// 	}
+		drr.Results = results
+		drrChan <- drr
 	}
 }
 
@@ -277,17 +313,64 @@ func verifyTLS(tlsScanResponse zgrab2.ScanResponse, domainName string) bool {
 	return err == nil
 }
 
-// updateAddressResults will read into memory the results of a Zgrab2 scan and
-// store the conclusions in AddressResults indexed by domain-ip
-func updateAddressResults(ditarm DomainIPToAddressResultMap, path string) {
+// updateAddressResults will accept AddressResults from a channel then add them
+// to the mapping, by their domain-ip as key. Will point out when something is
+// already in the mapping.
+func updateAddressResults(
+	ditarm DomainIPToAddressResultMap,
+	arChan <-chan *v4vsv6.AddressResult,
+) {
+	for ar := range arChan {
+		// tmpIP won't be invalid, already checked in createAddressResults
+		tmpIP := net.ParseIP(ar.IP)
+		key := ar.Domain + "-" + tmpIP.String()
+		if _, ok := ditarm[key]; ok {
+			// errorLogger.Printf(
+			// 	"key: %s already seen, keeping first result\n",
+			// 	key,
+			// )
+			// errorLogger.Printf("new.IP: %s, old.IP: %s\n", ar.IP, old.IP)
+			// errorLogger.Printf(
+			// 	"new.AddressType: %s, old.AddressType: %s\n",
+			// 	ar.AddressType,
+			// 	old,
+			// )
+			// errorLogger.Printf(
+			// 	"new.Domain: %s, old.Domain: %s\n",
+			// 	ar.Domain,
+			// 	old.Domain,
+			// )
+			// errorLogger.Printf(
+			// 	"new.SupportsTLS: %t, old.SupportsTLS: %t\n",
+			// 	ar.SupportsTLS,
+			// 	old.SupportsTLS,
+			// )
+			// errorLogger.Printf(
+			// 	"new.Error: %s, old.Error: %s\n",
+			// 	ar.Error,
+			// 	old.Error,
+			// )
+		} else {
+			ditarm[key] = ar
+		}
+	}
+}
+
+// createAddressResults will read into memory the results of a Zgrab2 scan and
+// pass the conclusions in AddressResults to a channel to be indexed by
+// domain-ip
+func createAddressResults(
+	path string,
+	arChan chan<- *v4vsv6.AddressResult,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
 	tlsResultsFile, err := os.Open(path)
 	if err != nil {
 		errorLogger.Fatalf("error opening %s: %v\n", path, err)
 	}
 	defer tlsResultsFile.Close()
-
 	scanner := bufio.NewScanner(tlsResultsFile)
-
 	var numLines int
 	for scanner.Scan() {
 		var zgrabResult zgrab2.Grab
@@ -321,33 +404,7 @@ func updateAddressResults(ditarm DomainIPToAddressResultMap, path string) {
 		}
 		ar.Timestamp = tlsScanResponse.Timestamp
 		ar.SupportsTLS = verifyTLS(tlsScanResponse, zgrabResult.Domain)
-		// use tmpIP to ensure same formatting of IP in key
-		key := ar.Domain + "-" + tmpIP.String()
-		if old, ok := ditarm[key]; ok {
-			errorLogger.Printf("key: %s already seen\n", key)
-			errorLogger.Printf("new.IP: %s, old.IP: %s\n", ar.IP, old.IP)
-			errorLogger.Printf(
-				"new.AddressType: %s, old.AddressType: %s\n",
-				ar.AddressType,
-				old.AddressType,
-			)
-			errorLogger.Printf(
-				"new.Domain: %s, old.Domain: %s\n",
-				ar.Domain,
-				old.Domain,
-			)
-			errorLogger.Printf(
-				"new.SupportsTLS: %t, old.SupportsTLS: %t\n",
-				ar.SupportsTLS,
-				old.SupportsTLS,
-			)
-			errorLogger.Printf(
-				"new.Error: %s, old.Error: %s\n",
-				ar.Error,
-				old.Error,
-			)
-		}
-		ditarm[key] = ar
+		arChan <- ar
 	}
 
 	infoLogger.Printf("Read %d lines from %s\n", numLines, path)
@@ -368,57 +425,95 @@ func main() {
 	args := setupArgs()
 
 	domainIPToAddressResultsMap := make(DomainIPToAddressResultMap)
+	// will have 2 goroutines writing, so leave room for each
+	addressResultsChan := make(chan *v4vsv6.AddressResult, 2)
+	// will have 4 goroutines writine, so leave room for each
+	domainResolverResultChan := make(chan *v4vsv6.DomainResolverResult, 4)
+	var createAddressResultsWG sync.WaitGroup
+	var resolverCountryCodeMapWG sync.WaitGroup
+	var createAndWriteDomainResolverResultWG sync.WaitGroup
+	go updateAddressResults(domainIPToAddressResultsMap, addressResultsChan)
 	infoLogger.Printf(
 		"Loading in TLS data from v4 addresses from %s\n",
 		args.ATLSFile,
 	)
-	updateAddressResults(domainIPToAddressResultsMap, args.ATLSFile)
-	infoLogger.Printf(
-		"domainIPToAddressResultMap has %d entries\n",
-		len(domainIPToAddressResultsMap),
-	)
+
+	createAddressResultsWG.Add(1)
+	go createAddressResults(args.ATLSFile, addressResultsChan, &createAddressResultsWG)
 
 	infoLogger.Printf(
 		"Loading in TLS data from v6 addresses from %s\n",
 		args.AAAATLSFile,
 	)
-	updateAddressResults(domainIPToAddressResultsMap, args.AAAATLSFile)
-	infoLogger.Printf(
-		"domainIPToAddressResultMap has %d entries\n",
-		len(domainIPToAddressResultsMap),
-	)
+	createAddressResultsWG.Add(1)
+	go createAddressResults(args.AAAATLSFile, addressResultsChan, &createAddressResultsWG)
 
 	infoLogger.Printf(
 		"Creating resolver -> country code map from %s\n",
 		args.ResolverCountryCodeFile,
 	)
 	resolverCountryCodeMap := make(map[string]string)
-	getResolverCountryCodeMap(
+	resolverCountryCodeMapWG.Add(1)
+	go getResolverCountryCodeMap(
 		resolverCountryCodeMap,
 		args.ResolverCountryCodeFile,
+		&resolverCountryCodeMapWG,
 	)
+
+	infoLogger.Println("Waiting for AddressResults to be created")
+	createAddressResultsWG.Wait()
+	close(addressResultsChan)
 	infoLogger.Printf(
-		"Writing resolvers (with v4 addresses) requesting A records data to %s\n",
-		args.OutputFile,
+		"domainIPToAddressResultMap has %d entries\n",
+		len(domainIPToAddressResultsMap),
 	)
-	writeDomainResolverResults(
+	resolverCountryCodeMapWG.Wait()
+
+	infoLogger.Printf("Writing DomainResolverResults to %s\n", args.OutputFile)
+	go writeDomainResolverResults(domainResolverResultChan, args.OutputFile)
+
+	createAndWriteDomainResolverResultWG.Add(1)
+	go createThenWriteDomainResolverResults(
 		domainIPToAddressResultsMap,
 		resolverCountryCodeMap,
 		args.V4ARaw,
 		"A",
-		args.OutputFile,
+		domainResolverResultChan,
+		&createAndWriteDomainResolverResultWG,
 	)
-	// keys := make([]string, len(domainResolverResultMap))
 
-	// i := 0
-	// for k := range domainResolverResultMap {
-	// 	keys[i] = k
-	// 	i++
-	// }
-	// sort.Strings(keys)
-	// infoLogger.Printf(
-	// 	"Sample results for: %s: %+v\n",
-	// 	keys[0],
-	// 	domainResolverResultMap[keys[0]],
-	// )
+	createAndWriteDomainResolverResultWG.Add(1)
+	go createThenWriteDomainResolverResults(
+		domainIPToAddressResultsMap,
+		resolverCountryCodeMap,
+		args.V4AAAARaw,
+		"AAAA",
+		domainResolverResultChan,
+		&createAndWriteDomainResolverResultWG,
+	)
+
+	createAndWriteDomainResolverResultWG.Add(1)
+	go createThenWriteDomainResolverResults(
+		domainIPToAddressResultsMap,
+		resolverCountryCodeMap,
+		args.V6ARaw,
+		"A",
+		domainResolverResultChan,
+		&createAndWriteDomainResolverResultWG,
+	)
+
+	createAndWriteDomainResolverResultWG.Add(1)
+	go createThenWriteDomainResolverResults(
+		domainIPToAddressResultsMap,
+		resolverCountryCodeMap,
+		args.V6AAAARaw,
+		"AAAA",
+		domainResolverResultChan,
+		&createAndWriteDomainResolverResultWG,
+	)
+
+	infoLogger.Println(
+		"Waiting for DomainResolverResults to be created and written",
+	)
+	createAndWriteDomainResolverResultWG.Wait()
 }
