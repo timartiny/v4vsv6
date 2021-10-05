@@ -43,6 +43,3 @@ Of particular note is that 354 AAAA record requests essentially returned an A
 record. It returned an address of the form `::fff:146.112.61.104`, which ZGrab2
 interprets as just `146.112.61.104`, meaning in rare case you will find lines
 with `requested_address_type: AAAA` but in results you'll find IPv4 addresses.
-
-
-
