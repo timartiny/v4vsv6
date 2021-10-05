@@ -161,6 +161,14 @@ func getAddressResultFromZDNS(
 		ret = append(ret, ar)
 	}
 
+	if len(ret) == 0 {
+		singleAnswer := new(v4vsv6.AddressResult)
+		singleAnswer.Domain = domainName
+		singleAnswer.Error = "No A/AAAA records returned"
+		ret = append(ret, singleAnswer)
+
+	}
+
 	return ret
 }
 
