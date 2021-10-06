@@ -18,7 +18,7 @@ import (
 // censored requests, and what those domains are
 type Question1SimpleResult struct {
 	IP              string
-	Type            string
+	AF              string
 	CountryCode     string
 	CensoredDomains map[string]struct{}
 }
@@ -67,9 +67,9 @@ func getQuestion1SimpleResults(
 			continue
 		}
 		if tmpIP.To4() != nil {
-			sr.Type = "A"
+			sr.AF = "4"
 		} else {
-			sr.Type = "AAAA"
+			sr.AF = "6"
 		}
 		sr.CensoredDomains = make(map[string]struct{})
 		if isCensorship(drr) {
@@ -159,10 +159,10 @@ func findPair(r string, m1, m2 map[string]string) string {
 func organizePair(s1, s2 *Question1SimpleResult) (*Question1SimpleResult, *Question1SimpleResult) {
 	var v4, v6 *Question1SimpleResult
 
-	if s1.Type == "A" && s2.Type == "AAAA" {
+	if s1.AF == "4" && s2.AF == "6" {
 		v4 = s1
 		v6 = s2
-	} else if s1.Type == "AAAA" && s2.Type == "A" {
+	} else if s1.AF == "6" && s2.AF == "4" {
 		v4 = s2
 		v6 = s1
 	} else {
