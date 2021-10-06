@@ -45,36 +45,28 @@ func setupArgs() InterpretResultsFlags {
 	return ret
 }
 
-// censoredDomainsQuestion will read lines from the provided file and get the
-// unique country codes. It will store the unique ones, while also passing them
-// through a channel to workers to read the file again but only for that country
-func censoredDomainsQuestion(
+// readDomainResolverResults will read lines from the provided file. It will
+// pass them through a channel to workers to process the structs
+func readDomainResolverResults(
 	path string,
 	drrChan chan<- v4vsv6.DomainResolverResult,
-	ccChan chan<- []string,
+	wg *sync.WaitGroup,
 ) {
+	defer wg.Done()
 	resultsFile, err := os.Open(path)
 	if err != nil {
 		errorLogger.Fatalf("Error opening results file, %v\n", err)
 	}
 	defer resultsFile.Close()
 
-	var ret []string
-	tmp := make(map[string]bool)
 	scanner := bufio.NewScanner(resultsFile)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		var drr v4vsv6.DomainResolverResult
 		json.Unmarshal([]byte(line), &drr)
-		if _, ok := tmp[drr.ResolverCountry]; !ok {
-			tmp[drr.ResolverCountry] = true
-			ret = append(ret, drr.ResolverCountry)
-		}
 		drrChan <- drr
 	}
-
-	ccChan <- ret
 }
 
 // determineCensorship will read through a slice of AdressResults and say there
@@ -177,10 +169,18 @@ func printCensoredDomainData(
 
 }
 
+// Question 1 will answer the question: Is there a difference between v4 and v6
+// resolvers in countries
+func Question1(args InterpretResultsFlags) {
+
+}
+
+// Question3 will answer the question: which domains are censored in which
+// countries.
 func Question3(args InterpretResultsFlags) {
 	domainResolverResultChannel := make(chan v4vsv6.DomainResolverResult)
 	simplifiedResultChannel := make(chan SimplifiedResult)
-	countryCodeChannel := make(chan []string)
+	var readFileWG sync.WaitGroup
 	var lineToDetermineCensorshipWG sync.WaitGroup
 	var updateMapWG sync.WaitGroup
 	countryCodeDomainToCounter := make(CountryCodeDomainToCounter)
@@ -196,14 +196,14 @@ func Question3(args InterpretResultsFlags) {
 	}
 	updateMapWG.Add(1)
 	go updateMap(simplifiedResultChannel, countryCodeDomainToCounter, &updateMapWG)
-	go censoredDomainsQuestion(
+	readFileWG.Add(1)
+	go readDomainResolverResults(
 		args.ResultsFile,
 		domainResolverResultChannel,
-		countryCodeChannel,
+		&readFileWG,
 	)
 	infoLogger.Printf("Waiting for list of country codes\n")
-	countrySlice := <-countryCodeChannel
-	infoLogger.Printf("Have %d countries, first 10: %v\n", len(countrySlice), countrySlice[:10])
+	readFileWG.Wait()
 	close(domainResolverResultChannel)
 	infoLogger.Println("Written everything to determineCensorshipAndSendResult, waiting...")
 	lineToDetermineCensorshipWG.Wait()
