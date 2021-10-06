@@ -21,7 +21,7 @@ type InterpretResultsFlags struct {
 	ResultsFile        string  `arg:"--results-file,required" help:"(Required) Path to the file containing the DomainResolverResults" json:"results_file"`
 	Workers            int     `arg:"-w,--workers" help:"Number of workers to work simultaneously" default:"5" json:"wokers"`
 	CensorshipFraction float64 `arg:"-f,--fraction" help:"Fraction of queries that don't support TLS that should be considered censorship" default:"0.5" json:"censorship_fraction"`
-	ResolverFile       string  `arg:"-r,--resolver-file,quired" help:"(Required) Path to the file containing the Resolver Pairings, needed to format output of Question 1" json:"resolver_file"`
+	ResolverFile       string  `arg:"-r,--resolver-file,required" help:"(Required) Path to the file containing the Resolver Pairings, needed to format output of Question 1" json:"resolver_file"`
 }
 
 type Counter struct {
@@ -60,18 +60,19 @@ func readDomainResolverResults(
 	}
 }
 
-// determineCensorship will read through a slice of AdressResults and say there
-// is no censorship if all the IPs are filled in and SupportsTLS is true.
-// Otherwise false. If there are different results between entries in slice it
-// will point them out.
-func determineCensorship(drr v4vsv6.DomainResolverResult) bool {
-	ret := drr.Results[0].SupportsTLS
+// isCensorship will read through a slice of AdressResults and say there is no
+// censorship if all the IPs are filled in and SupportsTLS is true. Otherwise
+// false. If there are different results between entries in slice it will point
+// them out.
+func isCensorship(drr v4vsv6.DomainResolverResult) bool {
+	ret := !drr.Results[0].SupportsTLS
 
 	for _, ar := range drr.Results[1:] {
-		if ar.SupportsTLS != ret {
+		// condition is == because ret is flipped from SupportsTLS
+		if ar.SupportsTLS == ret {
 			// should print this once we have more reliable data...
 			// infoLogger.Printf("drr has mixed SupportsTLS results: %+v\n", drr)
-			return false
+			return true
 		}
 	}
 

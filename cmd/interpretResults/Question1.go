@@ -71,8 +71,8 @@ func getQuestion1SimpleResults(
 		} else {
 			sr.Type = "AAAA"
 		}
-		if determineCensorship(drr) {
-			sr.CensoredDomains = make(map[string]struct{})
+		sr.CensoredDomains = make(map[string]struct{})
+		if isCensorship(drr) {
 			sr.CensoredDomains[drr.Domain] = struct{}{}
 		}
 
