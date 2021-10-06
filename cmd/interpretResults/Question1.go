@@ -106,13 +106,9 @@ func updateCountryResolverMap(
 			// with one entry
 			for k := range sr.CensoredDomains {
 				// we already know this domain is censored, by this resolver,
-				// somehow...
+				// because there are two queries, A and AAAA, its likely that
+				// this will happen, but Question 2 explores that, not this one
 				if _, ok := existingSR.CensoredDomains[k]; ok {
-					infoLogger.Printf(
-						"Somehow we've seen this resolver and domain twice: "+
-							"%+v\n",
-						sr,
-					)
 					continue
 				}
 				existingSR.CensoredDomains[k] = struct{}{}
