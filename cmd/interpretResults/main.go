@@ -177,21 +177,7 @@ func printCensoredDomainData(
 
 }
 
-func main() {
-	infoLogger = log.New(
-		os.Stderr,
-		"INFO: ",
-		log.Ldate|log.Ltime|log.Lshortfile,
-	)
-	errorLogger = log.New(
-		os.Stderr,
-		"ERROR: ",
-		log.Ldate|log.Ltime|log.Lshortfile,
-	)
-
-	args := setupArgs()
-	infoLogger.Printf("Num Workers: %d\n", args.Workers)
-
+func Question3(args InterpretResultsFlags) {
 	domainResolverResultChannel := make(chan v4vsv6.DomainResolverResult)
 	simplifiedResultChannel := make(chan SimplifiedResult)
 	countryCodeChannel := make(chan []string)
@@ -230,4 +216,23 @@ func main() {
 		countryCodeDomainToCounter,
 		args.CensorshipFraction,
 	)
+
+}
+
+func main() {
+	infoLogger = log.New(
+		os.Stderr,
+		"INFO: ",
+		log.Ldate|log.Ltime|log.Lshortfile,
+	)
+	errorLogger = log.New(
+		os.Stderr,
+		"ERROR: ",
+		log.Ldate|log.Ltime|log.Lshortfile,
+	)
+
+	args := setupArgs()
+	infoLogger.Printf("Num Workers: %d\n", args.Workers)
+
+	Question3(args)
 }
