@@ -103,6 +103,9 @@ func determineCountryCensorship(
 // Question3 will answer the question: which domains are censored in which
 // countries.
 func Question3(args InterpretResultsFlags) {
+	infoLogger.Printf(
+		"Answering Question 3, which domains are censored in which countries",
+	)
 	domainResolverResultChannel := make(chan v4vsv6.DomainResolverResult)
 	simplifiedResultChannel := make(chan Question3SimpleResult)
 	var readFileWG sync.WaitGroup
@@ -110,7 +113,6 @@ func Question3(args InterpretResultsFlags) {
 	var updateMapWG sync.WaitGroup
 	countryCodeDomainToCounter := make(CountryCodeDomainToCounter)
 
-	infoLogger.Println("Getting a list of all the countries we have resolvers in")
 	for i := 0; i < args.Workers; i++ {
 		lineToDetermineCensorshipWG.Add(1)
 		go determineCountryCensorship(
