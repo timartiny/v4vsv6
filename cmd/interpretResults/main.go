@@ -92,10 +92,10 @@ func main() {
 
 	args := setupArgs()
 	infoLogger.Printf(
-		"Each question will be answered one at a time, using %d worksers\n",
+		"Each question will be answered one at a time, using %d workers\n",
 		args.Workers,
 	)
 
 	Question1(args)
-	Question3(args)
+	// Question3(args)
 }
