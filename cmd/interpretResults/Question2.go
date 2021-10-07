@@ -136,6 +136,7 @@ func Question2(
 		Question1(args, countryCodeResolverToSimpleResult, v4ToV6, v6ToV4, false)
 	}
 
+	infoLogger.Println("Have the Question1 data, so can print results for Question 2")
 	printCensoringRecordData(
 		args.DataFolder,
 		countryCodeResolverToSimpleResult,

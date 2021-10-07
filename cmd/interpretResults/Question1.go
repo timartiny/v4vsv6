@@ -119,13 +119,14 @@ func updateCountryResolverMap(
 			// with one entry
 			for k := range sr.ACensoredDomains {
 				if _, ok := existingSR.ACensoredDomains[k]; ok {
-					// we already know this domain is censored, by this resolver,
-					// for A record requests, somehow
-					infoLogger.Println(
-						"Already saw this domain is censored by this resolver" +
-							" on A record requests, somehow",
-					)
-					infoLogger.Printf("sr: %+v\n", sr)
+					// we already know this domain is censored, by this
+					// resolver, for A record requests, currently this happens
+					// because some v4 addresses are paired with multiple v6
+					// addresses
+					// infoLogger.Println(
+					//  "Already saw this domain is censored by this resolver" +
+					//      " on A record requests, somehow",
+					// )
 					continue
 				}
 				existingSR.ACensoredDomains[k] = struct{}{}
@@ -134,13 +135,15 @@ func updateCountryResolverMap(
 			// with one entry
 			for k := range sr.AAAACensoredDomains {
 				if _, ok := existingSR.AAAACensoredDomains[k]; ok {
-					// we already know this domain is censored, by this resolver,
-					// for AAAA record requests, somehow
-					infoLogger.Println(
-						"Already saw this domain is censored by this resolver" +
-							" on AAAA record requests, somehow",
-					)
-					infoLogger.Printf("sr: %+v\n", sr)
+					// we already know this domain is censored, by this
+					// resolver, for A record requests, currently this happens
+					// because some v4 addresses are paired with multiple v6
+					// addresses
+					// infoLogger.Println(
+					// 	"Already saw this domain is censored by this resolver" +
+					// 		" on AAAA record requests, somehow",
+					// )
+					// infoLogger.Printf("sr: %+v\n", sr)
 					continue
 				}
 				existingSR.AAAACensoredDomains[k] = struct{}{}
