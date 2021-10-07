@@ -173,19 +173,34 @@ func organizePair(s1, s2 *Question1SimpleResult) (*Question1SimpleResult, *Quest
 	return v4, v6
 }
 
+// findMedian finds the median of a slice of ints, doesn't actually sort list
+func findMedian(is []int) float64 {
+	isCopy := make([]int, len(is))
+	numCopied := copy(isCopy, is)
+	if numCopied != len(is) {
+		errorLogger.Println("Didn't copy full list of ints")
+		errorLogger.Printf(
+			"Full list has %d elements, only copied %d\n",
+			len(is),
+			numCopied,
+		)
+	}
+	sort.Ints(isCopy)
+	middleInd := len(isCopy) / 2
+	if len(isCopy)%2 == 1 {
+		return float64(isCopy[middleInd])
+	} else {
+		return float64(
+			isCopy[middleInd-1]+isCopy[middleInd],
+		) / 2
+	}
+}
+
 // question1Stats will take a summary for a country and fill out the missing
 // stats: average, median, std dev
 func question1Stats(q1s *Question1Summary) {
 	q1s.V4Average = float64(q1s.V4Total) / float64(len(q1s.V4CensoredData))
-	sort.Ints(q1s.V4CensoredData)
-	middleInd := len(q1s.V4CensoredData) / 2
-	if len(q1s.V4CensoredData)%2 == 1 {
-		q1s.V4Median = float64(q1s.V4CensoredData[middleInd])
-	} else {
-		q1s.V4Median = float64(
-			q1s.V4CensoredData[middleInd-1]+q1s.V4CensoredData[middleInd],
-		) / 2
-	}
+	q1s.V4Median = findMedian(q1s.V4CensoredData)
 	stdSum := 0.0
 	for _, v := range q1s.V4CensoredData {
 		stdSum += math.Pow(float64(v)-q1s.V4Average, 2.0)
@@ -193,15 +208,7 @@ func question1Stats(q1s *Question1Summary) {
 	q1s.V4StdDev = math.Sqrt(stdSum / float64(len(q1s.V4CensoredData)))
 
 	q1s.V6Average = float64(q1s.V6Total) / float64(len(q1s.V6CensoredData))
-	sort.Ints(q1s.V6CensoredData)
-	middleInd = len(q1s.V6CensoredData) / 2
-	if len(q1s.V6CensoredData)%2 == 1 {
-		q1s.V6Median = float64(q1s.V6CensoredData[middleInd])
-	} else {
-		q1s.V6Median = float64(
-			q1s.V6CensoredData[middleInd-1]+q1s.V6CensoredData[middleInd],
-		) / 2
-	}
+	q1s.V6Median = findMedian(q1s.V6CensoredData)
 	stdSum = 0.0
 	for _, v := range q1s.V6CensoredData {
 		stdSum += math.Pow(float64(v)-q1s.V6Average, 2.0)
