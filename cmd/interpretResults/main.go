@@ -22,6 +22,7 @@ type InterpretResultsFlags struct {
 	Workers            int     `arg:"-w,--workers" help:"Number of workers to work simultaneously" default:"5" json:"wokers"`
 	CensorshipFraction float64 `arg:"-f,--fraction" help:"Fraction of queries that don't support TLS that should be considered censorship" default:"0.5" json:"censorship_fraction"`
 	ResolverFile       string  `arg:"-r,--resolver-file,required" help:"(Required) Path to the file containing the Resolver Pairings, needed to format output of Question 1" json:"resolver_file"`
+	Questions          []int   `arg:"-q,--questions,separate" help:"Which questions to answer, can be supplied multiple times" json:"questions"`
 }
 
 type Counter struct {
@@ -97,6 +98,20 @@ func main() {
 		args.Workers,
 	)
 
-	Question1(args)
-	// Question3(args)
+	// No question specified so answer all of them
+	if len(args.Questions) == 0 {
+		args.Questions = []int{1, 2, 3, 4}
+	}
+
+	for _, q := range args.Questions {
+		switch q {
+		case 1:
+			Question1(args)
+		case 3:
+			Question3(args)
+		default:
+			infoLogger.Printf("Question %d not yet implemented\n", q)
+			infoLogger.Println("Question input must be 1-4")
+		}
+	}
 }
