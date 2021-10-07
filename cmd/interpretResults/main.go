@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"sort"
 	"sync"
 
 	"github.com/alexflint/go-arg"
@@ -100,13 +101,29 @@ func main() {
 
 	// No question specified so answer all of them
 	if len(args.Questions) == 0 {
-		args.Questions = []int{1, 2, 3, 4}
+		args.Questions = []int{1, 2, 3, 4, 5}
 	}
 
+	// Answer questions in order
+	sort.Ints(args.Questions)
+
+	// Question 1 and 2 answer roughly the same question, so collection data for
+	// Question 1 can just be used for Question 2
+	v4ToV6 := make(map[string]string)
+	v6ToV4 := make(map[string]string)
+	countryCodeResolverToSimpleResult := make(CountryCodeResolverToSimpleResult)
 	for _, q := range args.Questions {
 		switch q {
 		case 1:
-			Question1(args)
+			Question1(
+				args,
+				countryCodeResolverToSimpleResult,
+				v4ToV6,
+				v6ToV4,
+				true,
+			)
+		case 2:
+			Question2(args, countryCodeResolverToSimpleResult, v4ToV6, v6ToV4)
 		case 3:
 			Question3(args)
 		default:

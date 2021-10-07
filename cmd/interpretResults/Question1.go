@@ -17,10 +17,11 @@ import (
 // Question1SimpleResult will store, for each resolver how many domains it
 // censored requests, and what those domains are
 type Question1SimpleResult struct {
-	IP              string
-	AF              string
-	CountryCode     string
-	CensoredDomains map[string]struct{}
+	IP                  string
+	AF                  string
+	CountryCode         string
+	ACensoredDomains    map[string]struct{}
+	AAAACensoredDomains map[string]struct{}
 }
 
 type Question1Output struct {
@@ -71,9 +72,21 @@ func getQuestion1SimpleResults(
 		} else {
 			sr.AF = "6"
 		}
-		sr.CensoredDomains = make(map[string]struct{})
+		sr.ACensoredDomains = make(map[string]struct{})
+		sr.AAAACensoredDomains = make(map[string]struct{})
 		if isCensorship(drr) {
-			sr.CensoredDomains[drr.Domain] = struct{}{}
+			if drr.RequestedAddressType == "A" {
+				sr.ACensoredDomains[drr.Domain] = struct{}{}
+			} else if drr.RequestedAddressType == "AAAA" {
+				sr.AAAACensoredDomains[drr.Domain] = struct{}{}
+			} else {
+				errorLogger.Printf(
+					"Somehow Got a requested address type that is not A or "+
+						"AAAA: %s\n",
+					drr.RequestedAddressType,
+				)
+				errorLogger.Printf("drr: %+v\n", drr)
+			}
 		}
 
 		srChan <- sr
@@ -104,14 +117,33 @@ func updateCountryResolverMap(
 		} else {
 			// this should only be one pass through, since srs are only made
 			// with one entry
-			for k := range sr.CensoredDomains {
-				// we already know this domain is censored, by this resolver,
-				// because there are two queries, A and AAAA, its likely that
-				// this will happen, but Question 2 explores that, not this one
-				if _, ok := existingSR.CensoredDomains[k]; ok {
+			for k := range sr.ACensoredDomains {
+				if _, ok := existingSR.ACensoredDomains[k]; ok {
+					// we already know this domain is censored, by this resolver,
+					// for A record requests, somehow
+					infoLogger.Println(
+						"Already saw this domain is censored by this resolver" +
+							" on A record requests, somehow",
+					)
+					infoLogger.Printf("sr: %+v\n", sr)
 					continue
 				}
-				existingSR.CensoredDomains[k] = struct{}{}
+				existingSR.ACensoredDomains[k] = struct{}{}
+			}
+			// this should only be one pass through, since srs are only made
+			// with one entry
+			for k := range sr.AAAACensoredDomains {
+				if _, ok := existingSR.AAAACensoredDomains[k]; ok {
+					// we already know this domain is censored, by this resolver,
+					// for AAAA record requests, somehow
+					infoLogger.Println(
+						"Already saw this domain is censored by this resolver" +
+							" on AAAA record requests, somehow",
+					)
+					infoLogger.Printf("sr: %+v\n", sr)
+					continue
+				}
+				existingSR.AAAACensoredDomains[k] = struct{}{}
 			}
 		}
 	}
@@ -261,12 +293,12 @@ func printCensoringResolverData(
 				// now everything is marked as seen, actually print data.
 				var q1o Question1Output
 				q1o.V4IP = v4.IP
-				q1o.V4CensoredCount = len(v4.CensoredDomains)
+				q1o.V4CensoredCount = len(v4.ACensoredDomains) + len(v4.AAAACensoredDomains)
 				q1s.V4CensoredData = append(q1s.V4CensoredData, q1o.V4CensoredCount)
 				q1s.V4Total += q1o.V4CensoredCount
 
 				q1o.V6IP = v6.IP
-				q1o.V6CensoredCount = len(v6.CensoredDomains)
+				q1o.V6CensoredCount = len(v6.ACensoredDomains) + len(v6.AAAACensoredDomains)
 				q1s.V6CensoredData = append(q1s.V6CensoredData, q1o.V6CensoredCount)
 				q1s.V6Total += q1o.V6CensoredCount
 
@@ -290,19 +322,21 @@ func printCensoringResolverData(
 
 // Question 1 will answer the question: Is there a difference between v4 and v6
 // resolvers in countries
-func Question1(args InterpretResultsFlags) {
+func Question1(
+	args InterpretResultsFlags,
+	countryCodeResolverToSimpleResult CountryCodeResolverToSimpleResult,
+	v4ToV6, v6ToV4 map[string]string,
+	printResults bool,
+) {
 	infoLogger.Println(
 		"Answering Question 1, is there a difference between v4/v6 resolvers",
 	)
 	domainResolverResultChannel := make(chan v4vsv6.DomainResolverResult)
 	simplifiedResultChannel := make(chan *Question1SimpleResult)
-	v4ToV6 := make(map[string]string)
-	v6ToV4 := make(map[string]string)
 	var readFileWG sync.WaitGroup
 	var getSimpleResultsWG sync.WaitGroup
 	var updateMapWG sync.WaitGroup
 	var doubleResolverMapWG sync.WaitGroup
-	countryCodeResolverToSimpleResult := make(CountryCodeResolverToSimpleResult)
 
 	for i := 0; i < args.Workers; i++ {
 		getSimpleResultsWG.Add(1)
@@ -350,8 +384,10 @@ func Question1(args InterpretResultsFlags) {
 
 	infoLogger.Println("Question 1 data collated. Waiting of Resolver Pairs")
 	doubleResolverMapWG.Wait()
-	infoLogger.Println("Resolver Pairs formed, printing data")
+	if printResults {
+		infoLogger.Println("Resolver Pairs formed, printing data")
 
-	printCensoringResolverData(args.DataFolder, countryCodeResolverToSimpleResult, v4ToV6, v6ToV4)
+		printCensoringResolverData(args.DataFolder, countryCodeResolverToSimpleResult, v4ToV6, v6ToV4)
+	}
 
 }
