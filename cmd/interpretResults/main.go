@@ -126,6 +126,8 @@ func main() {
 			Question2(args, countryCodeResolverToSimpleResult, v4ToV6, v6ToV4)
 		case 3:
 			Question3(args)
+		case 4:
+			Question4(args)
 		default:
 			infoLogger.Printf("Question %d not yet implemented\n", q)
 			infoLogger.Println("Question input must be 1-4")
