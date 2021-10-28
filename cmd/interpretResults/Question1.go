@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"math"
 	"net"
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/timartiny/v4vsv6"
@@ -48,8 +46,8 @@ type Question1Summary struct {
 type CountryCodeResolverToSimpleResult map[string]map[string]*Question1SimpleResult
 
 // getQuestion1SimpleResults will take DomainResolverResults and get the
-// Question 1 Simple Results from extracted from it, then pass the simple result
-// on to updating the local map
+// Question 1 Simple Results extracted from it, then pass the simple result on
+// to updating the local map
 func getQuestion1SimpleResults(
 	drrChan <-chan v4vsv6.DomainResolverResult,
 	srChan chan<- *Question1SimpleResult,
@@ -150,30 +148,6 @@ func updateCountryResolverMap(
 			}
 		}
 	}
-}
-
-// getResolverPairs will read the file and split the lines to get maps between
-// paired v4 and v6 resolvers, for printing formatted data later
-func getResolverPairs(
-	v4ToV6, v6ToV4 map[string]string,
-	path string,
-	wg *sync.WaitGroup,
-) {
-	defer wg.Done()
-
-	resolverPairFile, err := os.Open(path)
-	if err != nil {
-		errorLogger.Fatalf("Error opening resolver pair file: %v\n", err)
-	}
-	scanner := bufio.NewScanner(resolverPairFile)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		splitLine := strings.Split(line, "  ")
-		v4ToV6[splitLine[1]] = splitLine[0]
-		v6ToV4[splitLine[0]] = splitLine[1]
-	}
-
 }
 
 // findPair will look for r in m1 and m2 (it is assumed to be in 1 only) and
@@ -377,8 +351,8 @@ func Question1(
 	)
 
 	getSimpleResultsWG.Wait()
-
 	close(simplifiedResultChannel)
+
 	infoLogger.Println("Parsed the Question 1 data into simple results, now " +
 		"collating them into a map",
 	)

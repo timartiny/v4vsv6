@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/alexflint/go-arg"
@@ -60,6 +61,30 @@ func readDomainResolverResults(
 		json.Unmarshal([]byte(line), &drr)
 		drrChan <- drr
 	}
+}
+
+// getResolverPairs will read the file and split the lines to get maps between
+// paired v4 and v6 resolvers, for printing formatted data later
+func getResolverPairs(
+	v4ToV6, v6ToV4 map[string]string,
+	path string,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+
+	resolverPairFile, err := os.Open(path)
+	if err != nil {
+		errorLogger.Fatalf("Error opening resolver pair file: %v\n", err)
+	}
+	scanner := bufio.NewScanner(resolverPairFile)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		splitLine := strings.Split(line, "  ")
+		v4ToV6[splitLine[1]] = splitLine[0]
+		v6ToV4[splitLine[0]] = splitLine[1]
+	}
+
 }
 
 // isCensorship will read through a slice of AdressResults and say there is no
@@ -127,7 +152,7 @@ func main() {
 		case 3:
 			Question3(args)
 		case 4:
-			Question4(args)
+			Question4(args, v4ToV6, v6ToV4)
 		default:
 			infoLogger.Printf("Question %d not yet implemented\n", q)
 			infoLogger.Println("Question input must be 1-4")
