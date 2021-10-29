@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"log"
+	"net"
 	"os"
 	"sort"
 	"strings"
@@ -81,8 +82,10 @@ func getResolverPairs(
 	for scanner.Scan() {
 		line := scanner.Text()
 		splitLine := strings.Split(line, "  ")
-		v4ToV6[splitLine[1]] = splitLine[0]
-		v6ToV4[splitLine[0]] = splitLine[1]
+		v4IP := net.ParseIP(splitLine[1])
+		v6IP := net.ParseIP(splitLine[0])
+		v4ToV6[v4IP.String()] = v6IP.String()
+		v6ToV4[v6IP.String()] = v4IP.String()
 	}
 
 }

@@ -1,15 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"net"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/timartiny/v4vsv6"
 )
 
 type ResolverPair struct {
-	V4 string
-	V6 string
+	V4 string `json:"v4"`
+	V6 string `json:"v6"`
 }
 
 type Question4SimpleResult struct {
@@ -18,6 +21,16 @@ type Question4SimpleResult struct {
 	CensoringPairs       []ResolverPair
 	CensoringV4Resolvers map[string]struct{}
 	CensoringV6Resolvers map[string]struct{}
+}
+
+type Question4Output struct {
+	Domain               string         `json:"domain"`
+	TotalPairs           int            `json:"total_pairs"`
+	CensoringPairs       []ResolverPair `json:"censoring_pairs"`
+	TotalV4              int            `json:"total_v4"`
+	CensoringV4Resolvers []string       `json:"censoring_v4_resolvers"`
+	TotalV6              int            `json:"total_v6"`
+	CensoringV6Resolvers []string       `json:"censoring_v6_resolvers"`
 }
 
 type CountryCodeDomainToSimpleResult map[string]map[string]*Question4SimpleResult
@@ -45,9 +58,9 @@ func getQuestion4SimpleResults(
 				continue
 			}
 			if tmpIP.To4() != nil {
-				sr.CensoringV4Resolvers[drr.ResolverIP] = struct{}{}
+				sr.CensoringV4Resolvers[tmpIP.String()] = struct{}{}
 			} else {
-				sr.CensoringV6Resolvers[drr.ResolverIP] = struct{}{}
+				sr.CensoringV6Resolvers[tmpIP.String()] = struct{}{}
 			}
 		}
 
@@ -114,7 +127,9 @@ func pairCensoringResolvers(
 		for _, sr := range dtsr {
 			for v4Resolver := range sr.CensoringV4Resolvers {
 				v6Pair := v4ToV6[v4Resolver]
+				// infoLogger.Printf("v4Resolver: %v, v6Pair: %v\n", v4Resolver, v6Pair)
 				if _, ok := sr.CensoringV6Resolvers[v6Pair]; ok {
+					// infoLogger.Printf("The following pair censors: %v, %v\n", v4Resolver, v6Pair)
 					// the pair censors!
 					rp := ResolverPair{V4: v4Resolver, V6: v6Pair}
 					sr.CensoringPairs = append(sr.CensoringPairs, rp)
@@ -127,6 +142,60 @@ func pairCensoringResolvers(
 		}
 	}
 
+}
+
+// printQuestion4Resulst will make a directory in the dataFolder called Question
+// 4 and make a file for each country code. In the country code files each line
+// will be a JSON object of Question4Ouput.
+func printQuesion4Results(
+	dataFolder string,
+	ccdtsr CountryCodeDomainToSimpleResult,
+) {
+	fullFolderPath := filepath.Join(dataFolder, "Question4")
+	err := os.MkdirAll(fullFolderPath, os.ModePerm)
+	if err != nil {
+		errorLogger.Fatalf("Error creating directory: %v\n", err)
+	}
+
+	for cc, dtsr := range ccdtsr {
+		func() {
+			ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".json"))
+			if err != nil {
+				errorLogger.Fatalf("Error creating country code file: %v\n", err)
+			}
+			defer ccFile.Close()
+
+			for domain, simpleResult := range dtsr {
+				var q4o Question4Output
+				q4o.Domain = domain
+				q4o.TotalPairs = len(simpleResult.CensoringPairs)
+				q4o.CensoringPairs = simpleResult.CensoringPairs
+
+				q4o.TotalV4 = len(simpleResult.CensoringV4Resolvers)
+				q4o.CensoringV4Resolvers = make([]string, q4o.TotalV4)
+				i := 0
+				for key := range simpleResult.CensoringV4Resolvers {
+					q4o.CensoringV4Resolvers[i] = key
+					i++
+				}
+
+				q4o.TotalV6 = len(simpleResult.CensoringV6Resolvers)
+				q4o.CensoringV6Resolvers = make([]string, q4o.TotalV6)
+				i = 0
+				for key := range simpleResult.CensoringV6Resolvers {
+					q4o.CensoringV6Resolvers[i] = key
+					i++
+				}
+
+				bs, err := json.Marshal(&q4o)
+				if err != nil {
+					errorLogger.Printf("Error Marshaling pair struct: %+v\n", q4o)
+				}
+				ccFile.Write(bs)
+				ccFile.WriteString("\n")
+			}
+		}()
+	}
 }
 
 func Question4(
@@ -169,7 +238,7 @@ func Question4(
 	)
 
 	// only check v4ToV6 because we only need that one
-	if v4ToV6 == nil {
+	if len(v4ToV6) == 0 {
 		// This only happens if Question 1 isn't answered on this run
 		doubleResolverMapWG.Add(1)
 		go getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile, &doubleResolverMapWG)
@@ -199,5 +268,5 @@ func Question4(
 	doubleResolverMapWG.Wait()
 	infoLogger.Println("Resolvers paired together, simplifying data by pairs")
 	pairCensoringResolvers(countryCodeDomainToSimpleResult, v4ToV6)
-	// printQuesion4Results(countryCodeDomainToSimpleResult)
+	printQuesion4Results(args.DataFolder, countryCodeDomainToSimpleResult)
 }
