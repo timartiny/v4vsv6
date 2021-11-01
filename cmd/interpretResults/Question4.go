@@ -21,6 +21,8 @@ type Question4SimpleResult struct {
 	CensoringPairs       []ResolverPair
 	CensoringV4Resolvers map[string]struct{}
 	CensoringV6Resolvers map[string]struct{}
+	CensoredARequests    int
+	CensoredAAAARequests int
 }
 
 type Question4Output struct {
@@ -31,6 +33,8 @@ type Question4Output struct {
 	CensoringV4Resolvers []string       `json:"censoring_v4_resolvers"`
 	TotalV6              int            `json:"total_v6"`
 	CensoringV6Resolvers []string       `json:"censoring_v6_resolvers"`
+	CensoredARequests    int            `json:"censored_a_requests"`
+	CensoredAAAARequests int            `json:"censored_aaaa_requests"`
 }
 
 type CountryCodeDomainToSimpleResult map[string]map[string]*Question4SimpleResult
@@ -61,6 +65,11 @@ func getQuestion4SimpleResults(
 				sr.CensoringV4Resolvers[tmpIP.String()] = struct{}{}
 			} else {
 				sr.CensoringV6Resolvers[tmpIP.String()] = struct{}{}
+			}
+			if drr.RequestedAddressType == "A" {
+				sr.CensoredARequests++
+			} else {
+				sr.CensoredAAAARequests++
 			}
 		}
 
@@ -112,6 +121,8 @@ func updateCountryDomainQuestion4Map(
 				}
 				existingSR.CensoringV6Resolvers[k] = struct{}{}
 			}
+			existingSR.CensoredARequests += sr.CensoredARequests
+			existingSR.CensoredAAAARequests += sr.CensoredAAAARequests
 		}
 	}
 }
@@ -186,6 +197,9 @@ func printQuesion4Results(
 					q4o.CensoringV6Resolvers[i] = key
 					i++
 				}
+
+				q4o.CensoredARequests = simpleResult.CensoredARequests
+				q4o.CensoredAAAARequests = simpleResult.CensoredAAAARequests
 
 				bs, err := json.Marshal(&q4o)
 				if err != nil {
