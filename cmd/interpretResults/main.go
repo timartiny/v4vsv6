@@ -156,6 +156,8 @@ func main() {
 			Question3(args)
 		case 4:
 			Question4(args, v4ToV6, v6ToV4)
+		case 5:
+			Question5(args)
 		default:
 			infoLogger.Printf("Question %d not yet implemented\n", q)
 			infoLogger.Println("Question input must be 1-4")

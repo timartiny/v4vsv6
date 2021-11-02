@@ -90,12 +90,12 @@ func updateCountryDomainQuestion4Map(
 	for sr := range srChan {
 		// if this is the first time we've seen the country code, add a new map
 		if ccdtsr[sr.CountryCode] == nil {
-			rtsr := make(map[string]*Question4SimpleResult)
-			ccdtsr[sr.CountryCode] = rtsr
+			dtsr := make(map[string]*Question4SimpleResult)
+			ccdtsr[sr.CountryCode] = dtsr
 		}
 		existingSR := ccdtsr[sr.CountryCode][sr.Domain]
-		// if this is the first time we've seen this IP, then our received sr
-		// is the whole data so far
+		// if this is the first time we've seen this domain, then our received
+		// sr is the whole data so far
 		if existingSR == nil {
 			ccdtsr[sr.CountryCode][sr.Domain] = sr
 		} else {
@@ -155,10 +155,10 @@ func pairCensoringResolvers(
 
 }
 
-// printQuestion4Resulst will make a directory in the dataFolder called Question
+// printQuestion4Results will make a directory in the dataFolder called Question
 // 4 and make a file for each country code. In the country code files each line
 // will be a JSON object of Question4Ouput.
-func printQuesion4Results(
+func printQuestion4Results(
 	dataFolder string,
 	ccdtsr CountryCodeDomainToSimpleResult,
 ) {
@@ -282,5 +282,5 @@ func Question4(
 	doubleResolverMapWG.Wait()
 	infoLogger.Println("Resolvers paired together, simplifying data by pairs")
 	pairCensoringResolvers(countryCodeDomainToSimpleResult, v4ToV6)
-	printQuesion4Results(args.DataFolder, countryCodeDomainToSimpleResult)
+	printQuestion4Results(args.DataFolder, countryCodeDomainToSimpleResult)
 }
