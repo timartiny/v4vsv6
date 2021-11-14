@@ -50,30 +50,33 @@ cat data/v6_cartesian_file | ./zdns AAAA --local-addr "<v6 address>"--output-fil
 The above commands took the following amounts of time, and created various
 amounts of data:
 
-`v4_cartesian_A_lookups.json`: 2.7 GB
+The following are the stats from the latest run on Nov. 12
+`v4_cartesian_A_lookups.json`: 2.8 GB
 ```
-real 10027.13
-user 3328.90
-sys 998.26
-```
-
-`v4_cartesian_AAAA_lookups.json`: 2.9 GB
-```
-Missing time data
+real 2695.44
+user 3170.05
+sys 706.42
 ```
 
-`v6_cartesian_A_lookups.json`: 2.5 GB
+`v4_cartesian_AAAA_lookups.json`: 3.1 GB
 ```
-real 14387.00
-user 3083.54
-sys 988.57
+real 2462.11
+user 3255.20
+sys 687.10
 ```
 
-`v6_cartesian_AAAA_lookups.json`: 2.7 GB
+`v6_cartesian_A_lookups.json`: 2.8 GB
 ```
-real 14580.41
-user 3184.37
-sys 1014.58
+real 2976.76
+user 3077.58
+sys 711.46
+```
+
+`v6_cartesian_AAAA_lookups.json`: 3.1 GB
+```
+real 2885.43
+user 3159.38
+sys 705.47
 ```
 
 The v6 lookups need to come from a v6 address. ZDNS does not automatically
