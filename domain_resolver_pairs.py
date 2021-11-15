@@ -47,9 +47,9 @@ def cartesian_product(
     This will open the output file and write to it, one line at a time a domain
     and a resolver, as long as both the v4 and v6 resolvers share the same country.
     """
-    print(f"Writing cartesian product to {v4_output_file} and {v6_output_file}")
+    print("Writing cartesian product to {} and {}".format(v4_output_file, v6_output_file))
 
-    with open(v4_output_file, 'w') as v4_write_file, open(v6_output_file, 'w') as v6_write_file:
+    with open(v4_output_file, 'w+') as v4_write_file, open(v6_output_file, 'w+') as v6_write_file:
         with open(domain_file, 'r') as domain_json_file:
             for json_string in domain_json_file.readlines():
                 json_dict = json.loads(json_string)
@@ -58,9 +58,12 @@ def cartesian_product(
                     for resolvers_string in resolver_pairs_file.readlines():
                         if "!!" in resolvers_string:
                             continue
-                        v6_address, v4_address, _ = resolvers_string.split("  ")
-                        v6_write_file.write(f"{domain},[{v6_address}]\n")
-                        v4_write_file.write(f"{domain},{v4_address}\n")
+                        try:
+                            v6_address, v4_address, _ = resolvers_string.split("  ")
+                        except ValueError:
+                            print("Couldn't split line: {}".format(resolvers_string))
+                        v6_write_file.write("{},[{}]\n".format(domain, v6_address))
+                        v4_write_file.write("{},{}\n".format(domain, v4_address))
 
 if __name__ == "__main__":
     args = setup_args()
