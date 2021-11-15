@@ -137,18 +137,20 @@ cat A_ip_domain_list.dat | zgrab2 --output-file data/A_tls_lookups.json tls
 cat AAAA_ip_domain_list.dat | zgrab2 --output-file data/AAAA_tls_lookups.json tls
 ```
 
-`A_tls_lookups.json`: 2.2 GB
+The following stats are for the Nov. 12 Run
+
+`A_tls_lookups.json`: 6.9 GB
 ```
-real 82.29
-user 498.01
-sys 22.25
+real 250.98
+user 1547.58
+sys 72.29
 ```
 
 `AAAA_tls_lookups.json`: 11 GB
 ```
-real 547.18
-user 2254.74
-sys 102.45
+real 1688.55
+user 7352.45
+sys 331.78
 ```
 
 ## Parse Scans
