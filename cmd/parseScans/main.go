@@ -364,6 +364,47 @@ func updateAddressResults(
 	}
 }
 
+// isControlDomain will check if dom is in a list of control domains or not.
+func isControlDomain(dom string) bool {
+	controls := []string{"v4vsv6.com", "test1.v4vsv6.com", "test2.v4vsv6.com"}
+
+	for _, cDom := range controls {
+		if dom == cDom {
+			return true
+		}
+	}
+
+	return false
+}
+
+// verifyControlDomain will check whether the IP corresponds to the listed
+// domain, this only works for hardcoded control domains, this function assumes
+// the domain has already been tested as a control domain
+func verifyControlDomain(ar v4vsv6.AddressResult) bool {
+	v4ControlDomToIPMap := make(map[string]string)
+	v6ControlDomToIPMap := make(map[string]string)
+	v4ControlDomToIPMap["v4vsv6.com"] = "192.12.240.40"
+	v4ControlDomToIPMap["test1.v4vsv6.com"] = "1.1.1.1"
+	v4ControlDomToIPMap["test1.v4vsv6.com"] = "2.2.2.2"
+	v6ControlDomToIPMap["v4vsv6.com"] = "2620:18f:30:4100::2"
+	v6ControlDomToIPMap["test1.v4vsv6.com"] = "1111:1111:1111:1111:1111:1111:1111:1111"
+	v6ControlDomToIPMap["test1.v4vsv6.com"] = "2222:2222:2222:2222:2222:2222:2222:2222"
+
+	if ar.AddressType == "A" {
+		if v4ControlDomToIPMap[ar.Domain] == ar.IP {
+			return true
+		}
+	} else if ar.AddressType == "AAAA" {
+		if v6ControlDomToIPMap[ar.Domain] == ar.IP {
+			return true
+		}
+	} else {
+		errorLogger.Printf("Invalid Address Type given: %v\n", ar.AddressType)
+	}
+
+	return false
+}
+
 // createAddressResults will read into memory the results of a Zgrab2 scan and
 // pass the conclusions in AddressResults to a channel to be indexed by
 // domain-ip
@@ -379,6 +420,14 @@ func createAddressResults(
 	}
 	defer tlsResultsFile.Close()
 	scanner := bufio.NewScanner(tlsResultsFile)
+
+	// future scans can have duplicated attempts for the same TLS IP, and domain
+	// to check for timeouts. To avoid parsing unnecessary lines (like if we
+	// have already verified an IP supports TLS for a given domain) we keep a
+	// mapping, and only parse a line if we haven't seen the domain-ip before or
+	// if the domain-ip didn't support TLS last time.
+	nonDuplicationMap := make(map[string]bool)
+
 	var numLines int
 	for scanner.Scan() {
 		var zgrabResult zgrab2.Grab
@@ -387,6 +436,10 @@ func createAddressResults(
 		err = json.Unmarshal([]byte(l), &zgrabResult)
 		if err != nil {
 			errorLogger.Printf("error unmarshaling line: %s, err: %v\n", l, err)
+			continue
+		}
+		if nonDuplicationMap[zgrabResult.Domain+"-"+zgrabResult.IP] {
+			// we've seen this IP/domain before and found it supports TLS, no need to check the retries
 			continue
 		}
 		ar := new(v4vsv6.AddressResult)
@@ -411,7 +464,14 @@ func createAddressResults(
 			)
 		}
 		ar.Timestamp = tlsScanResponse.Timestamp
-		ar.SupportsTLS = verifyTLS(tlsScanResponse, zgrabResult.Domain)
+		if isControlDomain(ar.Domain) {
+			// ar._future_thing = verifyControlDomain(*ar)
+
+			// nonDuplicationMap[ar.Domain+"-"+ar.IP] = ar._future_thing
+		} else {
+			ar.SupportsTLS = verifyTLS(tlsScanResponse, zgrabResult.Domain)
+			nonDuplicationMap[ar.Domain+"-"+ar.IP] = ar.SupportsTLS
+		}
 		arChan <- ar
 	}
 
@@ -435,7 +495,7 @@ func main() {
 	domainIPToAddressResultsMap := make(DomainIPToAddressResultMap)
 	// will have 2 goroutines writing, so leave room for each
 	addressResultsChan := make(chan *v4vsv6.AddressResult, 2)
-	// will have 4 goroutines writine, so leave room for each
+	// will have 4 goroutines writing, so leave room for each
 	domainResolverResultChan := make(chan *v4vsv6.DomainResolverResult, 4)
 	var createAddressResultsWG sync.WaitGroup
 	var resolverCountryCodeMapWG sync.WaitGroup
