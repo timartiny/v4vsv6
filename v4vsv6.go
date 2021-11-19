@@ -2,23 +2,25 @@ package v4vsv6
 
 // AddressResult will store information about a specific IP address.
 type AddressResult struct {
-	IP          string `json:"ip,omitempty"`
-	AddressType string `json:"address_type,omitempty"`
-	Domain      string `json:"domain"`
-	SupportsTLS bool   `json:"supports_tls,omitempty"`
-	Timestamp   string `json:"timestamp,omitempty"`
-	Error       string `json:"error,omitempty"`
+	IP             string `json:"ip,omitempty"`
+	AddressType    string `json:"address_type,omitempty"`
+	Domain         string `json:"domain"`
+	SupportsTLS    bool   `json:"supports_tls,omitempty"`
+	ValidControlIP bool   `json:"valid_control_ip,omitempty"`
+	Timestamp      string `json:"timestamp,omitempty"`
+	Error          string `json:"error,omitempty"`
 }
 
 // DomainResolverResult stores information on how a particular resolver
 // responded to queries for a particular domain, including A and AAAA record
 // requests
 type DomainResolverResult struct {
-	Domain               string           `json:"domain"`
-	ResolverIP           string           `json:"resolver_ip"`
-	ResolverCountry      string           `json:"resolver_country"`
-	RequestedAddressType string           `json:"requested_address_type"`
-	Results              []*AddressResult `json:"results,omitempty"`
+	Domain                   string           `json:"domain"`
+	ResolverIP               string           `json:"resolver_ip"`
+	ResolverCountry          string           `json:"resolver_country"`
+	RequestedAddressType     string           `json:"requested_address_type"`
+	Results                  []*AddressResult `json:"results,omitempty"`
+	CorrectControlResolution bool             `json:"correct_control_resolution"`
 }
 
 // AppendResults will take a slice of AddressResults and add non-duplicates to
