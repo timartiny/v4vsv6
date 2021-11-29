@@ -431,7 +431,6 @@ func createAddressResults(
 	}
 	var numLines int
 	defer tlsResultsFile.Close()
-	defer infoLogger.Printf("Read %d lines from %s\n", numLines, path)
 	scanner := bufio.NewScanner(tlsResultsFile)
 
 	// future scans can have duplicated attempts for the same TLS IP, and domain
@@ -487,6 +486,7 @@ func createAddressResults(
 		arChan <- ar
 	}
 
+	infoLogger.Printf("Read %d lines from %s\n", numLines, path)
 }
 
 func main() {
