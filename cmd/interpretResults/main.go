@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	infoLogger  *log.Logger
-	errorLogger *log.Logger
+	infoLogger     *log.Logger
+	errorLogger    *log.Logger
+	controlDomains map[string]struct{}
 )
 
 type InterpretResultsFlags struct {
@@ -101,12 +102,21 @@ func isCensorship(drr v4vsv6.DomainResolverResult) bool {
 		// condition is == because ret is flipped from SupportsTLS
 		if ar.SupportsTLS == ret {
 			// should print this once we have more reliable data...
-			// infoLogger.Printf("drr has mixed SupportsTLS results: %+v\n", drr)
+			infoLogger.Printf("drr has mixed SupportsTLS results: %+v\n", drr)
 			return true
 		}
 	}
 
 	return ret
+}
+
+// isControlDomain will check if a provided drr is for a control domain.
+func isControlDomain(drr v4vsv6.DomainResolverResult) bool {
+	if _, ok := controlDomains[drr.Domain]; ok {
+		return true
+	}
+
+	return false
 }
 
 func main() {
@@ -126,6 +136,8 @@ func main() {
 		"Each question will be answered one at a time, using %d workers\n",
 		args.Workers,
 	)
+	// controlDomains := map[string]map[string]string{"v4vsv6.com":{"v4": "192.12.240.40", "v6": "2620:18f:30:4100::2"}, "test1.v4vsv6.com":{"v4": "1.1.1.1", "v6": "1111:1111:1111:1111:1111:1111:1111:1111"}, "test2.v4vsv6.com":{"v4": "2.2.2.2", "v6": "2222:2222:2222:2222:2222:2222:2222:2222"}}
+	controlDomains = map[string]struct{}{"v4vsv6.com": {}, "test1.v4vsv6.com": {}, "test2.v4vsv6.com": {}}
 
 	// No question specified so answer all of them
 	if len(args.Questions) == 0 {

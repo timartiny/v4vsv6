@@ -15,32 +15,37 @@ import (
 // Question1SimpleResult will store, for each resolver how many domains it
 // censored requests, and what those domains are
 type Question1SimpleResult struct {
-	IP                  string
-	AF                  string
-	CountryCode         string
-	ACensoredDomains    map[string]struct{}
-	AAAACensoredDomains map[string]struct{}
+	IP                       string
+	AF                       string
+	CountryCode              string
+	ACensoredDomains         map[string]struct{}
+	AAAACensoredDomains      map[string]struct{}
+	CorrectControlResolution int
 }
 
 type Question1Output struct {
-	V4IP            string `json:"v4_ip"`
-	V6IP            string `json:"v6_ip"`
-	V4CensoredCount int    `json:"v4_censored_count"`
-	V6CensoredCount int    `json:"v6_censored_count"`
+	V4IP                       string `json:"v4_ip"`
+	V6IP                       string `json:"v6_ip"`
+	V4CensoredCount            int    `json:"v4_censored_count"`
+	V6CensoredCount            int    `json:"v6_censored_count"`
+	V4CorrectControlResolution bool   `json:"v4_correct_control_resolution"`
+	V6CorrectControlResolution bool   `json:"v6_correct_control_resolution"`
 }
 
 type Question1Summary struct {
-	CountryCode    string  `json:"country_code"`
-	V4CensoredData []int   `json:"v4_censored_data"`
-	V6CensoredData []int   `json:"v6_censored_data"`
-	V4Total        int     `json:"v4_total"`
-	V6Total        int     `json:"v6_total"`
-	V4Average      float64 `json:"v4_avg"`
-	V6Average      float64 `json:"v6_avg"`
-	V4Median       float64 `json:"v4_median"`
-	V6Median       float64 `json:"v6_median"`
-	V4StdDev       float64 `json:"v4_std_dev"`
-	V6StdDev       float64 `json:"v6_std_dev"`
+	CountryCode                    string  `json:"country_code"`
+	V4CensoredData                 []int   `json:"v4_censored_data"`
+	V6CensoredData                 []int   `json:"v6_censored_data"`
+	V4Total                        int     `json:"v4_total"`
+	V6Total                        int     `json:"v6_total"`
+	V4Average                      float64 `json:"v4_avg"`
+	V6Average                      float64 `json:"v6_avg"`
+	V4Median                       float64 `json:"v4_median"`
+	V6Median                       float64 `json:"v6_median"`
+	V4StdDev                       float64 `json:"v4_std_dev"`
+	V6StdDev                       float64 `json:"v6_std_dev"`
+	NumResolversPairs              int     `json:"num_resolver_pairs"`
+	NumCorrectControlResolverPairs int     `json:"num_correct_control_resolver_pairs"`
 }
 
 type CountryCodeResolverToSimpleResult map[string]map[string]*Question1SimpleResult
@@ -58,6 +63,13 @@ func getQuestion1SimpleResults(
 		sr := new(Question1SimpleResult)
 		sr.IP = drr.ResolverIP
 		sr.CountryCode = drr.ResolverCountry
+		// correctcontrolresolution can be unhelpfully false, if the domain
+		// requested is not a control domain, this will be check in a later step
+		if drr.CorrectControlResolution {
+			sr.CorrectControlResolution = 1
+		} else {
+			sr.CorrectControlResolution = 0
+		}
 		tmpIP := net.ParseIP(sr.IP)
 		if tmpIP == nil {
 			errorLogger.Printf("Not a valid IP: %v\n", sr.IP)
@@ -72,18 +84,22 @@ func getQuestion1SimpleResults(
 		}
 		sr.ACensoredDomains = make(map[string]struct{})
 		sr.AAAACensoredDomains = make(map[string]struct{})
-		if isCensorship(drr) {
-			if drr.RequestedAddressType == "A" {
-				sr.ACensoredDomains[drr.Domain] = struct{}{}
-			} else if drr.RequestedAddressType == "AAAA" {
-				sr.AAAACensoredDomains[drr.Domain] = struct{}{}
-			} else {
-				errorLogger.Printf(
-					"Somehow Got a requested address type that is not A or "+
-						"AAAA: %s\n",
-					drr.RequestedAddressType,
-				)
-				errorLogger.Printf("drr: %+v\n", drr)
+		// don't need to check censorship of control domains, so check that
+		// first
+		if !isControlDomain(drr) {
+			if isCensorship(drr) {
+				if drr.RequestedAddressType == "A" {
+					sr.ACensoredDomains[drr.Domain] = struct{}{}
+				} else if drr.RequestedAddressType == "AAAA" {
+					sr.AAAACensoredDomains[drr.Domain] = struct{}{}
+				} else {
+					errorLogger.Printf(
+						"Somehow Got a requested address type that is not A or "+
+							"AAAA: %s\n",
+						drr.RequestedAddressType,
+					)
+					errorLogger.Printf("drr: %+v\n", drr)
+				}
 			}
 		}
 
@@ -113,38 +129,42 @@ func updateCountryResolverMap(
 		if existingSR == nil {
 			ccrtsr[sr.CountryCode][sr.IP] = sr
 		} else {
-			// this should only be one pass through, since srs are only made
-			// with one entry
-			for k := range sr.ACensoredDomains {
-				if _, ok := existingSR.ACensoredDomains[k]; ok {
-					// we already know this domain is censored, by this
-					// resolver, for A record requests, currently this happens
-					// because some v4 addresses are paired with multiple v6
-					// addresses
-					// infoLogger.Println(
-					//  "Already saw this domain is censored by this resolver" +
-					//      " on A record requests, somehow",
-					// )
-					continue
+			if sr.CorrectControlResolution > 0 {
+				existingSR.CorrectControlResolution += sr.CorrectControlResolution
+			} else {
+				// this should only be one pass through, since srs are only made
+				// with one entry
+				for k := range sr.ACensoredDomains {
+					if _, ok := existingSR.ACensoredDomains[k]; ok {
+						// we already know this domain is censored, by this
+						// resolver, for A record requests, currently this happens
+						// because some v4 addresses are paired with multiple v6
+						// addresses
+						// infoLogger.Println(
+						//  "Already saw this domain is censored by this resolver" +
+						//      " on A record requests, somehow",
+						// )
+						continue
+					}
+					existingSR.ACensoredDomains[k] = struct{}{}
 				}
-				existingSR.ACensoredDomains[k] = struct{}{}
-			}
-			// this should only be one pass through, since srs are only made
-			// with one entry
-			for k := range sr.AAAACensoredDomains {
-				if _, ok := existingSR.AAAACensoredDomains[k]; ok {
-					// we already know this domain is censored, by this
-					// resolver, for A record requests, currently this happens
-					// because some v4 addresses are paired with multiple v6
-					// addresses
-					// infoLogger.Println(
-					// 	"Already saw this domain is censored by this resolver" +
-					// 		" on AAAA record requests, somehow",
-					// )
-					// infoLogger.Printf("sr: %+v\n", sr)
-					continue
+				// this should only be one pass through, since srs are only made
+				// with one entry
+				for k := range sr.AAAACensoredDomains {
+					if _, ok := existingSR.AAAACensoredDomains[k]; ok {
+						// we already know this domain is censored, by this
+						// resolver, for A record requests, currently this happens
+						// because some v4 addresses are paired with multiple v6
+						// addresses
+						// infoLogger.Println(
+						// 	"Already saw this domain is censored by this resolver" +
+						// 		" on AAAA record requests, somehow",
+						// )
+						// infoLogger.Printf("sr: %+v\n", sr)
+						continue
+					}
+					existingSR.AAAACensoredDomains[k] = struct{}{}
 				}
-				existingSR.AAAACensoredDomains[k] = struct{}{}
 			}
 		}
 	}
@@ -226,74 +246,83 @@ func question1Stats(q1s *Question1Summary) {
 }
 
 // printCensoringResolverData will make a directory in the dataFolder called
-// Question 1 and make a file for each country code. In the country code files
-// each line will be a JSON object of Question1Ouput. Finally this will create a
-// summary file where each line is a JSON object of Question1Summary
+// Question 1 in there it will make two folders, full and passesControl and make
+// a file for each country code. In the country code files each line will be a
+// JSON object of Question1Ouput. Finally this will create a summary file where
+// each line is a JSON object of Question1Summary
 func printCensoringResolverData(
 	dataFolder string,
 	ccrtsr CountryCodeResolverToSimpleResult,
 	v4ToV6, v6ToV4 map[string]string,
 ) {
-	fullFolderPath := filepath.Join(dataFolder, "Question1")
-	err := os.MkdirAll(fullFolderPath, os.ModePerm)
+	parentFolderPath := filepath.Join(dataFolder, "Question1")
+	err := os.MkdirAll(parentFolderPath, os.ModePerm)
 	if err != nil {
 		errorLogger.Fatalf("Error creating directory: %v\n", err)
 	}
 
-	summaryFile, err := os.Create(filepath.Join(fullFolderPath, "summary.json"))
-	if err != nil {
-		errorLogger.Fatalf("Error creating summary file: %v\n", err)
-	}
-	defer summaryFile.Close()
-
-	for cc, rtsr := range ccrtsr {
-		var q1s Question1Summary
-		q1s.CountryCode = cc
-		func() {
-			ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".json"))
-			if err != nil {
-				errorLogger.Fatalf("Error creating country code file: %v\n", err)
-			}
-			defer ccFile.Close()
-
-			seenResolvers := make(map[string]struct{})
-			for resolver, simpleResult := range rtsr {
-				if _, ok := seenResolvers[resolver]; ok {
-					// saw this resolver through its pair, so we're done here
-					continue
-				}
-				seenResolvers[resolver] = struct{}{}
-				pair := findPair(resolver, v4ToV6, v6ToV4)
-				seenResolvers[pair] = struct{}{}
-				v4, v6 := organizePair(simpleResult, rtsr[pair])
-
-				// now everything is marked as seen, actually print data.
-				var q1o Question1Output
-				q1o.V4IP = v4.IP
-				q1o.V4CensoredCount = len(v4.ACensoredDomains) + len(v4.AAAACensoredDomains)
-				q1s.V4CensoredData = append(q1s.V4CensoredData, q1o.V4CensoredCount)
-				q1s.V4Total += q1o.V4CensoredCount
-
-				q1o.V6IP = v6.IP
-				q1o.V6CensoredCount = len(v6.ACensoredDomains) + len(v6.AAAACensoredDomains)
-				q1s.V6CensoredData = append(q1s.V6CensoredData, q1o.V6CensoredCount)
-				q1s.V6Total += q1o.V6CensoredCount
-
-				bs, err := json.Marshal(&q1o)
-				if err != nil {
-					errorLogger.Printf("Error Marshaling pair struct: %+v\n", q1o)
-				}
-				ccFile.Write(bs)
-				ccFile.WriteString("\n")
-			}
-		}()
-		question1Stats(&q1s)
-		bs, err := json.Marshal(&q1s)
+	for _, dataType := range []string{"full", "passesControl"} {
+		fullFolderPath := filepath.Join(parentFolderPath, dataType)
+		summaryFile, err := os.Create(filepath.Join(fullFolderPath, "summary.json"))
 		if err != nil {
-			errorLogger.Printf("Error marshaling summary struct: %+v\n", q1s)
+			errorLogger.Fatalf("Error creating summary file: %v\n", err)
 		}
-		summaryFile.Write(bs)
-		summaryFile.WriteString("\n")
+		defer summaryFile.Close()
+
+		for cc, rtsr := range ccrtsr {
+			var q1s Question1Summary
+			q1s.CountryCode = cc
+			func() {
+				ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".json"))
+				if err != nil {
+					errorLogger.Fatalf("Error creating country code file: %v\n", err)
+				}
+				defer ccFile.Close()
+
+				seenResolvers := make(map[string]struct{})
+				for resolver, simpleResult := range rtsr {
+					if _, ok := seenResolvers[resolver]; ok {
+						// saw this resolver through its pair, so we're done here
+						continue
+					}
+					if dataType == "passesControl" {
+						if simpleResult.CorrectControlResolution != len(controlDomains)*2 {
+							continue
+						}
+					}
+					seenResolvers[resolver] = struct{}{}
+					pair := findPair(resolver, v4ToV6, v6ToV4)
+					seenResolvers[pair] = struct{}{}
+					v4, v6 := organizePair(simpleResult, rtsr[pair])
+
+					// now everything is marked as seen, actually print data.
+					var q1o Question1Output
+					q1o.V4IP = v4.IP
+					q1o.V4CensoredCount = len(v4.ACensoredDomains) + len(v4.AAAACensoredDomains)
+					q1s.V4CensoredData = append(q1s.V4CensoredData, q1o.V4CensoredCount)
+					q1s.V4Total += q1o.V4CensoredCount
+
+					q1o.V6IP = v6.IP
+					q1o.V6CensoredCount = len(v6.ACensoredDomains) + len(v6.AAAACensoredDomains)
+					q1s.V6CensoredData = append(q1s.V6CensoredData, q1o.V6CensoredCount)
+					q1s.V6Total += q1o.V6CensoredCount
+
+					bs, err := json.Marshal(&q1o)
+					if err != nil {
+						errorLogger.Printf("Error Marshaling pair struct: %+v\n", q1o)
+					}
+					ccFile.Write(bs)
+					ccFile.WriteString("\n")
+				}
+			}()
+			question1Stats(&q1s)
+			bs, err := json.Marshal(&q1s)
+			if err != nil {
+				errorLogger.Printf("Error marshaling summary struct: %+v\n", q1s)
+			}
+			summaryFile.Write(bs)
+			summaryFile.WriteString("\n")
+		}
 	}
 }
 
