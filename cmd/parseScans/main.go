@@ -31,9 +31,11 @@ type ParseScansFlags struct {
 	OutputFile              string `arg:"--output-file,required" help:"(Required) Path to write out the JSON resolver-domain-ip-tls structs" json:"output_file"`
 	ATLSFile                string `arg:"--a-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses" json:"a_tls_file"`
 	AAAATLSFile             string `arg:"--aaaa-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses" json:"aaaa_tls_file"`
+	RepeatATLSFile          string `arg:"--repeat-a-tls-file" help:"Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses, repeat file to work around rate limits" json:"repeat_a_tls_file"`
+	RepeatAAAATLSFile       string `arg:"--repeat-aaaa-tls-file" help:"Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses, repeat file to work around rate limits" json:"repeat_aaaa_tls_file"`
 }
 
-type DomainResolverResultMap map[string]*v4vsv6.DomainResolverResult
+// type DomainResolverResultMap map[string]*v4vsv6.DomainResolverResult
 type DomainIPToAddressResultMap map[string]*v4vsv6.AddressResult
 
 type ZDNSResult struct {
@@ -251,6 +253,15 @@ func createThenWriteDomainResolverResults(
 		drr.ResolverCountry = rccm[resolverStr]
 		drr.RequestedAddressType = resultType
 		drr.Results = results
+		if isControlDomain(drr.Domain) {
+			for _, result := range drr.Results {
+				if !result.ValidControlIP {
+					drr.CorrectControlResolution = false
+					break
+				}
+				drr.CorrectControlResolution = true
+			}
+		}
 		drrChan <- drr
 	}
 }
@@ -465,9 +476,9 @@ func createAddressResults(
 		}
 		ar.Timestamp = tlsScanResponse.Timestamp
 		if isControlDomain(ar.Domain) {
-			// ar._future_thing = verifyControlDomain(*ar)
+			ar.ValidControlIP = verifyControlDomain(*ar)
 
-			// nonDuplicationMap[ar.Domain+"-"+ar.IP] = ar._future_thing
+			nonDuplicationMap[ar.Domain+"-"+ar.IP] = ar.ValidControlIP
 		} else {
 			ar.SupportsTLS = verifyTLS(tlsScanResponse, zgrabResult.Domain)
 			nonDuplicationMap[ar.Domain+"-"+ar.IP] = ar.SupportsTLS
@@ -529,6 +540,27 @@ func main() {
 	)
 
 	infoLogger.Println("Waiting for AddressResults to be created")
+	createAddressResultsWG.Wait()
+	if len(args.RepeatATLSFile) > 0 {
+		createAddressResultsWG.Add(1)
+		infoLogger.Printf(
+			"Loading in repeat TLS data from v4 addresses from %s\n",
+			args.RepeatATLSFile,
+		)
+
+		createAddressResultsWG.Add(1)
+		go createAddressResults(args.RepeatATLSFile, addressResultsChan, &createAddressResultsWG)
+	}
+
+	if len(args.RepeatAAAATLSFile) > 0 {
+		infoLogger.Printf(
+			"Loading in repeat TLS data from v6 addresses from %s\n",
+			args.RepeatAAAATLSFile,
+		)
+		createAddressResultsWG.Add(1)
+		go createAddressResults(args.RepeatAAAATLSFile, addressResultsChan, &createAddressResultsWG)
+	}
+	// wait for any optional runs of createAddressResults
 	createAddressResultsWG.Wait()
 	close(addressResultsChan)
 	infoLogger.Printf(
