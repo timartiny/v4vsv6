@@ -542,7 +542,6 @@ func main() {
 	infoLogger.Println("Waiting for AddressResults to be created")
 	createAddressResultsWG.Wait()
 	if len(args.RepeatATLSFile) > 0 {
-		createAddressResultsWG.Add(1)
 		infoLogger.Printf(
 			"Loading in repeat TLS data from v4 addresses from %s\n",
 			args.RepeatATLSFile,
