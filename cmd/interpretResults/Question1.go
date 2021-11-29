@@ -28,8 +28,8 @@ type Question1Output struct {
 	V6IP                       string `json:"v6_ip"`
 	V4CensoredCount            int    `json:"v4_censored_count"`
 	V6CensoredCount            int    `json:"v6_censored_count"`
-	V4CorrectControlResolution bool   `json:"v4_correct_control_resolution"`
-	V6CorrectControlResolution bool   `json:"v6_correct_control_resolution"`
+	V4CorrectControlResolution int    `json:"v4_correct_control_resolution"`
+	V6CorrectControlResolution int    `json:"v6_correct_control_resolution"`
 }
 
 type Question1Summary struct {
@@ -296,14 +296,21 @@ func printCensoringResolverData(
 					v4, v6 := organizePair(simpleResult, rtsr[pair])
 
 					// now everything is marked as seen, actually print data.
+					// we have a pair, so tally it.
+					q1s.NumResolversPairs += 1
+					if v4.CorrectControlResolution == len(controlDomains)*2 && v6.CorrectControlResolution == len(controlDomains)*2 {
+						q1s.NumCorrectControlResolverPairs += 1
+					}
 					var q1o Question1Output
 					q1o.V4IP = v4.IP
 					q1o.V4CensoredCount = len(v4.ACensoredDomains) + len(v4.AAAACensoredDomains)
+					q1o.V4CorrectControlResolution = v4.CorrectControlResolution
 					q1s.V4CensoredData = append(q1s.V4CensoredData, q1o.V4CensoredCount)
 					q1s.V4Total += q1o.V4CensoredCount
 
 					q1o.V6IP = v6.IP
 					q1o.V6CensoredCount = len(v6.ACensoredDomains) + len(v6.AAAACensoredDomains)
+					q1o.V6CorrectControlResolution = v6.CorrectControlResolution
 					q1s.V6CensoredData = append(q1s.V6CensoredData, q1o.V6CensoredCount)
 					q1s.V6Total += q1o.V6CensoredCount
 
