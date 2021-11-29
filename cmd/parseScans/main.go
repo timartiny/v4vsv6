@@ -429,7 +429,9 @@ func createAddressResults(
 	if err != nil {
 		errorLogger.Fatalf("error opening %s: %v\n", path, err)
 	}
+	var numLines int
 	defer tlsResultsFile.Close()
+	defer infoLogger.Printf("Read %d lines from %s\n", numLines, path)
 	scanner := bufio.NewScanner(tlsResultsFile)
 
 	// future scans can have duplicated attempts for the same TLS IP, and domain
@@ -439,7 +441,6 @@ func createAddressResults(
 	// if the domain-ip didn't support TLS last time.
 	nonDuplicationMap := make(map[string]bool)
 
-	var numLines int
 	for scanner.Scan() {
 		var zgrabResult zgrab2.Grab
 		l := scanner.Text()
@@ -486,7 +487,6 @@ func createAddressResults(
 		arChan <- ar
 	}
 
-	infoLogger.Printf("Read %d lines from %s\n", numLines, path)
 }
 
 func main() {
@@ -561,6 +561,7 @@ func main() {
 		go createAddressResults(args.RepeatAAAATLSFile, addressResultsChan, &createAddressResultsWG)
 	}
 	// wait for any optional runs of createAddressResults
+	infoLogger.Println("Waiting for any repeat TLS scan results")
 	createAddressResultsWG.Wait()
 	close(addressResultsChan)
 	infoLogger.Printf(
