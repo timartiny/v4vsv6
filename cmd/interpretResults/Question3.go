@@ -10,9 +10,10 @@ import (
 )
 
 type Question3SimpleResult struct {
-	Domain      string
-	CountryCode string
-	Censored    bool
+	Domain       string
+	CountryCode  string
+	Censored     bool
+	ControlCount int
 }
 
 type CountryCodeDomainToCounter map[string]map[string]Counter
@@ -25,17 +26,56 @@ type CountryCodeDomainToCounter map[string]map[string]Counter
 func printCensoredDomainData(
 	dataFolder string,
 	ccdtc CountryCodeDomainToCounter,
+	ccdtcControl CountryCodeDomainToCounter,
 	censorshipFraction float64,
 ) {
-	infoLogger.Println("Writing which domains are censored in which countries")
+	infoLogger.Println("Writing which domains are censored in which countries," +
+		" regardless of control domains",
+	)
 	infoLogger.Printf("Using censorship fraction: %f\n", censorshipFraction)
-	fullFolderPath := filepath.Join(dataFolder, "Question3")
-	err := os.MkdirAll(fullFolderPath, os.ModePerm)
+	parentFolderPath := filepath.Join(dataFolder, "Question3")
+	err := os.MkdirAll(parentFolderPath, os.ModePerm)
+	if err != nil {
+		errorLogger.Fatalf("Error creating directory: %v\n", err)
+	}
+	fullFolderPath := filepath.Join(parentFolderPath, "full")
+	err = os.MkdirAll(fullFolderPath, os.ModePerm)
 	if err != nil {
 		errorLogger.Fatalf("Error creating directory: %v\n", err)
 	}
 
 	for cc, dtc := range ccdtc {
+		// wrapper function for opening and deferring closure of a lot of files.
+		func() {
+			ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".txt"))
+			if err != nil {
+				errorLogger.Fatalf("Error creating country code file: %v\n", err)
+			}
+			defer ccFile.Close()
+			ccFile.WriteString(fmt.Sprintf("Censored Domains in %s\n", cc))
+
+			for domain, counter := range dtc {
+				total := float64(counter.Censored + counter.Uncensored)
+				if float64(counter.Censored)/total >= censorshipFraction {
+					ccFile.WriteString(fmt.Sprintf("%s\n", domain))
+				}
+			}
+			infoLogger.Printf("Completed writing %s, closing it\n", ccFile.Name())
+		}()
+	}
+
+	infoLogger.Println(
+		"Done writing all data, now doing only resolvers that answered control" +
+			" domains successfully",
+	)
+
+	fullFolderPath = filepath.Join(parentFolderPath, "passesControl")
+	err = os.MkdirAll(fullFolderPath, os.ModePerm)
+	if err != nil {
+		errorLogger.Fatalf("Error creating directory: %v\n", err)
+	}
+
+	for cc, dtc := range ccdtcControl {
 		// wrapper function for opening and deferring closure of a lot of files.
 		func() {
 			ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".txt"))
@@ -63,6 +103,7 @@ func printCensoredDomainData(
 func updateCountryDomainMap(
 	srChan <-chan Question3SimpleResult,
 	ccdtc CountryCodeDomainToCounter,
+	ccdtcControl CountryCodeDomainToCounter,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -72,6 +113,22 @@ func updateCountryDomainMap(
 			dtc := make(map[string]Counter)
 			ccdtc[sr.CountryCode] = dtc
 		}
+		if ccdtcControl[sr.CountryCode] == nil {
+			dtc := make(map[string]Counter)
+			ccdtcControl[sr.CountryCode] = dtc
+		}
+		// only update control map if this result came from a resolver that
+		// resolved all the control domains successfully
+		if sr.ControlCount == len(controlDomains)*2 {
+			counter := ccdtcControl[sr.CountryCode][sr.Domain]
+			if sr.Censored {
+				counter.Censored++
+			} else {
+				counter.Uncensored++
+			}
+			ccdtcControl[sr.CountryCode][sr.Domain] = counter
+		}
+		// always update this
 		counter := ccdtc[sr.CountryCode][sr.Domain]
 		if sr.Censored {
 			counter.Censored++
@@ -99,6 +156,7 @@ func determineCountryCensorship(
 		sr.Domain = drr.Domain
 		sr.CountryCode = drr.ResolverCountry
 		sr.Censored = !isCensorship(drr)
+		sr.ControlCount = resolvers[drr.ResolverIP].ControlCount
 		srChan <- sr
 	}
 }
@@ -115,6 +173,7 @@ func Question3(args InterpretResultsFlags) {
 	var lineToDetermineCensorshipWG sync.WaitGroup
 	var updateMapWG sync.WaitGroup
 	countryCodeDomainToCounter := make(CountryCodeDomainToCounter)
+	controlCountryCodeDomainToCounter := make(CountryCodeDomainToCounter)
 
 	for i := 0; i < args.Workers; i++ {
 		lineToDetermineCensorshipWG.Add(1)
@@ -128,6 +187,7 @@ func Question3(args InterpretResultsFlags) {
 	go updateCountryDomainMap(
 		simplifiedResultChannel,
 		countryCodeDomainToCounter,
+		controlCountryCodeDomainToCounter,
 		&updateMapWG,
 	)
 	readFileWG.Add(1)
@@ -148,6 +208,7 @@ func Question3(args InterpretResultsFlags) {
 	printCensoredDomainData(
 		args.DataFolder,
 		countryCodeDomainToCounter,
+		controlCountryCodeDomainToCounter,
 		args.CensorshipFraction,
 	)
 
