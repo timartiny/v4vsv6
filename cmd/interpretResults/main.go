@@ -18,6 +18,7 @@ var (
 	infoLogger     *log.Logger
 	errorLogger    *log.Logger
 	controlDomains map[string]struct{}
+	resolvers      map[string]ResolverStats
 )
 
 type InterpretResultsFlags struct {
@@ -32,6 +33,12 @@ type InterpretResultsFlags struct {
 type Counter struct {
 	Censored   int
 	Uncensored int
+}
+
+type ResolverStats struct {
+	ResolverIP      string `json:"resovler_ip"`
+	ResolverCountry string `json:"resolver_country"`
+	ControlCount    int    `json:"control_count"`
 }
 
 func setupArgs() InterpretResultsFlags {
@@ -119,6 +126,39 @@ func isControlDomain(drr v4vsv6.DomainResolverResult) bool {
 	return false
 }
 
+// resolverStats will go throug the results file and for each resolver will
+// collect the number of control domains it got correct.
+func resolverStats(path string) {
+	resultsFile, err := os.Open(path)
+	if err != nil {
+		errorLogger.Fatalf("Error opening results file, %v\n", err)
+	}
+	defer resultsFile.Close()
+
+	scanner := bufio.NewScanner(resultsFile)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		var drr v4vsv6.DomainResolverResult
+		json.Unmarshal([]byte(line), &drr)
+		if !isControlDomain(drr) {
+			continue
+		}
+		if drr.CorrectControlResolution {
+			if _, ok := resolvers[drr.ResolverIP]; !ok {
+				resolvers[drr.ResolverIP] = ResolverStats{
+					ResolverIP:      drr.ResolverIP,
+					ResolverCountry: drr.ResolverCountry,
+					ControlCount:    0,
+				}
+			}
+			rs := resolvers[drr.ResolverIP]
+			rs.ControlCount++
+			resolvers[drr.ResolverIP] = rs
+		}
+	}
+}
+
 func main() {
 	infoLogger = log.New(
 		os.Stderr,
@@ -136,8 +176,10 @@ func main() {
 		"Each question will be answered one at a time, using %d workers\n",
 		args.Workers,
 	)
-	// controlDomains := map[string]map[string]string{"v4vsv6.com":{"v4": "192.12.240.40", "v6": "2620:18f:30:4100::2"}, "test1.v4vsv6.com":{"v4": "1.1.1.1", "v6": "1111:1111:1111:1111:1111:1111:1111:1111"}, "test2.v4vsv6.com":{"v4": "2.2.2.2", "v6": "2222:2222:2222:2222:2222:2222:2222:2222"}}
 	controlDomains = map[string]struct{}{"v4vsv6.com": {}, "test1.v4vsv6.com": {}, "test2.v4vsv6.com": {}}
+
+	resolvers = make(map[string]ResolverStats)
+	resolverStats(args.ResultsFile)
 
 	// No question specified so answer all of them
 	if len(args.Questions) == 0 {
