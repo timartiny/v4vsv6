@@ -15,12 +15,11 @@ import (
 // Question1SimpleResult will store, for each resolver how many domains it
 // censored requests, and what those domains are
 type Question1SimpleResult struct {
-	IP                       string
-	AF                       string
-	CountryCode              string
-	ACensoredDomains         map[string]struct{}
-	AAAACensoredDomains      map[string]struct{}
-	CorrectControlResolution int
+	IP                  string
+	AF                  string
+	CountryCode         string
+	ACensoredDomains    map[string]struct{}
+	AAAACensoredDomains map[string]struct{}
 }
 
 type Question1Output struct {
@@ -63,13 +62,6 @@ func getQuestion1SimpleResults(
 		sr := new(Question1SimpleResult)
 		sr.IP = drr.ResolverIP
 		sr.CountryCode = drr.ResolverCountry
-		// correctcontrolresolution can be unhelpfully false, if the domain
-		// requested is not a control domain, this will be check in a later step
-		if drr.CorrectControlResolution {
-			sr.CorrectControlResolution = 1
-		} else {
-			sr.CorrectControlResolution = 0
-		}
 		tmpIP := net.ParseIP(sr.IP)
 		if tmpIP == nil {
 			errorLogger.Printf("Not a valid IP: %v\n", sr.IP)
@@ -129,42 +121,38 @@ func updateCountryResolverMap(
 		if existingSR == nil {
 			ccrtsr[sr.CountryCode][sr.IP] = sr
 		} else {
-			if sr.CorrectControlResolution > 0 {
-				existingSR.CorrectControlResolution += sr.CorrectControlResolution
-			} else {
-				// this should only be one pass through, since srs are only made
-				// with one entry
-				for k := range sr.ACensoredDomains {
-					if _, ok := existingSR.ACensoredDomains[k]; ok {
-						// we already know this domain is censored, by this
-						// resolver, for A record requests, currently this happens
-						// because some v4 addresses are paired with multiple v6
-						// addresses
-						// infoLogger.Println(
-						//  "Already saw this domain is censored by this resolver" +
-						//      " on A record requests, somehow",
-						// )
-						continue
-					}
-					existingSR.ACensoredDomains[k] = struct{}{}
+			// this should only be one pass through, since srs are only made
+			// with one entry
+			for k := range sr.ACensoredDomains {
+				if _, ok := existingSR.ACensoredDomains[k]; ok {
+					// we already know this domain is censored, by this
+					// resolver, for A record requests, currently this happens
+					// because some v4 addresses are paired with multiple v6
+					// addresses
+					// infoLogger.Println(
+					//  "Already saw this domain is censored by this resolver" +
+					//      " on A record requests, somehow",
+					// )
+					continue
 				}
-				// this should only be one pass through, since srs are only made
-				// with one entry
-				for k := range sr.AAAACensoredDomains {
-					if _, ok := existingSR.AAAACensoredDomains[k]; ok {
-						// we already know this domain is censored, by this
-						// resolver, for A record requests, currently this happens
-						// because some v4 addresses are paired with multiple v6
-						// addresses
-						// infoLogger.Println(
-						// 	"Already saw this domain is censored by this resolver" +
-						// 		" on AAAA record requests, somehow",
-						// )
-						// infoLogger.Printf("sr: %+v\n", sr)
-						continue
-					}
-					existingSR.AAAACensoredDomains[k] = struct{}{}
+				existingSR.ACensoredDomains[k] = struct{}{}
+			}
+			// this should only be one pass through, since srs are only made
+			// with one entry
+			for k := range sr.AAAACensoredDomains {
+				if _, ok := existingSR.AAAACensoredDomains[k]; ok {
+					// we already know this domain is censored, by this
+					// resolver, for A record requests, currently this happens
+					// because some v4 addresses are paired with multiple v6
+					// addresses
+					// infoLogger.Println(
+					// 	"Already saw this domain is censored by this resolver" +
+					// 		" on AAAA record requests, somehow",
+					// )
+					// infoLogger.Printf("sr: %+v\n", sr)
+					continue
 				}
+				existingSR.AAAACensoredDomains[k] = struct{}{}
 			}
 		}
 	}
@@ -286,7 +274,7 @@ func printCensoringResolverData(
 						continue
 					}
 					if dataType == "passesControl" {
-						if simpleResult.CorrectControlResolution != len(controlDomains)*2 {
+						if resolvers[simpleResult.IP].ControlCount != len(controlDomains)*2 {
 							continue
 						}
 					}
@@ -298,19 +286,19 @@ func printCensoringResolverData(
 					// now everything is marked as seen, actually print data.
 					// we have a pair, so tally it.
 					q1s.NumResolversPairs += 1
-					if v4.CorrectControlResolution == len(controlDomains)*2 && v6.CorrectControlResolution == len(controlDomains)*2 {
+					if resolvers[v4.IP].ControlCount == len(controlDomains)*2 && resolvers[v6.IP].ControlCount == len(controlDomains)*2 {
 						q1s.NumCorrectControlResolverPairs += 1
 					}
 					var q1o Question1Output
 					q1o.V4IP = v4.IP
 					q1o.V4CensoredCount = len(v4.ACensoredDomains) + len(v4.AAAACensoredDomains)
-					q1o.V4CorrectControlResolution = v4.CorrectControlResolution
+					q1o.V4CorrectControlResolution = resolvers[v4.IP].ControlCount
 					q1s.V4CensoredData = append(q1s.V4CensoredData, q1o.V4CensoredCount)
 					q1s.V4Total += q1o.V4CensoredCount
 
 					q1o.V6IP = v6.IP
 					q1o.V6CensoredCount = len(v6.ACensoredDomains) + len(v6.AAAACensoredDomains)
-					q1o.V6CorrectControlResolution = v6.CorrectControlResolution
+					q1o.V6CorrectControlResolution = resolvers[v6.IP].ControlCount
 					q1s.V6CensoredData = append(q1s.V6CensoredData, q1o.V6CensoredCount)
 					q1s.V6Total += q1o.V6CensoredCount
 
