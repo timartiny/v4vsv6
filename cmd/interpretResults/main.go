@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -128,7 +129,7 @@ func isControlDomain(drr v4vsv6.DomainResolverResult) bool {
 
 // resolverStats will go throug the results file and for each resolver will
 // collect the number of control domains it got correct.
-func resolverStats(path string) {
+func resolverStats(path, dataFolder string) {
 	resultsFile, err := os.Open(path)
 	if err != nil {
 		errorLogger.Fatalf("Error opening results file, %v\n", err)
@@ -157,6 +158,21 @@ func resolverStats(path string) {
 			resolvers[drr.ResolverIP] = rs
 		}
 	}
+
+	summaryFile, err := os.Create(filepath.Join(dataFolder, "resolvers.json"))
+	infoLogger.Printf("Writing resolver stats to %s\n", summaryFile.Name())
+	if err != nil {
+		errorLogger.Fatalf("Error creating directory: %v\n", err)
+	}
+	defer summaryFile.Close()
+	for _, rs := range resolvers {
+		bs, err := json.Marshal(&rs)
+		if err != nil {
+			errorLogger.Printf("Error Marshaling pair struct: %+v\n", rs)
+		}
+		summaryFile.Write(bs)
+		summaryFile.WriteString("\n")
+	}
 }
 
 func main() {
@@ -179,7 +195,12 @@ func main() {
 	controlDomains = map[string]struct{}{"v4vsv6.com": {}, "test1.v4vsv6.com": {}, "test2.v4vsv6.com": {}}
 
 	resolvers = make(map[string]ResolverStats)
-	resolverStats(args.ResultsFile)
+	infoLogger.Println(
+		"Reading results file to get basic resolver stats: IP, Country, and " +
+			"how many control domains it successfully resolved",
+	)
+	resolverStats(args.ResultsFile, args.DataFolder)
+	infoLogger.Println("Done, onto questions")
 
 	// No question specified so answer all of them
 	if len(args.Questions) == 0 {
