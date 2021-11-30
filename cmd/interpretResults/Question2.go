@@ -92,7 +92,7 @@ func printCensoringRecordData(
 						continue
 					}
 					if dataType == "passesControl" {
-						if simpleResult.CorrectControlResolution != len(controlDomains)*2 {
+						if resolvers[simpleResult.IP].ControlCount != len(controlDomains)*2 {
 							continue
 						}
 					}
@@ -104,18 +104,18 @@ func printCensoringRecordData(
 					// now everything is marked as seen, actually print data.
 					// we have a pair, so tally it.
 					q2s.NumResolversPairs += 1
-					if v4.CorrectControlResolution == len(controlDomains)*2 && v6.CorrectControlResolution == len(controlDomains)*2 {
+					if resolvers[v4.IP].ControlCount == len(controlDomains)*2 && resolvers[v6.IP].ControlCount == len(controlDomains)*2 {
 						q2s.NumCorrectControlResolverPairs += 1
 					}
 					var q2o Question2Output
 					q2o.V4IP = v4.IP
-					q2o.V4CorrectControlResolution = v4.CorrectControlResolution
+					q2o.V4CorrectControlResolution = resolvers[v4.IP].ControlCount
 					q2o.ACensoredCount = len(v4.ACensoredDomains) + len(v6.ACensoredDomains)
 					q2s.ACensoredData = append(q2s.ACensoredData, q2o.ACensoredCount)
 					q2s.ATotal += q2o.ACensoredCount
 
 					q2o.V6IP = v6.IP
-					q2o.V6CorrectControlResolution = v6.CorrectControlResolution
+					q2o.V6CorrectControlResolution = resolvers[v6.IP].ControlCount
 					q2o.AAAACensoredCount = len(v6.AAAACensoredDomains) + len(v4.AAAACensoredDomains)
 					q2s.AAAACensoredData = append(q2s.AAAACensoredData, q2o.AAAACensoredCount)
 					q2s.AAAATotal += q2o.AAAACensoredCount
