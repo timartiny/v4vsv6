@@ -92,6 +92,9 @@ func determineCountryCensorship(
 ) {
 	defer wg.Done()
 	for drr := range drrChan {
+		if isControlDomain(drr) {
+			continue
+		}
 		var sr Question3SimpleResult
 		sr.Domain = drr.Domain
 		sr.CountryCode = drr.ResolverCountry
