@@ -16,13 +16,15 @@ type ResolverPair struct {
 }
 
 type Question4SimpleResult struct {
-	Domain               string
-	CountryCode          string
-	CensoringPairs       []ResolverPair
-	CensoringV4Resolvers map[string]struct{}
-	CensoringV6Resolvers map[string]struct{}
-	CensoredARequests    int
-	CensoredAAAARequests int
+	Domain                      string
+	CountryCode                 string
+	CensoringPairs              []ResolverPair
+	CensoringV4Resolvers        map[string]struct{}
+	CensoringV6Resolvers        map[string]struct{}
+	CensoredARequests           int
+	ControlCensoredARequests    int
+	CensoredAAAARequests        int
+	ControlCensoredAAAARequests int
 }
 
 type Question4Output struct {
@@ -54,22 +56,30 @@ func getQuestion4SimpleResults(
 		sr.CountryCode = drr.ResolverCountry
 		sr.CensoringV4Resolvers = make(map[string]struct{})
 		sr.CensoringV6Resolvers = make(map[string]struct{})
-		if isCensorship(drr) {
-			tmpIP := net.ParseIP(drr.ResolverIP)
-			if tmpIP == nil {
-				errorLogger.Printf("Invalid IP provided: %v\n", drr.ResolverIP)
-				errorLogger.Printf("Skipping this entry")
-				continue
-			}
-			if tmpIP.To4() != nil {
-				sr.CensoringV4Resolvers[tmpIP.String()] = struct{}{}
-			} else {
-				sr.CensoringV6Resolvers[tmpIP.String()] = struct{}{}
-			}
-			if drr.RequestedAddressType == "A" {
-				sr.CensoredARequests++
-			} else {
-				sr.CensoredAAAARequests++
+		if !isControlDomain(drr) {
+			if isCensorship(drr) {
+				tmpIP := net.ParseIP(drr.ResolverIP)
+				if tmpIP == nil {
+					errorLogger.Printf("Invalid IP provided: %v\n", drr.ResolverIP)
+					errorLogger.Printf("Skipping this entry")
+					continue
+				}
+				if tmpIP.To4() != nil {
+					sr.CensoringV4Resolvers[tmpIP.String()] = struct{}{}
+				} else {
+					sr.CensoringV6Resolvers[tmpIP.String()] = struct{}{}
+				}
+				if drr.RequestedAddressType == "A" {
+					sr.CensoredARequests++
+					if resolvers[drr.ResolverIP].ControlCount == len(controlDomains)*2 {
+						sr.ControlCensoredARequests++
+					}
+				} else {
+					sr.CensoredAAAARequests++
+					if resolvers[drr.ResolverIP].ControlCount == len(controlDomains)*2 {
+						sr.ControlCensoredAAAARequests++
+					}
+				}
 			}
 		}
 
@@ -122,7 +132,9 @@ func updateCountryDomainQuestion4Map(
 				existingSR.CensoringV6Resolvers[k] = struct{}{}
 			}
 			existingSR.CensoredARequests += sr.CensoredARequests
+			existingSR.ControlCensoredARequests += sr.ControlCensoredARequests
 			existingSR.CensoredAAAARequests += sr.CensoredAAAARequests
+			existingSR.ControlCensoredAAAARequests += sr.ControlCensoredAAAARequests
 		}
 	}
 }
@@ -162,53 +174,87 @@ func printQuestion4Results(
 	dataFolder string,
 	ccdtsr CountryCodeDomainToSimpleResult,
 ) {
-	fullFolderPath := filepath.Join(dataFolder, "Question4")
-	err := os.MkdirAll(fullFolderPath, os.ModePerm)
+	parentFolderPath := filepath.Join(dataFolder, "Question4")
+	err := os.MkdirAll(parentFolderPath, os.ModePerm)
 	if err != nil {
 		errorLogger.Fatalf("Error creating directory: %v\n", err)
 	}
 
-	for cc, dtsr := range ccdtsr {
-		func() {
-			ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".json"))
-			if err != nil {
-				errorLogger.Fatalf("Error creating country code file: %v\n", err)
-			}
-			defer ccFile.Close()
-
-			for domain, simpleResult := range dtsr {
-				var q4o Question4Output
-				q4o.Domain = domain
-				q4o.TotalPairs = len(simpleResult.CensoringPairs)
-				q4o.CensoringPairs = simpleResult.CensoringPairs
-
-				q4o.TotalV4 = len(simpleResult.CensoringV4Resolvers)
-				q4o.CensoringV4Resolvers = make([]string, q4o.TotalV4)
-				i := 0
-				for key := range simpleResult.CensoringV4Resolvers {
-					q4o.CensoringV4Resolvers[i] = key
-					i++
-				}
-
-				q4o.TotalV6 = len(simpleResult.CensoringV6Resolvers)
-				q4o.CensoringV6Resolvers = make([]string, q4o.TotalV6)
-				i = 0
-				for key := range simpleResult.CensoringV6Resolvers {
-					q4o.CensoringV6Resolvers[i] = key
-					i++
-				}
-
-				q4o.CensoredARequests = simpleResult.CensoredARequests
-				q4o.CensoredAAAARequests = simpleResult.CensoredAAAARequests
-
-				bs, err := json.Marshal(&q4o)
+	for _, dataType := range []string{"full", "passesControl"} {
+		fullFolderPath := filepath.Join(parentFolderPath, dataType)
+		err := os.MkdirAll(fullFolderPath, os.ModePerm)
+		if err != nil {
+			errorLogger.Fatalf("Error creating directory: %v\n", err)
+		}
+		for cc, dtsr := range ccdtsr {
+			func() {
+				ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".json"))
 				if err != nil {
-					errorLogger.Printf("Error Marshaling pair struct: %+v\n", q4o)
+					errorLogger.Fatalf("Error creating country code file: %v\n", err)
 				}
-				ccFile.Write(bs)
-				ccFile.WriteString("\n")
-			}
-		}()
+				defer ccFile.Close()
+
+				for domain, simpleResult := range dtsr {
+					var q4o Question4Output
+					q4o.Domain = domain
+					if dataType == "passesControl" {
+						for _, pair := range simpleResult.CensoringPairs {
+							if resolvers[pair.V4].ControlCount == len(controlDomains)*2 {
+								if resolvers[pair.V6].ControlCount == len(controlDomains)*2 {
+									q4o.CensoringPairs = append(q4o.CensoringPairs, pair)
+								} else {
+									q4o.CensoringV4Resolvers = append(q4o.CensoringV4Resolvers, pair.V4)
+								}
+							} else {
+								if resolvers[pair.V6].ControlCount == len(controlDomains)*2 {
+									q4o.CensoringV6Resolvers = append(q4o.CensoringV6Resolvers, pair.V6)
+								}
+							}
+						}
+
+						q4o.TotalPairs = len(q4o.CensoringPairs)
+					} else {
+						q4o.TotalPairs = len(simpleResult.CensoringPairs)
+						q4o.CensoringPairs = simpleResult.CensoringPairs
+					}
+
+					q4o.CensoringV4Resolvers = make([]string, q4o.TotalV4)
+					i := 0
+					for key := range simpleResult.CensoringV4Resolvers {
+						if dataType == "full" || resolvers[key].ControlCount == len(controlDomains)*2 {
+							q4o.CensoringV4Resolvers[i] = key
+							i++
+						}
+					}
+					q4o.TotalV4 = len(q4o.CensoringV4Resolvers)
+
+					q4o.CensoringV6Resolvers = make([]string, q4o.TotalV6)
+					i = 0
+					for key := range simpleResult.CensoringV6Resolvers {
+						if dataType == "full" || resolvers[key].ControlCount == len(controlDomains)*2 {
+							q4o.CensoringV6Resolvers[i] = key
+							i++
+						}
+					}
+					q4o.TotalV6 = len(q4o.CensoringV6Resolvers)
+
+					if dataType == "passesControl" {
+						q4o.CensoredARequests = simpleResult.ControlCensoredARequests
+						q4o.CensoredAAAARequests = simpleResult.ControlCensoredAAAARequests
+					} else {
+						q4o.CensoredARequests = simpleResult.CensoredARequests
+						q4o.CensoredAAAARequests = simpleResult.CensoredAAAARequests
+					}
+
+					bs, err := json.Marshal(&q4o)
+					if err != nil {
+						errorLogger.Printf("Error Marshaling pair struct: %+v\n", q4o)
+					}
+					ccFile.Write(bs)
+					ccFile.WriteString("\n")
+				}
+			}()
+		}
 	}
 }
 
