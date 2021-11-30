@@ -251,6 +251,10 @@ func printCensoringResolverData(
 
 	for _, dataType := range []string{"full", "passesControl"} {
 		fullFolderPath := filepath.Join(parentFolderPath, dataType)
+		err := os.MkdirAll(fullFolderPath, os.ModePerm)
+		if err != nil {
+			errorLogger.Fatalf("Error creating directory: %v\n", err)
+		}
 		summaryFile, err := os.Create(filepath.Join(fullFolderPath, "summary.json"))
 		if err != nil {
 			errorLogger.Fatalf("Error creating summary file: %v\n", err)
