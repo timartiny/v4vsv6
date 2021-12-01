@@ -60,7 +60,6 @@ func printCensoredDomainData(
 					ccFile.WriteString(fmt.Sprintf("%s\n", domain))
 				}
 			}
-			infoLogger.Printf("Completed writing %s, closing it\n", ccFile.Name())
 		}()
 	}
 
@@ -91,7 +90,6 @@ func printCensoredDomainData(
 					ccFile.WriteString(fmt.Sprintf("%s\n", domain))
 				}
 			}
-			infoLogger.Printf("Completed writing %s, closing it\n", ccFile.Name())
 		}()
 	}
 
