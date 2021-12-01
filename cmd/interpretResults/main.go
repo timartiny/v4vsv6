@@ -23,7 +23,7 @@ var (
 )
 
 type InterpretResultsFlags struct {
-	DataFolder         string  `arg:"--data-folder,required" help:"(Required) Path to the folder to store intreted results" json:"data_folder"`
+	DataFolder         string  `arg:"--data-folder,required" help:"(Required) Path to the folder to store answer to questions" json:"data_folder"`
 	ResultsFile        string  `arg:"--results-file,required" help:"(Required) Path to the file containing the DomainResolverResults" json:"results_file"`
 	Workers            int     `arg:"-w,--workers" help:"Number of workers to work simultaneously" default:"5" json:"wokers"`
 	CensorshipFraction float64 `arg:"-f,--fraction" help:"Fraction of queries that don't support TLS that should be considered censorship" default:"0.5" json:"censorship_fraction"`
