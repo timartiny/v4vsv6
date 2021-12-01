@@ -218,7 +218,7 @@ func printQuestion4Results(
 						q4o.CensoringPairs = simpleResult.CensoringPairs
 					}
 
-					q4o.CensoringV4Resolvers = make([]string, q4o.TotalV4)
+					q4o.CensoringV4Resolvers = make([]string, len(simpleResult.CensoringV4Resolvers))
 					i := 0
 					for key := range simpleResult.CensoringV4Resolvers {
 						if dataType == "full" || resolvers[key].ControlCount == len(controlDomains)*2 {
@@ -228,7 +228,7 @@ func printQuestion4Results(
 					}
 					q4o.TotalV4 = len(q4o.CensoringV4Resolvers)
 
-					q4o.CensoringV6Resolvers = make([]string, q4o.TotalV6)
+					q4o.CensoringV6Resolvers = make([]string, len(simpleResult.CensoringV6Resolvers))
 					i = 0
 					for key := range simpleResult.CensoringV6Resolvers {
 						if dataType == "full" || resolvers[key].ControlCount == len(controlDomains)*2 {
