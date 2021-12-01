@@ -18,6 +18,7 @@ type Question5SimpleResult struct {
 	V6IPs         map[string]struct{}
 	CensoredV4IPs map[string]struct{}
 	CensoredV6IPs map[string]struct{}
+	ControlCount  int
 }
 
 type Question5Output struct {
@@ -49,6 +50,7 @@ func getQuestion5SimpleResults(
 		sr.CensoredV6IPs = make(map[string]struct{})
 		sr.Domain = drr.Domain
 		sr.CountryCode = drr.ResolverCountry
+		sr.ControlCount = resolvers[drr.ResolverIP].ControlCount
 		for _, result := range drr.Results {
 			if _, ok := sr.IPs[result.IP]; ok {
 				// already seen this IP for this domain, from this result, skip it
@@ -91,6 +93,7 @@ func getQuestion5SimpleResults(
 func updateCountryDomainQuestion5Map(
 	srChan <-chan *Question5SimpleResult,
 	ccdtsr CountryCodeDomainToQuestion5SimpleResult,
+	controlccdtsr CountryCodeDomainToQuestion5SimpleResult,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -100,6 +103,10 @@ func updateCountryDomainQuestion5Map(
 		if ccdtsr[sr.CountryCode] == nil {
 			dtsr := make(map[string]*Question5SimpleResult)
 			ccdtsr[sr.CountryCode] = dtsr
+		}
+		if controlccdtsr[sr.CountryCode] == nil {
+			dtsr := make(map[string]*Question5SimpleResult)
+			controlccdtsr[sr.CountryCode] = dtsr
 		}
 		existingSR := ccdtsr[sr.CountryCode][sr.Domain]
 		// if this is the first time we've seen this domain, then our received
@@ -126,6 +133,35 @@ func updateCountryDomainQuestion5Map(
 				}
 			}
 		}
+		if sr.ControlCount == len(controlDomains)*2 {
+			// this result came from a resolver that passed the control stages,
+			// so do above again and put it in the control map
+			existingSR = controlccdtsr[sr.CountryCode][sr.Domain]
+			// if this is the first time we've seen this domain, then our received
+			// sr is the whole data so far
+			if existingSR == nil {
+				controlccdtsr[sr.CountryCode][sr.Domain] = sr
+			} else {
+				// this should only be one pass through, since srs are only made
+				// with one entry
+				for k := range sr.IPs {
+					// this is a map, so not a big deal if we are recreating an
+					// entry
+					existingSR.IPs[k] = struct{}{}
+					if _, ok := sr.V4IPs[k]; ok {
+						existingSR.V4IPs[k] = struct{}{}
+						if _, ok2 := sr.CensoredV4IPs[k]; ok2 {
+							existingSR.CensoredV4IPs[k] = struct{}{}
+						}
+					} else {
+						existingSR.V6IPs[k] = struct{}{}
+						if _, ok2 := sr.CensoredV6IPs[k]; ok2 {
+							existingSR.CensoredV6IPs[k] = struct{}{}
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -135,14 +171,63 @@ func updateCountryDomainQuestion5Map(
 func printQuestion5Results(
 	dataFolder string,
 	ccdtsr CountryCodeDomainToQuestion5SimpleResult,
+	controlCcdtsr CountryCodeDomainToQuestion5SimpleResult,
 ) {
-	fullFolderPath := filepath.Join(dataFolder, "Question5")
-	err := os.MkdirAll(fullFolderPath, os.ModePerm)
+	parentFolderPath := filepath.Join(dataFolder, "Question5")
+	err := os.MkdirAll(parentFolderPath, os.ModePerm)
+	if err != nil {
+		errorLogger.Fatalf("Error creating directory: %v\n", err)
+	}
+	fullFolderPath := filepath.Join(parentFolderPath, "full")
+	err = os.MkdirAll(fullFolderPath, os.ModePerm)
 	if err != nil {
 		errorLogger.Fatalf("Error creating directory: %v\n", err)
 	}
 
+	infoLogger.Printf("Writing results of how many IPs were given for " +
+		"each domain, regardless of whether the resolver passed the control " +
+		"domains",
+	)
+
 	for cc, dtsr := range ccdtsr {
+		func() {
+			ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".json"))
+			if err != nil {
+				errorLogger.Fatalf("Error creating country code file: %v\n", err)
+			}
+			defer ccFile.Close()
+
+			for domain, simpleResult := range dtsr {
+				var q5o Question5Output
+				q5o.Domain = domain
+				q5o.UniqueIPCount = len(simpleResult.IPs)
+				q5o.UniqueV4IPCount = len(simpleResult.V4IPs)
+				q5o.UniqueV6IPCount = len(simpleResult.V6IPs)
+				q5o.CensoredV4IPCount = len(simpleResult.CensoredV4IPs)
+				q5o.CensoredV6IPCount = len(simpleResult.CensoredV6IPs)
+
+				bs, err := json.Marshal(&q5o)
+				if err != nil {
+					errorLogger.Printf("Error Marshaling pair struct: %+v\n", q5o)
+				}
+				ccFile.Write(bs)
+				ccFile.WriteString("\n")
+			}
+		}()
+	}
+
+	infoLogger.Printf("Writing results of how many IPs were given for " +
+		"each domain, only for results coming from resolvers that passed " +
+		"control domains",
+	)
+
+	fullFolderPath = filepath.Join(parentFolderPath, "passesControl")
+	err = os.MkdirAll(fullFolderPath, os.ModePerm)
+	if err != nil {
+		errorLogger.Fatalf("Error creating directory: %v\n", err)
+	}
+
+	for cc, dtsr := range controlCcdtsr {
 		func() {
 			ccFile, err := os.Create(filepath.Join(fullFolderPath, cc+".json"))
 			if err != nil {
@@ -183,6 +268,7 @@ func Question5(
 	var updateMapWG sync.WaitGroup
 	var readFileWG sync.WaitGroup
 	countryCodeDomainToSimpleResult := make(CountryCodeDomainToQuestion5SimpleResult)
+	controlCountryCodeDomainToSimpleResult := make(CountryCodeDomainToQuestion5SimpleResult)
 
 	for i := 0; i < args.Workers; i++ {
 		getSimpleResultsWG.Add(1)
@@ -197,6 +283,7 @@ func Question5(
 	go updateCountryDomainQuestion5Map(
 		simplifiedResultChannel,
 		countryCodeDomainToSimpleResult,
+		controlCountryCodeDomainToSimpleResult,
 		&updateMapWG,
 	)
 
@@ -227,5 +314,5 @@ func Question5(
 		"Question 5 data collected and organized, printing results",
 	)
 
-	printQuestion5Results(args.DataFolder, countryCodeDomainToSimpleResult)
+	printQuestion5Results(args.DataFolder, countryCodeDomainToSimpleResult, controlCountryCodeDomainToSimpleResult)
 }
