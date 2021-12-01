@@ -110,7 +110,7 @@ func isCensorship(drr v4vsv6.DomainResolverResult) bool {
 		// condition is == because ret is flipped from SupportsTLS
 		if ar.SupportsTLS == ret {
 			// should print this once we have more reliable data...
-			infoLogger.Printf("drr has mixed SupportsTLS results: %+v\n", drr)
+			// infoLogger.Printf("drr has mixed SupportsTLS results: %+v\n", drr)
 			return true
 		}
 	}
