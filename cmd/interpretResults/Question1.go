@@ -192,6 +192,9 @@ func organizePair(s1, s2 *Question1SimpleResult) (*Question1SimpleResult, *Quest
 
 // findMedian finds the median of a slice of ints, doesn't actually sort list
 func findMedian(is []int) float64 {
+	if len(is) == 0 {
+		return 0.0
+	}
 	isCopy := make([]int, len(is))
 	numCopied := copy(isCopy, is)
 	if numCopied != len(is) {
