@@ -18,8 +18,10 @@ import (
 )
 
 var (
-	infoLogger  *log.Logger
-	errorLogger *log.Logger
+	infoLogger          *log.Logger
+	errorLogger         *log.Logger
+	v4ControlDomToIPMap map[string]net.IP
+	v6ControlDomToIPMap map[string]net.IP
 )
 
 type ParseScansFlags struct {
@@ -392,21 +394,13 @@ func isControlDomain(dom string) bool {
 // domain, this only works for hardcoded control domains, this function assumes
 // the domain has already been tested as a control domain
 func verifyControlDomain(ar v4vsv6.AddressResult) bool {
-	v4ControlDomToIPMap := make(map[string]string)
-	v6ControlDomToIPMap := make(map[string]string)
-	v4ControlDomToIPMap["v4vsv6.com"] = "192.12.240.40"
-	v4ControlDomToIPMap["test1.v4vsv6.com"] = "1.1.1.1"
-	v4ControlDomToIPMap["test1.v4vsv6.com"] = "2.2.2.2"
-	v6ControlDomToIPMap["v4vsv6.com"] = "2620:18f:30:4100::2"
-	v6ControlDomToIPMap["test1.v4vsv6.com"] = "1111:1111:1111:1111:1111:1111:1111:1111"
-	v6ControlDomToIPMap["test1.v4vsv6.com"] = "2222:2222:2222:2222:2222:2222:2222:2222"
 
 	if ar.AddressType == "A" {
-		if v4ControlDomToIPMap[ar.Domain] == ar.IP {
+		if v4ControlDomToIPMap[ar.Domain].String() == net.ParseIP(ar.IP).String() {
 			return true
 		}
 	} else if ar.AddressType == "AAAA" {
-		if v6ControlDomToIPMap[ar.Domain] == ar.IP {
+		if v6ControlDomToIPMap[ar.Domain].String() == net.ParseIP(ar.IP).String() {
 			return true
 		}
 	} else {
@@ -500,6 +494,14 @@ func main() {
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile,
 	)
+	v4ControlDomToIPMap = make(map[string]net.IP)
+	v6ControlDomToIPMap = make(map[string]net.IP)
+	v4ControlDomToIPMap["v4vsv6.com"] = net.ParseIP("192.12.240.40")
+	v4ControlDomToIPMap["test1.v4vsv6.com"] = net.ParseIP("1.1.1.1")
+	v4ControlDomToIPMap["test1.v4vsv6.com"] = net.ParseIP("2.2.2.2")
+	v6ControlDomToIPMap["v4vsv6.com"] = net.ParseIP("2620:18f:30:4100::2")
+	v6ControlDomToIPMap["test1.v4vsv6.com"] = net.ParseIP("1111:1111:1111:1111:1111:1111:1111:1111")
+	v6ControlDomToIPMap["test1.v4vsv6.com"] = net.ParseIP("2222:2222:2222:2222:2222:2222:2222:2222")
 
 	args := setupArgs()
 
