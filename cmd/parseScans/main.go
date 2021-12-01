@@ -498,10 +498,10 @@ func main() {
 	v6ControlDomToIPMap = make(map[string]net.IP)
 	v4ControlDomToIPMap["v4vsv6.com"] = net.ParseIP("192.12.240.40")
 	v4ControlDomToIPMap["test1.v4vsv6.com"] = net.ParseIP("1.1.1.1")
-	v4ControlDomToIPMap["test1.v4vsv6.com"] = net.ParseIP("2.2.2.2")
+	v4ControlDomToIPMap["test2.v4vsv6.com"] = net.ParseIP("2.2.2.2")
 	v6ControlDomToIPMap["v4vsv6.com"] = net.ParseIP("2620:18f:30:4100::2")
 	v6ControlDomToIPMap["test1.v4vsv6.com"] = net.ParseIP("1111:1111:1111:1111:1111:1111:1111:1111")
-	v6ControlDomToIPMap["test1.v4vsv6.com"] = net.ParseIP("2222:2222:2222:2222:2222:2222:2222:2222")
+	v6ControlDomToIPMap["test2.v4vsv6.com"] = net.ParseIP("2222:2222:2222:2222:2222:2222:2222:2222")
 
 	args := setupArgs()
 
