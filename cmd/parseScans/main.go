@@ -345,32 +345,15 @@ func updateAddressResults(
 		// tmpIP won't be invalid, already checked in createAddressResults
 		tmpIP := net.ParseIP(ar.IP)
 		key := ar.Domain + "-" + tmpIP.String()
-		if _, ok := ditarm[key]; ok {
-			// errorLogger.Printf(
-			// 	"key: %s already seen, keeping first result\n",
-			// 	key,
-			// )
-			// errorLogger.Printf("new.IP: %s, old.IP: %s\n", ar.IP, old.IP)
-			// errorLogger.Printf(
-			// 	"new.AddressType: %s, old.AddressType: %s\n",
-			// 	ar.AddressType,
-			// 	old,
-			// )
-			// errorLogger.Printf(
-			// 	"new.Domain: %s, old.Domain: %s\n",
-			// 	ar.Domain,
-			// 	old.Domain,
-			// )
-			// errorLogger.Printf(
-			// 	"new.SupportsTLS: %t, old.SupportsTLS: %t\n",
-			// 	ar.SupportsTLS,
-			// 	old.SupportsTLS,
-			// )
-			// errorLogger.Printf(
-			// 	"new.Error: %s, old.Error: %s\n",
-			// 	ar.Error,
-			// 	old.Error,
-			// )
+		if oldAR, ok := ditarm[key]; ok {
+			// the important bit here is whether the address supports TLS, and
+			// we repeat scans, so if a previous scan supported TLS keep it, if
+			// it didn't use the new one
+			if oldAR.SupportsTLS {
+				continue
+			} else {
+				ditarm[key] = ar
+			}
 		} else {
 			ditarm[key] = ar
 		}
