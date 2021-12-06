@@ -20,7 +20,7 @@ def print_asn_results(asn_dict, unknown_asns, outfile):
     return
 
 def print_results(counting_dict, db_path, asn_outfile, expected_count, retry_file):
-    timeoutCount = 0
+    errorCount = 0
     weirdCount = 0
     asn_dict = defaultdict(default_dict_constructor)
     unknown_asns = []
@@ -38,18 +38,18 @@ def print_results(counting_dict, db_path, asn_outfile, expected_count, retry_fil
                 if counting_dict[k]["seen"] < expected_count:
                     print("{} seen {} times only".format(k, counting_dict[k]['seen']))
 
-                if counting_dict[k]["seen"] == counting_dict[k]["timeout"]:
+                if counting_dict[k]["seen"] == counting_dict[k]["error"]:
                     print(k)
                     split = k.split("-")
                     writer.write("{}, {}\n".format(split[0], split[1]))
-                    timeoutCount += 1
-                    asn_dict[asn_key]["timeout"] += 1
+                    errorCount += 1
+                    asn_dict[asn_key]["error"] += 1
                 else:
                     asn_dict[asn_key]["fine"] += 1
-                    if counting_dict[k]["timeout"] > 0:
+                    if counting_dict[k]["error"] > 0:
                         weirdCount += 1
     
-    print("ip-domain timeout rate: {} / {} = {}".format(timeoutCount, len(counting_dict), timeoutCount/len(counting_dict)))
+    print("ip-domain error rate: {} / {} = {}".format(errorCount, len(counting_dict), errorCount/len(counting_dict)))
     print("weird rate: {} / {} = {}".format(weirdCount, len(counting_dict), weirdCount/len(counting_dict)))
     print_asn_results(asn_dict, unknown_asns, asn_outfile)
 
@@ -71,12 +71,12 @@ def main():
             if v is None:
                 counting_dict[keyStr] = {}
                 counting_dict[keyStr]["seen"] = 1
-                counting_dict[keyStr]["timeout"] = 0
+                counting_dict[keyStr]["error"] = 0
             else:
                 counting_dict[keyStr]["seen"] += 1
 
-            if "i/o timeout" in line:
-                counting_dict[keyStr]["timeout"] += 1
+            if lineDict["data"]["tls"]["status"] != "success":
+                counting_dict[keyStr]["error"] += 1
     print_results(counting_dict, sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5])
     
 
