@@ -106,6 +106,7 @@ def print_results(counting_dict, db_path, asn_outfile, expected_count, retry_fil
     print("ip-domain oversized 29805 rate: {} / {} = {}".format(oversized29805Count, dictSize, oversized29805Count/dictSize))
     print("ip-domain alert 112 rate: {} / {} = {}".format(alert112Count, dictSize, alert112Count/dictSize))
     print("ip-domain permission denied rate: {} / {} = {}".format(permissionDeniedCount, dictSize, permissionDeniedCount/dictSize))
+    print("\nip-domain overall error rate: {} / {} = {}".format(errorCount, dictSize, errorCount/dictSize))
     print("weird rate: {} / {} = {}".format(weirdCount, dictSize, weirdCount/dictSize))
     print_asn_results(asn_dict, unknown_asns, asn_outfile)
 
@@ -163,7 +164,7 @@ def main():
                 counting_dict[keyStr]["context_deadline_exceeded"] += 1
             elif "oversized record received with length 20527" in line:
                 counting_dict[keyStr]["oversized_20527"] += 1
-            elif "EOF" in line:
+            elif "\"error\":\"EOF\"" in line:
                 counting_dict[keyStr]["EOF"] += 1
             elif "remote error: handshake failure" in line:
                 counting_dict[keyStr]["remote_error_handshake_failure"] += 1
