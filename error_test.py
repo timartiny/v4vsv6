@@ -35,6 +35,7 @@ def print_results(counting_dict, db_path, asn_outfile, expected_count, retry_fil
     oversized29805Count = 0
     alert112Count = 0
     weirdCount = 0
+    permissionDeniedCount = 0
     asn_dict = defaultdict(default_dict_constructor)
     unknown_asns = []
     with geoip2.database.Reader(db_path) as reader:
@@ -87,6 +88,8 @@ def print_results(counting_dict, db_path, asn_outfile, expected_count, retry_fil
                     oversized29805Count += 1
                 elif seenCount == counting_dict[k]["alert_112"]:
                     alert112Count += 1
+                elif seenCount == counting_dict[k]["permission_denied"]:
+                    permissionDeniedCount += 1
     
     dictSize = len(counting_dict)
     print("ip-domain connection refused rate: {} / {} = {}".format(connectionRefusedCount, dictSize, connectionRefusedCount/dictSize))
@@ -102,6 +105,7 @@ def print_results(counting_dict, db_path, asn_outfile, expected_count, retry_fil
     print("ip-domain remote error: handshake failure rate: {} / {} = {}".format(remoteHandshakeFailureCount, dictSize, remoteHandshakeFailureCount/dictSize))
     print("ip-domain oversized 29805 rate: {} / {} = {}".format(oversized29805Count, dictSize, oversized29805Count/dictSize))
     print("ip-domain alert 112 rate: {} / {} = {}".format(alert112Count, dictSize, alert112Count/dictSize))
+    print("ip-domain permission denied rate: {} / {} = {}".format(permissionDeniedCount, dictSize, permissionDeniedCount/dictSize))
     print("weird rate: {} / {} = {}".format(weirdCount, dictSize, weirdCount/dictSize))
     print_asn_results(asn_dict, unknown_asns, asn_outfile)
 
@@ -137,6 +141,7 @@ def main():
                 counting_dict[keyStr]["remote_error_handshake_failure"] = 0
                 counting_dict[keyStr]["oversized_29805"] = 0
                 counting_dict[keyStr]["alert_112"] = 0
+                counting_dict[keyStr]["permission_denied"] = 0
             else:
                 counting_dict[keyStr]["seen"] += 1
 
@@ -166,6 +171,8 @@ def main():
                 counting_dict[keyStr]["oversized_29805"] += 1
             elif "alert(112)" in line:
                 counting_dict[keyStr]["alert_112"] += 1
+            elif "connect: permission denied" in line:
+                counting_dict[keyStr]["permission_denied"] += 1
             elif lineDict["data"]["tls"]["status"] != "success":
                 print("Non success case not yet categorized")
                 print(line)
