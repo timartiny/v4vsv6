@@ -52,6 +52,9 @@ func getQuestion5SimpleResults(
 		sr.CountryCode = drr.ResolverCountry
 		sr.ControlCount = resolvers[drr.ResolverIP].ControlCount
 		for _, result := range drr.Results {
+			if result == nil {
+				continue
+			}
 			if _, ok := sr.IPs[result.IP]; ok {
 				// already seen this IP for this domain, from this result, skip it
 				continue
