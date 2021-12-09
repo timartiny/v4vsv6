@@ -234,6 +234,18 @@ func question1Stats(q1s *Question1Summary) {
 		stdSum += math.Pow(float64(v)-q1s.V6Average, 2.0)
 	}
 	q1s.V6StdDev = math.Sqrt(stdSum / float64(len(q1s.V6CensoredData)))
+	if math.IsNaN(q1s.V4Average) {
+		q1s.V4Average = 0.0
+	}
+	if math.IsNaN(q1s.V4StdDev) {
+		q1s.V4StdDev = 0.0
+	}
+	if math.IsNaN(q1s.V6Average) {
+		q1s.V6Average = 0.0
+	}
+	if math.IsNaN(q1s.V6StdDev) {
+		q1s.V6StdDev = 0.0
+	}
 }
 
 // printCensoringResolverData will make a directory in the dataFolder called

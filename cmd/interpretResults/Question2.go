@@ -50,6 +50,18 @@ func question2Stats(q2s *Question2Summary) {
 		stdSum += math.Pow(float64(v)-q2s.AAAAAverage, 2.0)
 	}
 	q2s.AAAAStdDev = math.Sqrt(stdSum / float64(len(q2s.AAAACensoredData)))
+	if math.IsNaN(q2s.AAverage) {
+		q2s.AAverage = 0.0
+	}
+	if math.IsNaN(q2s.AStdDev) {
+		q2s.AStdDev = 0.0
+	}
+	if math.IsNaN(q2s.AAAAAverage) {
+		q2s.AAAAAverage = 0.0
+	}
+	if math.IsNaN(q2s.AAAAStdDev) {
+		q2s.AAAAStdDev = 0.0
+	}
 }
 
 // printCensoringRecordData will make a directory in the dataFolder called
