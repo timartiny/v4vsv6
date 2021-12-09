@@ -104,6 +104,9 @@ func getResolverPairs(
 // false. If there are different results between entries in slice it will point
 // them out.
 func isCensorship(drr v4vsv6.DomainResolverResult) bool {
+	if len(drr.Results) == 0 {
+		return true
+	}
 	ret := !drr.Results[0].SupportsTLS
 
 	for _, ar := range drr.Results[1:] {
