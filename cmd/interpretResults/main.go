@@ -4,11 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"log"
-	"net"
 	"os"
-	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/alexflint/go-arg"
@@ -19,7 +16,6 @@ var (
 	infoLogger     *log.Logger
 	errorLogger    *log.Logger
 	controlDomains map[string]struct{}
-	resolvers      map[string]ResolverStats
 )
 
 type InterpretResultsFlags struct {
@@ -34,12 +30,6 @@ type InterpretResultsFlags struct {
 type Counter struct {
 	Censored   int
 	Uncensored int
-}
-
-type ResolverStats struct {
-	ResolverIP      string `json:"resovler_ip"`
-	ResolverCountry string `json:"resolver_country"`
-	ControlCount    int    `json:"control_count"`
 }
 
 func setupArgs() InterpretResultsFlags {
@@ -71,32 +61,6 @@ func readDomainResolverResults(
 		json.Unmarshal([]byte(line), &drr)
 		drrChan <- drr
 	}
-}
-
-// getResolverPairs will read the file and split the lines to get maps between
-// paired v4 and v6 resolvers, for printing formatted data later
-func getResolverPairs(
-	v4ToV6, v6ToV4 map[string]string,
-	path string,
-	wg *sync.WaitGroup,
-) {
-	defer wg.Done()
-
-	resolverPairFile, err := os.Open(path)
-	if err != nil {
-		errorLogger.Fatalf("Error opening resolver pair file: %v\n", err)
-	}
-	scanner := bufio.NewScanner(resolverPairFile)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		splitLine := strings.Split(line, "  ")
-		v4IP := net.ParseIP(splitLine[1])
-		v6IP := net.ParseIP(splitLine[0])
-		v4ToV6[v4IP.String()] = v6IP.String()
-		v6ToV4[v6IP.String()] = v4IP.String()
-	}
-
 }
 
 // isCensorship will read through a slice of AdressResults and say there is no
@@ -132,52 +96,6 @@ func isControlDomain(drr v4vsv6.DomainResolverResult) bool {
 
 // resolverStats will go throug the results file and for each resolver will
 // collect the number of control domains it got correct.
-func resolverStats(path, dataFolder string) {
-	resultsFile, err := os.Open(path)
-	if err != nil {
-		errorLogger.Fatalf("Error opening results file, %v\n", err)
-	}
-	defer resultsFile.Close()
-
-	scanner := bufio.NewScanner(resultsFile)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		var drr v4vsv6.DomainResolverResult
-		json.Unmarshal([]byte(line), &drr)
-		if !isControlDomain(drr) {
-			continue
-		}
-		if drr.CorrectControlResolution {
-			if _, ok := resolvers[drr.ResolverIP]; !ok {
-				resolvers[drr.ResolverIP] = ResolverStats{
-					ResolverIP:      drr.ResolverIP,
-					ResolverCountry: drr.ResolverCountry,
-					ControlCount:    0,
-				}
-			}
-			rs := resolvers[drr.ResolverIP]
-			rs.ControlCount++
-			resolvers[drr.ResolverIP] = rs
-		}
-	}
-
-	summaryFile, err := os.Create(filepath.Join(dataFolder, "resolvers.json"))
-	infoLogger.Printf("Writing resolver stats to %s\n", summaryFile.Name())
-	if err != nil {
-		errorLogger.Fatalf("Error creating directory: %v\n", err)
-	}
-	defer summaryFile.Close()
-	for _, rs := range resolvers {
-		bs, err := json.Marshal(&rs)
-		if err != nil {
-			errorLogger.Printf("Error Marshaling pair struct: %+v\n", rs)
-		}
-		summaryFile.Write(bs)
-		summaryFile.WriteString("\n")
-	}
-}
-
 func main() {
 	infoLogger = log.New(
 		os.Stderr,
@@ -197,17 +115,20 @@ func main() {
 	)
 	controlDomains = map[string]struct{}{"v4vsv6.com": {}, "test1.v4vsv6.com": {}, "test2.v4vsv6.com": {}}
 
-	resolvers = make(map[string]ResolverStats)
-	infoLogger.Println(
-		"Reading results file to get basic resolver stats: IP, Country, and " +
-			"how many control domains it successfully resolved",
-	)
-	resolverStats(args.ResultsFile, args.DataFolder)
-	infoLogger.Println("Done, onto questions")
+	// resolvers = make(map[string]ResolverStats)
+	// infoLogger.Println(
+	// 	"Reading results file to get basic resolver stats: IP, Country, and " +
+	// 		"how many control domains it successfully resolved",
+	// )
+	// resolverStats(args.ResultsFile, args.DataFolder)
+	// infoLogger.Println("Done, onto questions")
 
+	v4ToV6 := make(map[string]string)
+	v6ToV4 := make(map[string]string)
+	getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile)
 	// No question specified so answer all of them
 	if len(args.Questions) == 0 {
-		args.Questions = []int{1, 2, 3, 4, 5}
+		args.Questions = []int{6, 1, 2, 3, 4, 5}
 	}
 
 	// Answer questions in order
@@ -215,8 +136,8 @@ func main() {
 
 	// Question 1 and 2 answer roughly the same question, so collection data for
 	// Question 1 can just be used for Question 2
-	v4ToV6 := make(map[string]string)
-	v6ToV4 := make(map[string]string)
+	// Question 6 gets resolver data which is used in earlier questions, so it must go first
+	Question6(args, v4ToV6, v6ToV4)
 	countryCodeResolverToSimpleResult := make(CountryCodeResolverToSimpleResult)
 	for _, q := range args.Questions {
 		switch q {
@@ -236,9 +157,11 @@ func main() {
 			Question4(args, v4ToV6, v6ToV4)
 		case 5:
 			Question5(args)
+		case 6:
+			continue
 		default:
 			infoLogger.Printf("Question %d not yet implemented\n", q)
-			infoLogger.Println("Question input must be 1-4")
+			infoLogger.Println("Question input must be 1-6")
 		}
 	}
 }

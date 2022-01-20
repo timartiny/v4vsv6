@@ -270,7 +270,6 @@ func Question4(
 	simplifiedResultChannel := make(chan *Question4SimpleResult)
 	var getSimpleResultsWG sync.WaitGroup
 	var updateMapWG sync.WaitGroup
-	var doubleResolverMapWG sync.WaitGroup
 	var readFileWG sync.WaitGroup
 	countryCodeDomainToSimpleResult := make(CountryCodeDomainToSimpleResult)
 
@@ -300,8 +299,7 @@ func Question4(
 	// only check v4ToV6 because we only need that one
 	if len(v4ToV6) == 0 {
 		// This only happens if Question 1 isn't answered on this run
-		doubleResolverMapWG.Add(1)
-		go getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile, &doubleResolverMapWG)
+		go getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile)
 	}
 
 	infoLogger.Println("Reading data for Question 4")
@@ -325,7 +323,6 @@ func Question4(
 			"to be organized",
 	)
 
-	doubleResolverMapWG.Wait()
 	infoLogger.Println("Resolvers paired together, simplifying data by pairs")
 	pairCensoringResolvers(countryCodeDomainToSimpleResult, v4ToV6)
 	printQuestion4Results(args.DataFolder, countryCodeDomainToSimpleResult)

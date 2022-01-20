@@ -381,9 +381,6 @@ func Question1(
 		&readFileWG,
 	)
 
-	doubleResolverMapWG.Add(1)
-	go getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile, &doubleResolverMapWG)
-
 	infoLogger.Println("Reading data file for Question 1")
 	readFileWG.Wait()
 
