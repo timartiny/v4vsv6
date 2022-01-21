@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "cmd/interpretResults"
+		},
+		{
+			"path": "cmd/parseScans"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}
