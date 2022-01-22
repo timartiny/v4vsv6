@@ -115,14 +115,6 @@ func main() {
 	)
 	controlDomains = map[string]struct{}{"v4vsv6.com": {}, "test1.v4vsv6.com": {}, "test2.v4vsv6.com": {}}
 
-	// resolvers = make(map[string]ResolverStats)
-	// infoLogger.Println(
-	// 	"Reading results file to get basic resolver stats: IP, Country, and " +
-	// 		"how many control domains it successfully resolved",
-	// )
-	// resolverStats(args.ResultsFile, args.DataFolder)
-	// infoLogger.Println("Done, onto questions")
-
 	v4ToV6 := make(map[string]string)
 	v6ToV4 := make(map[string]string)
 	getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile)
