@@ -30,7 +30,7 @@ type ResolverStats struct {
 	ResolverIP      string   `json:"resovler_ip"`
 	ResolverCountry string   `json:"resolver_country"`
 	ControlCount    int      `json:"control_count"`
-	BlockedDomains  []string `json:"blocked_domains"`
+	BlockedDomains  map[string]struct{} `json:"blocked_domains"`
 }
 
 // getResolverPairs will read the file and split the lines to get maps between
@@ -121,14 +121,14 @@ func resolverStats(
 				ResolverIP:      drr.ResolverIP,
 				ResolverCountry: drr.ResolverCountry,
 				ControlCount:    0,
-				BlockedDomains:  []string{},
+				BlockedDomains:  make(map[string]struct{}),
 			}
 		}
 		rs := resolvers[strID]
 		if isControlDomain(drr) && drr.CorrectControlResolution {
 			rs.ControlCount++
 		} else if isCensorship(drr) {
-			rs.BlockedDomains = append(rs.BlockedDomains, drr.Domain)
+			rs.BlockedDomains[drr.Domain] = struct{}{}
 		}
 		resolvers[strID] = rs
 	}
@@ -208,7 +208,7 @@ func writeResolverStats(dataFolder string, resolvers map[string]ResolverStats) {
 			}
 			dtq6o := ccdtq6o[resolvers[strIDA].ResolverCountry]
 
-			for _, domain := range resolvers[strIDA].BlockedDomains {
+			for domain, _ := range resolvers[strIDA].BlockedDomains {
 				if dtq6o[domain] == nil {
 					t := new(Question6Output)
 					t.Domain = domain
@@ -224,7 +224,7 @@ func writeResolverStats(dataFolder string, resolvers map[string]ResolverStats) {
 
 			dtq6o = ccdtq6o[resolvers[strIDB].ResolverCountry]
 
-			for _, domain := range resolvers[strIDB].BlockedDomains {
+			for domain, _ := range resolvers[strIDB].BlockedDomains {
 				if dtq6o[domain] == nil {
 					t := new(Question6Output)
 					t.Domain = domain
