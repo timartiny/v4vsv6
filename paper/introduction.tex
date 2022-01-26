@@ -46,29 +46,28 @@ censorship deployments are handling the v4-to-v6 transition.
 \para{Our contributions.}
 % one-liner of our work
 Our work reduces this gap in knowledge by identifying inconsistencies in DNS
-censorship over IPv4 and IPv6 infrastructure. In doing so, we make the
-following contributions:
+censorship over IPv4 and IPv6 infrastructure. More specifically, we make the
+following contributions.
+% In doing so, we make the following contributions:
 
 \begin{itemize}
 
-  \item {\it Methodological improvements (\Cref{sec:methods}).} 
-    We begin by building on the DNS censorship identification approaches used
-    by prior work. More specifically, we take steps to improve the reliability
-    of DNS censorship identification by integrating data from the TLS protocol
-    and filtering unreliable DNS resolvers.
+%   \item {\it Methodological improvements (\Cref{sec:methods}).} 
+%     We begin by building on the DNS censorship identification approaches used
+%     by prior work. More specifically, we take steps to improve the reliability
+%     of DNS censorship identification by integrating data from the TLS protocol
+%     and filtering unreliable DNS resolvers.
 
   \item {\it Measure prevalence of DNS censorship (\Cref{sec:prevalence}).} 
-    We conduct a large-scale measurement of DNS censorship in six countries
-    with IPv6 connectivity. We find \rnnote{fill in nice result summary here.}
+    We conduct the first large-scale measurement of IPv6 DNS censorship in
+    \fixme{XX} IPv6-connected countries. We find \rnnote{fill in nice result summary here.}
 
-  \item {\it Characterize differences due to DNS query type
-    (\Cref{sec:query}).} 
+  \item {\it Characterize differences due to IPv6 resources (\Cref{sec:query}).} 
     We then focus on the differences observed in DNS censorship based on
     whether the DNS query requested an IPv4 ({\tt A} record) or IPv6 address
     ({\tt AAAA} record). We find that \rnnote{summary}.
 
-  \item {\it Characterize differences due to network infrastructure
-    (\Cref{sec:dual}).}
+  \item {\it Characterize differences due to network infrastructure (\Cref{sec:dual}).}
     Finally, we focus on DNS censorship policy differences that occur in
     dual-stack resolver deployments --- \ie where the censorship determination
     is different for a resolver's IPv4 and IPv6 interfaces. We find that
