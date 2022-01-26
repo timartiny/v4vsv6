@@ -61,6 +61,7 @@ func getResolverPairs(
 func resolverStats(
 	resultsPath string,
 	v4ToV6, v6ToV4 map[string]string,
+	localResolvers map[string]ResolverStats,
 ) {
 	resultsFile, err := os.Open(resultsPath)
 	if err != nil {
@@ -115,8 +116,8 @@ func resolverStats(
 		} else {
 			strID = sid
 		}
-		if _, ok := resolvers[strID]; !ok {
-			resolvers[strID] = ResolverStats{
+		if _, ok := localResolvers[strID]; !ok {
+			localResolvers[strID] = ResolverStats{
 				ID:              strID,
 				ResolverIP:      drr.ResolverIP,
 				ResolverCountry: drr.ResolverCountry,
@@ -124,13 +125,16 @@ func resolverStats(
 				BlockedDomains:  make(map[string]struct{}),
 			}
 		}
-		rs := resolvers[strID]
+		rs := localResolvers[strID]
 		if isControlDomain(drr) && drr.CorrectControlResolution {
 			rs.ControlCount++
 		} else if isCensorship(drr) {
 			rs.BlockedDomains[drr.Domain] = struct{}{}
 		}
-		resolvers[strID] = rs
+		localResolvers[strID] = rs
+	}
+	for k := range localResolvers {
+		resolvers[localResolvers[k].ResolverIP] = localResolvers[k]
 	}
 }
 
@@ -164,7 +168,7 @@ func writeQuestion6Output(
 // of 'full' and 'passesControl' and write a file in each called
 // resolver-blocks.json. This function will also create a map to keep track of
 // how many resolvers censored domains in a country, then write it to a file.
-func writeResolverStats(dataFolder string, resolvers map[string]ResolverStats) {
+func writeResolverStats(dataFolder string, localResolvers map[string]ResolverStats) {
 	parentFolderPath := filepath.Join(dataFolder, "Question6")
 	err := os.MkdirAll(parentFolderPath, os.ModePerm)
 	if err != nil {
@@ -183,70 +187,70 @@ func writeResolverStats(dataFolder string, resolvers map[string]ResolverStats) {
 		defer summaryFile.Close()
 
 		ccdtq6o := make(CountryCodeDomainToQuestion6Output)
-		for id := 0; id < len(resolvers)/2; id++ {
+		for id := 0; id < len(localResolvers)/2; id++ {
 			strIDA := fmt.Sprintf("%d-A", id+1)
 			strIDB := fmt.Sprintf("%d-B", id+1)
-			if resolvers[strIDA].ResolverCountry != resolvers[strIDB].ResolverCountry {
+			if localResolvers[strIDA].ResolverCountry != localResolvers[strIDB].ResolverCountry {
 				// this comes from an issue where a single v4 resolvers get
 				// associated with multiple v6 addresses, it will be fixed in
 				// future runs, but needs to be kept for old runs
-				infoLogger.Printf("\n%s - %s - %s\n%s - %s - %s\n", dataType, strIDA, resolvers[strIDA].ResolverCountry, dataType, strIDB, resolvers[strIDB].ResolverCountry)
+				infoLogger.Printf("\n%s - %s - %s\n%s - %s - %s\n", dataType, strIDA, localResolvers[strIDA].ResolverCountry, dataType, strIDB, localResolvers[strIDB].ResolverCountry)
 				continue
 			}
 			if dataType == "passesControl" {
-				if resolvers[strIDA].ControlCount != len(controlDomains)*2 {
+				if localResolvers[strIDA].ControlCount != len(controlDomains)*2 {
 					continue
 				}
-				if resolvers[strIDB].ControlCount != len(controlDomains)*2 {
+				if localResolvers[strIDB].ControlCount != len(controlDomains)*2 {
 					continue
 				}
 			}
 			// if this is our first time seeing a country, make an output struct for it
-			if ccdtq6o[resolvers[strIDA].ResolverCountry] == nil {
+			if ccdtq6o[localResolvers[strIDA].ResolverCountry] == nil {
 				dtq6o := make(map[string]*Question6Output)
-				ccdtq6o[resolvers[strIDA].ResolverCountry] = dtq6o
+				ccdtq6o[localResolvers[strIDA].ResolverCountry] = dtq6o
 			}
-			dtq6o := ccdtq6o[resolvers[strIDA].ResolverCountry]
+			dtq6o := ccdtq6o[localResolvers[strIDA].ResolverCountry]
 
-			for domain, _ := range resolvers[strIDA].BlockedDomains {
+			for domain, _ := range localResolvers[strIDA].BlockedDomains {
 				if dtq6o[domain] == nil {
 					t := new(Question6Output)
 					t.Domain = domain
-					t.CountryCode = resolvers[strIDA].ResolverCountry
+					t.CountryCode = localResolvers[strIDA].ResolverCountry
 					dtq6o[domain] = t
 				}
 				q6o := dtq6o[domain]
 
 				q6o.V4CensoredCount++
 				dtq6o[domain] = q6o
-				ccdtq6o[resolvers[strIDA].ResolverCountry] = dtq6o
+				ccdtq6o[localResolvers[strIDA].ResolverCountry] = dtq6o
 			}
 
-			dtq6o = ccdtq6o[resolvers[strIDB].ResolverCountry]
+			dtq6o = ccdtq6o[localResolvers[strIDB].ResolverCountry]
 
-			for domain, _ := range resolvers[strIDB].BlockedDomains {
+			for domain, _ := range localResolvers[strIDB].BlockedDomains {
 				if dtq6o[domain] == nil {
 					t := new(Question6Output)
 					t.Domain = domain
-					t.CountryCode = resolvers[strIDB].ResolverCountry
+					t.CountryCode = localResolvers[strIDB].ResolverCountry
 					dtq6o[domain] = t
 				}
 				q6o := dtq6o[domain]
 
 				q6o.V6CensoredCount++
 				dtq6o[domain] = q6o
-				ccdtq6o[resolvers[strIDB].ResolverCountry] = dtq6o
+				ccdtq6o[localResolvers[strIDB].ResolverCountry] = dtq6o
 			}
 
-			bs, err := json.Marshal(resolvers[strIDA])
+			bs, err := json.Marshal(localResolvers[strIDA])
 			if err != nil {
-				errorLogger.Printf("Error Marshaling pair struct: %+v\n", resolvers[strIDA])
+				errorLogger.Printf("Error Marshaling pair struct: %+v\n", localResolvers[strIDA])
 			}
 			summaryFile.Write(bs)
 			summaryFile.WriteString("\n")
-			bs, err = json.Marshal(resolvers[strIDB])
+			bs, err = json.Marshal(localResolvers[strIDB])
 			if err != nil {
-				errorLogger.Printf("Error Marshaling pair struct: %+v\n", resolvers[strIDB])
+				errorLogger.Printf("Error Marshaling pair struct: %+v\n", localResolvers[strIDB])
 			}
 			summaryFile.Write(bs)
 			summaryFile.WriteString("\n")
@@ -259,11 +263,12 @@ func Question6(args InterpretResultsFlags, v4ToV6, v6ToV4 map[string]string) {
 	getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile)
 
 	resolvers = make(map[string]ResolverStats)
+	localResolvers := make(map[string]ResolverStats) // this is only used for Question 6
 	infoLogger.Println(
 		"Reading results file to get basic resolver stats: IP, Country, and " +
 			"how many control domains it successfully resolved, and what domains it blocked",
 	)
-	resolverStats(args.ResultsFile, v4ToV6, v6ToV4)
+	resolverStats(args.ResultsFile, v4ToV6, v6ToV4, localResolvers)
 	infoLogger.Println("Writing resolver blocks to file and grouping data by country code.")
-	writeResolverStats(args.DataFolder, resolvers)
+	writeResolverStats(args.DataFolder, localResolvers)
 }
