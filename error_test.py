@@ -12,7 +12,7 @@ def default_dict_constructor():
 def print_asn_results(asn_dict, unknown_asns, outfile):
     with open(outfile, 'w') as write_file:
         for key in asn_dict:
-            write_file.write("{}: {} {}\n".format(key, asn_dict[key]['timeout'], asn_dict[key]['fine']))
+            write_file.write("{}: {} {}\n".format(key, asn_dict[key]['error'], asn_dict[key]['fine']))
         
         for ip in unknown_asns:
             write_file.write("unknown_asn: {}\n".format(ip))
