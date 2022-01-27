@@ -37,10 +37,13 @@ identify significant differences within a country, resolver, and domain.
     We use a $t$-test to verify statistical significance of any observed
     differences between the two groups for each country. In our statistical
     analysis, we aim to achieve a significance level of 5\% ($p \leq$  .05)
-    \emph{over all our findings}. Therefore, we apply a Bonferroni correction
-    with $p \leq \frac{.05}{n_{c}}$, where $n_c$ is the total number of
-    countries in our dataset (\fixme{XXX}). This conservative approach reduces
-    the likelihood of false-positive reports of within-country differences.
+    \emph{over all our findings}. Therefore, we apply a Sidak correction
+    \cite{Sidak} to control for Type I errors from multiple hypothesis testing.
+    %
+    This requires $p \leq 1-{.05}^{1/n_{c}}$ for classifying a difference as
+    significant, where $n_c$ is the total number of countries in our dataset
+    (\fixme{XXX}). This approach reduces the likelihood of false-positive
+    reports of within-country differences.
     %
     The presence of a statistically significant difference for a specific
     country would imply that the two resource types appear to undergo different
@@ -55,26 +58,27 @@ identify significant differences within a country, resolver, and domain.
     %
     We use a two-proportion $z$-test to verify the statistical significance of
     any observed difference in the ratios between the two groups for each
-    resolver. Similar to our within-country analysis, we apply a Bonferroni
-    correction with $p \leq \frac{.05}{n_r}$, where $n_r$ is the total number
-    of resolvers in our dataset (\fixme{XXX}).
+    resolver. Similar to our within-country analysis, we apply a Sidak
+    correction to account for our testing of multiple hypotheses and use $p
+    \leq 1-{.05}^{1/n_r}$ to classify a difference as significant, where $n_r$
+    is the total number of resolvers in our dataset (\fixme{XXX}).
     %
     In the absence of significant within-country differences, the presence of
     a statistically significant difference for a resolver would imply that the
     two resource types appear to undergo different censorship mechanisms due to
     resolver misconfiguration.
 
-  \item {\it Identifying differences in domain behaviors within a country.} In
-    this analysis, we compare the prevalence of censorship on the {\tt A} and
-    {\tt AAAA} query by aggregating responses {for each (domain, country)
-    pair in our study}.
+  \item {\it Identifying differences in domain behaviors within a country.} To
+    uncover the domains which have their {\tt A} and {\tt AAAA} queries treated
+    differently within a country, we compare the ratios of censored responses
+    in each group for each domain across all resolvers within a country. 
     %
-    We use a $t$-test to verify the statistical significance of any observed
+    We use a $z$-test to verify the statistical significance of any observed
     differences between the two query types for each domain tested within each
-    country. We once again apply a Bonferroni correction to ensure that our
+    country. We once again apply a Sidak correction to ensure that our
     results for domains identified to behave differently within each country
     are within a 5\% significance level. We set $p \leq
-    \frac{.05}{n_{dom_{c}}}$, where $n_{dom_{c}}$ represents the number of
+    1-{.05}^{1/n_{dom_{c}}}$, where $n_{dom_{c}}$ represents the number of
     domains tested in country $c$.
     %
     A statistically significant difference for a domain would suggest
