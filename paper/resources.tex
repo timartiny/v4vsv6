@@ -1,2 +1,66 @@
-\section{Differences Due To IPv6 Resources}
-\label{sec:resources}
+\section{Censorship by Resource Record Types} \label{sec:resources}
+
+\para{Overview.}
+In this section, we focus on {\it identifying and characterizing differences in
+the handling of IPv4 and IPv6 resource records} in DNS censorship deployments.
+Specifically, we seek to answer the following questions: 
+%
+(\Cref{sec:resources:sig}) is the censorship of IPv4 resource records (DNS
+{\tt A} queries) significantly different than the censorship of IPv6 resource
+records (DNS {\tt AAAA} queries)?,
+%
+(\Cref{sec:resources:domains}) what are the characteristics of domains in which
+these differences are frequently observed?, and
+%
+(\Cref{sec:resources:resolvers}) what are the characteristics of the resolvers
+which frequently exhibit such differences?
+
+\subsection{Quantifying differences in the censorship of \texttt{A} and
+\texttt{AAAA} resource records} \label{sec:resources:sig}
+%
+We use the responses received from our {\tt A} and {\tt AAAA} queries sent to
+the same set of resolvers and for the same set of domains (\cf
+\Cref{sec:methods:gathering} for a detailed description of our data gathering
+process). We then apply the censorship determination methods described in
+\Cref{sec:methods:labeling} to measure the prevalence of censorship on our {\tt
+A} and {\tt AAAA} DNS queries. Finally, we perform statistical tests to
+identify significant differences at the:
+
+\begin{itemize}
+  \item {\it national-level.} To measure national-level differences in DNS query
+    handling, we compare the prevalence of censorship on {\tt A} and {\tt AAAA}
+    queries by aggregating responses across \emph{all resolvers within a single
+    country}.
+    %
+    We use a $t$-test ($p$ < .05) to verify statistical significance of any
+    observed differences between the two groups for each country. The presence
+    of a statistically significant difference for a specific country would
+    imply that the two resource types appear to undergo different censorship
+    mechanisms within that country (or, a significant number of resolvers
+    within that country have inconsistencies in their handling of each query
+    type).
+
+  \item {\it resolver-level.} To measure resolver-level differences in DNS
+    query handling, we compare the ratios of censored responses observed from
+    our {\tt A} and {\tt AAAA} queries \emph{from each resolver}. 
+    %
+    We use a two-proportion $z$-test ($p$ < .05) to verify the statistical
+    significance of any observed difference in the ratios between the two
+    groups for each resolver. In the absence of significant national-level
+    differences, the presence of a statistically significant difference for
+    a resolver would imply that the two resource types appear to undergo
+    different censorship mechanisms due to resolver misconfiguration.
+
+  \item {\it domain-level.} In this analysis, we compare the prevalence of
+    censorship on the {\tt A} and {\tt AAAA} query by aggregating responses
+    \emph{for each (domain, country) pair in our study}.
+    %
+    We use a $t$-test ($p$ < .05) to verify the statistical significance of any
+    observed differences between the two query types for each (domain, country)
+    pair. A statistically significant difference for a (domain would suggest
+    the presence of a domain-specific characteristic that results in the two
+    resource records undergoing different censorship mechanisms within the
+    corresponding country.
+\end{itemize}
+
+
