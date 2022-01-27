@@ -29,8 +29,10 @@ identify significant differences at the:
 \begin{itemize}
   \item {\it national-level.} To measure national-level differences in DNS query
     handling, we compare the prevalence of censorship on {\tt A} and {\tt AAAA}
-    queries by aggregating responses across \emph{all resolvers within a single
-    country}.
+    queries by aggregating responses across \emph{each resolver within a single
+    country}. This presents us with a two distributions (one each for the group
+    of {\tt A} and {\tt AAAA} queries) of the fraction of censored domains
+    observed from resolvers in the country.
     %
     We use a $t$-test ($p$ < .05) to verify statistical significance of any
     observed differences between the two groups for each country. The presence
@@ -42,7 +44,8 @@ identify significant differences at the:
 
   \item {\it resolver-level.} To measure resolver-level differences in DNS
     query handling, we compare the ratios of censored responses observed from
-    our {\tt A} and {\tt AAAA} queries \emph{from each resolver}. 
+    our {\tt A} and {\tt AAAA} queries \emph{from each resolver used in our
+    study}. 
     %
     We use a two-proportion $z$-test ($p$ < .05) to verify the statistical
     significance of any observed difference in the ratios between the two
