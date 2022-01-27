@@ -107,11 +107,6 @@ func printCensoringRecordData(
 						// saw this resolver through its pair, so we're done here
 						continue
 					}
-					if dataType == "passesControl" {
-						if resolvers[simpleResult.IP].ControlCount != len(controlDomains)*2 {
-							continue
-						}
-					}
 					seenResolvers[resolver] = struct{}{}
 					pair := findPair(resolver, v4ToV6, v6ToV4)
 					seenResolvers[pair] = struct{}{}
@@ -122,6 +117,8 @@ func printCensoringRecordData(
 					q2s.NumResolversPairs += 1
 					if resolvers[v4.IP].ControlCount == len(controlDomains)*2 && resolvers[v6.IP].ControlCount == len(controlDomains)*2 {
 						q2s.NumCorrectControlResolverPairs += 1
+					} else if dataType == "passesControl" {
+						continue
 					}
 					var q2o Question2Output
 					q2o.V4IP = v4.IP
