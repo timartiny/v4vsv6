@@ -5,15 +5,17 @@ Network based censorship is a common barrier to global internet access today.
 State actors have the ability to incorporate large scale network monitoring
 systems into national network infrastructure preventing access to information
 through either active interference or threat of retribution. There
-have been many studies on censorship techniques both globally~\cite{} and within
-individual countries~\cite{}.
+have been many studies on censorship techniques both
+globally~\cite{pearce2017global,niaki2020iclab,scott2016satellite,sundara2020censored,filasto2012ooni,pearce2017augur}
+and within individual countries~\cite{USESEC21:GFWatch,aryan2013internet,ramesh2020decentralized,yadav2018light,gebhart2017internet,nabi2013anatomy}.
 
 Internet infrastructure is evolving to accommodate global connectivity as well
 -- IPv6 deployment provides routable addressing to an increasing portion of the
 internet as IPv4 allocations become scarce. Effective censorship strategies
 attempting to control or limit accessibility have to keep up.
 Censorship strategies are capable of reactive change as demonstrated by
-the impact that real world events like elections~\cite{}, regime change~\cite{},
+the impact that real world events like elections~\cite{aryan2013internet},
+social or political unrest~\cite{shandler2018measuring,padmanabhan2021multi},
 and specifically crafted circumvention tools~\cite{beznazwy2020china}
 have on blocking techniques and block-lists. Documenting contemporary censorship
 strategies through the transition from IPv4 to IPv6 can help to understand the
@@ -21,7 +23,6 @@ the trajectory of network censorship efforts more broadly.
 
 
 \subsection{DNS Censorship Measurement}
-
 The Domain Name System (DNS) underpins the global internet by providing a
 mapping from human readable hostnames to routable IP addresses making domain name
 resolution the first step in almost all connection establishment flows. However,
@@ -32,7 +33,8 @@ connections and in some cases inject falsified responses to interfere.
 The Chinese traffic inspection system, called the Great Firewall (GFW),
 is documented injecting falsified DNS responses as early as 2002~\cite{global2002great}.
 This censorship has been shown to be a packet injection from an on-path adversary
-monitoring for hostname substrings in DNS queries~\cite{}. An on-path adversary
+monitoring for hostname in DNS queries that match regular
+expressions~\cite{USESEC21:GFWatch}. An on-path adversary
 operates on a copy of traffic transiting a specific link or gateway in a network.
 This contrasts with an in-path adversary which operates on traffic inline with
 the capability to drop or modify packets on the fly. These traffic inspection
