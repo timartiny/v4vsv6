@@ -9,11 +9,12 @@ Specifically, we seek to answer the following questions:
 {\tt A} queries) significantly different than the censorship of IPv6 resource
 records (DNS {\tt AAAA} queries)?,
 %
-(\Cref{sec:resources:domains}) what are the characteristics of domains in which
-these differences are frequently observed?, and
-%
 (\Cref{sec:resources:resolvers}) what are the characteristics of the resolvers
-which frequently exhibit such differences?
+which frequently exhibit such differences?, and
+%
+(\Cref{sec:resources:domains}) what are the characteristics of domains in which
+these differences are frequently observed?
+%
 
 \subsection{Quantifying differences in the censorship of \texttt{A} and
 \texttt{AAAA} resource records} \label{sec:resources:sig}
@@ -24,67 +25,80 @@ the same set of resolvers and for the same set of domains (\cf
 process). We then apply the censorship determination methods described in
 \Cref{sec:methods:labeling} to measure the prevalence of censorship on our {\tt
 A} and {\tt AAAA} DNS queries. Finally, we perform statistical tests to
-identify significant differences within a country, resolver, and domain. 
+identify significant differences in the prevalence of censorship of {\tt A} and
+{\tt AAAA} queries within a country, by individual resolvers, and for each
+domain. 
 
-\begin{itemize}
-  \item {\it Identifying differences within a country.} To measure differences
-    in DNS query handling within a specific country, we compare the prevalence
-    of censorship on {\tt A} and {\tt AAAA} queries by aggregating responses
-    across {each resolver within the country}. This presents us with a two
-    distributions (one each for the group of {\tt A} and {\tt AAAA} queries) of
-    the fraction of censored domains observed from resolvers in the country.
-    %
-    We use a $t$-test to verify statistical significance of any observed
-    differences between the two groups for each country. In our statistical
-    analysis, we aim to achieve a significance level of 5\% ($p \leq$  .05)
-    \emph{over all our findings}. Therefore, we apply a Sidak correction
-    \cite{Sidak} to control for Type I errors from multiple hypothesis testing.
-    %
-    This requires $p \leq 1-{.05}^{1/n_{c}}$ for classifying a difference as
-    significant, where $n_c$ is the total number of countries in our dataset
-    (\fixme{XXX}). This approach reduces the likelihood of false-positive
-    reports of within-country differences.
-    %
-    The presence of a statistically significant difference for a specific
-    country would imply that the two resource types appear to undergo different
-    censorship mechanisms within that country (or, a significant number of
-    resolvers within that country have inconsistencies in their handling of
-    each query type).
+\para{Identifying differences within a country.} 
+To measure differences in DNS query handling within a specific country, we
+compare the prevalence of censorship on {\tt A} and {\tt AAAA} queries by
+aggregating responses across {each resolver within the country}. This presents
+us with a two distributions (one each for the group of {\tt A} and {\tt AAAA}
+queries) of the fraction of censored domains observed from resolvers in the
+country.
+%
+We use a $t$-test to verify statistical significance of any observed
+differences between the two groups for each country. In our statistical
+analysis, we aim to achieve a significance level of 5\% ($p \leq$  .05)
+\emph{over all our findings}. Therefore, we apply a Sidak correction
+\cite{abdi2007bonferroni} to control for Type I errors from multiple hypothesis
+testing. 
+%
+This requires $p \leq 1-{.05}^{1/n_{c}}$ for classifying a difference as
+significant, where $n_c$ is the total number of countries in our dataset
+(\fixme{XXX}). This approach reduces the likelihood of false-positive reports
+of within-country differences.
+%
+The presence of a statistically significant difference for a specific country
+would imply that the two resource types appear to undergo different censorship
+mechanisms within that country (or, a significant number of resolvers within
+that country have inconsistencies in their handling of each query type).
 
-  \item {\it Identifying differences in individual resolvers.} To measure
-    differences in DNS query handling of individual resolvers, we compare the
-    ratios of censored responses observed from our {\tt A} and {\tt AAAA}
-    queries {from each resolver}. 
-    %
-    We use a two-proportion $z$-test to verify the statistical significance of
-    any observed difference in the ratios between the two groups for each
-    resolver. Similar to our within-country analysis, we apply a Sidak
-    correction to account for our testing of multiple hypotheses and use $p
-    \leq 1-{.05}^{1/n_r}$ to classify a difference as significant, where $n_r$
-    is the total number of resolvers in our dataset (\fixme{XXX}).
-    %
-    In the absence of significant within-country differences, the presence of
-    a statistically significant difference for a resolver would imply that the
-    two resource types appear to undergo different censorship mechanisms due to
-    resolver misconfiguration.
-
-  \item {\it Identifying differences in domain behaviors within a country.} To
-    uncover the domains which have their {\tt A} and {\tt AAAA} queries treated
-    differently within a country, we compare the ratios of censored responses
-    in each group for each domain across all resolvers within a country. 
-    %
-    We use a two-proportion $z$-test to verify the statistical significance of
-    any observed differences between the two query types for each domain tested
-    within each country. We once again apply a Sidak correction to ensure that
-    our results for domains identified to behave differently within each country
-    are within a 5\% significance level. We set $p \leq
-    1-{.05}^{1/n_{dom_{c}}}$, where $n_{dom_{c}}$ represents the number of
-    domains tested in country $c$.
-    %
-    A statistically significant difference for a domain would suggest
-    the presence of a domain-specific characteristic that results in the two
-    resource records undergoing different censorship mechanisms within the
-    corresponding country.
-\end{itemize}
+\parait{Results.}
 
 
+\para{Identifying differences in individual resolvers.} 
+To measure differences in DNS query handling of individual resolvers, we
+compare the ratios of censored responses observed from our {\tt A} and {\tt
+AAAA} queries {from each resolver}.  
+%
+We use a two-proportion $z$-test to verify the statistical significance of any
+observed difference in the ratios between the two groups for each resolver.
+Similar to our within-country analysis, we apply a Sidak correction to account
+for our testing of multiple hypotheses and use $p \leq 1-{.05}^{1/n_r}$ to
+classify a difference as significant, where $n_r$ is the total number of
+resolvers in our dataset (\fixme{XXX}).
+%
+In the absence of significant within-country differences, the presence of
+a statistically significant difference for a resolver would imply that the two
+resource types appear to undergo different censorship mechanisms due to
+resolver misconfiguration. 
+
+\parait{Results.}
+
+\para{Identifying differences in domain behaviors within a country.} 
+To uncover the domains which have their {\tt A} and {\tt AAAA} queries treated
+differently within a country, we compare the ratios of censored responses in
+each group for each domain across all resolvers within a country.  
+%
+We use a two-proportion $z$-test to verify the statistical significance of any
+observed differences between the two query types for each domain tested within
+each country. We once again apply a Sidak correction to ensure that our results
+for domains identified to behave differently within each country are within
+a 5\% significance level. We set $p \leq 1-{.05}^{1/n_{dom_{c}}}$, where
+$n_{dom_{c}}$ represents the number of domains tested in country $c$.
+%
+In the absence of significant within-country differences, a statistically
+significant difference for a domain would suggest the presence of
+a domain-specific characteristic that results in the two resource records
+undergoing different censorship mechanisms within the corresponding country.
+
+\parait{Results.}
+
+\subsection{Characteristics of misconfigured resolvers}
+\label{sec:resources:resolvers}
+
+
+
+\subsection{Characteristics of anomalous domains} 
+\label{sec:resources:domains}
