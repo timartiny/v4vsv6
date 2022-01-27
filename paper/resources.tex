@@ -73,10 +73,10 @@ identify significant differences within a country, resolver, and domain.
     differently within a country, we compare the ratios of censored responses
     in each group for each domain across all resolvers within a country. 
     %
-    We use a $z$-test to verify the statistical significance of any observed
-    differences between the two query types for each domain tested within each
-    country. We once again apply a Sidak correction to ensure that our
-    results for domains identified to behave differently within each country
+    We use a two-proportion $z$-test to verify the statistical significance of
+    any observed differences between the two query types for each domain tested
+    within each country. We once again apply a Sidak correction to ensure that
+    our results for domains identified to behave differently within each country
     are within a 5\% significance level. We set $p \leq
     1-{.05}^{1/n_{dom_{c}}}$, where $n_{dom_{c}}$ represents the number of
     domains tested in country $c$.
