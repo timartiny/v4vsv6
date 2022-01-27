@@ -37,6 +37,7 @@ type ResolverStats struct {
 
 type Node struct {
 	Id    string `json:"id"`
+	Value string `json:"value"`
 	Group int    `json:"group"`
 }
 
@@ -74,6 +75,7 @@ func updateNodeMaps(nodes *Nodes, ntbl map[string][]string, lc <-chan string, wg
 		} else {
 			n.Group = 2
 		}
+		n.Value = "5" // default size, can change to larger/smaller if needed
 		n.Id = rs.ID
 		*nodes = append(*nodes, n)
 
@@ -209,7 +211,7 @@ func main() {
 		infoLogger.Printf("first link: %v\n", links[0])
 	}
 	out := Output{Nodes: nodes, Links: links}
-	bs, err := json.Marshal(&out)
+	bs, err := json.MarshalIndent(&out, "", "  ")
 	if err != nil {
 		errorLogger.Fatalf("Error writing output to bytes: %v\n", err)
 	}
