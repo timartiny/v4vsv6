@@ -16,116 +16,216 @@
 %     \label{fig:NumMessages}
 % \end{figure}
 % }
-\newcommand{\IRDomainTable}{
+
+\newcommand{\IRTopDomainTable}{
     \begin{table}[t]
-    \centering
-    \begin{tabular}{c|cc}
-        \hline\textbf{Domain} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
-        rottentomatoes.com & 219 & 218\\
-        biblegateway.com & 219 & 218\\
-        yumpu.com & 219 & 217\\
-        www.vonage.com & 219 & 217\\
-        www.usaid.gov & 219 & 217\\
-        www.truecaller.com & 219 & 217\\
-        www.snapchat.com & 219 & 217\\
-        www.proxyweb.net & 219 & 217\\
-        www.playboy.com & 219 & 217\\
-        www.netflix.com & 219 & 217\\
-        \hline
-    \end{tabular}
-    \caption{\textbf{Iran table of most blocked domains}\,---\,%
-        We measured which domains were blocked in Iran, and whether they were
-        blocked differently between resolvers at a v4 IP address, compared to
-        those at a v6 IP address. As we can see here the most popularly blocked
-        domains are blocked very similarly between resolvers on different IP
-        address families but there is a difference.
-    }
+        \centering
+        \begin{adjustbox}{width=\textwidth}
+            \begin{tabular}{|c||ccc|}
+                \hline\textbf{Domain} & \textbf{Requested Record Type} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
+                secure.flickr.com & A & 276 & 209\\
+                www.netflix.com & A & 275 & 206\\
+                yumpu.com & A & 276 & 204\\
+                www.urduvoa.com & A & 276 & 204\\
+                www.snapchat.com & A & 274 & 206\\
+                www.ning.com & A & 276 & 204\\
+                www.lightsailvpn.com & A & 276 & 204\\
+                signal.org & A & 275 & 205\\
+                www.vonage.com & A & 276 & 203\\
+                www.voanews.com & A & 276 & 203\\
+                \hline
+            \end{tabular}
+        \end{adjustbox}
+        \caption{\textbf{Iran table of most censored domains}\,---\,%
+            We measured which domains were blocked in Iran, and whether they were
+            blocked differently between resolvers at a v4 IP address, compared to
+            those at a v6 IP address. As we can see here the most popularly blocked
+            domains are blocked by resolvers on different IP address families but
+            there is a difference. These domains were blocked by the most resolvers.
+        }
+        \label{tab:ir-top}
     \end{table}
 }
 
-\newcommand{\RUDomainTable}{
-    \begin{tabular}{c|cc}
-        \hline\textbf{Domain} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
-        rottentomatoes.com & 266 & 265\\
-        www.dss.mil & 234 & 224\\
-        www.usmc.mil & 222 & 224\\
-        www.jcs.mil & 221 & 225\\
-        www.dtra.mil & 222 & 224\\
-        www.uscg.mil & 221 & 224\\
-        www.usafa.af.mil & 221 & 224\\
-        www.quantico.marines.mil & 223 & 222\\
-        www.pfpa.mil & 221 & 224\\
-        www.jpeocbrnd.osd.mil & 222 & 223\\
-        \hline
-    \end{tabular}
+\newcommand{\IRDifferenceDomainTable}{
+    \begin{table}[ht]
+        \centering
+        \begin{adjustbox}{width=\textwidth}
+            \begin{tabular}{|c||ccc|}
+                \hline\textbf{Domain} & \textbf{Requested Record Type} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
+                www.nbc.com & AAAA & 261 & 25\\
+                download.cnet.com & AAAA & 259 & 23\\
+                www.indiatimes.com & AAAA & 262 & 28\\
+                spankbang.com & AAAA & 261 & 27\\
+                psiphon.ca & AAAA & 261 & 27\\
+                free.fr & AAAA & 261 & 27\\
+                www.voanews.com & AAAA & 261 & 28\\
+                www.netflix.com & AAAA & 262 & 29\\
+                www.jesussaves.cc & AAAA & 261 & 28\\
+                tmz.com & AAAA & 264 & 31\\
+                \hline
+            \end{tabular}
+        \end{adjustbox}
+        \caption{\textbf{Iran table of most difference in Address Family Censorship}\,---\,%
+            We measured which domains were blocked in Iran, and whether they were
+            blocked differently between resolvers at a v4 IP address, compared to
+            those at a v6 IP address. As we can see here the most popularly blocked
+            domains are blocked by resolvers on different IP address families but
+            there is a difference. These domains had the largest difference in
+            censoring behavior between resolver address family. 
+        }
+        \label{tab:ir-diff}
+    \end{table}
 }
 
-\newcommand{\HKDomainTable}{
-    \begin{tabular}{c|cc}
-        \hline\textbf{Domain} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
-        www.dss.mil & 56 & 57\\
-        www.nro.gov & 55 & 57\\
-        www.southcom.mil & 55 & 56\\
-        www.pfpa.mil & 54 & 56\\
-        www.pacom.mil & 55 & 55\\
-        www.nga.mil & 54 & 56\\
-        www.dla.mil & 55 & 55\\
-        www.dcaa.mil & 55 & 55\\
-        www.centcom.mil & 54 & 56\\
-        www.whs.mil & 54 & 55\\
-        \hline
-    \end{tabular}
+\newcommand{\RUTopDomainTable}{
+    \begin{table}[ht]
+        \centering
+        \begin{adjustbox}{width=\textwidth}
+            \begin{tabular}{|c||ccc|}
+                \hline\textbf{Domain} & \textbf{Requested Record Type} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
+                eenadu.net & AAAA & 148 & 89\\
+                www.spotify.com & AAAA & 93 & 98\\
+                www.ned.org & A & 60 & 29\\
+                www.europacasino.com & A & 47 & 37\\
+                www.casinotropez.com & A & 45 & 37\\
+                global.blackberry.com & A & 44 & 34\\
+                www.sex.com & A & 40 & 37\\
+                www.khilafah.com & A & 40 & 37\\
+                ultrasurf.us & A & 41 & 36\\
+                thepiratebay.org & A & 39 & 38\\
+                \hline
+            \end{tabular}
+        \end{adjustbox}
+        \caption{\textbf{Russia's top censored domains}\,---\,%
+        }
+        \label{tab:ru-top}
+    \end{table}
 }
 
-\newcommand{\CNDomainTable}{
-    \begin{tabular}{c|cc}
-        \hline\textbf{Domain} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
-        www.whs.mil & 6 & 6\\
-        www.usmc.mil & 6 & 6\\
-        www.usafa.af.mil & 6 & 6\\
-        www.southcom.mil & 6 & 6\\
-        www.quantico.marines.mil & 6 & 6\\
-        www.pfpa.mil & 6 & 6\\
-        www.pacom.mil & 6 & 6\\
-        www.nro.gov & 6 & 6\\
-        www.northcom.mil & 6 & 6\\
-        www.nga.mil & 6 & 6\\
-        \hline
-    \end{tabular}
+\newcommand{\RUDifferenceDomainTable}{
+    \begin{table}[ht]
+        \centering
+        \begin{adjustbox}{width=\textwidth}
+            \begin{tabular}{|c||ccc|}
+                \hline\textbf{Domain} & \textbf{Requested Record Type} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
+                eenadu.net & AAAA & 148 & 89\\
+                doh.dns.sb & A & 36 & 4\\
+                www.ned.org & A & 60 & 29\\
+                www.volcanomail.com & A & 30 & 0\\
+                www.msf.org & A & 24 & 0\\
+                mail.yahoo.com & A & 24 & 1\\
+                www.cnn.com & AAAA & 0 & 21\\
+                www.netflix.com & A & 27 & 10\\
+                www.theglobalfund.org & A & 20 & 5\\
+                www.ecdc.europa.eu & A & 15 & 0\\
+                \hline
+            \end{tabular}
+        \end{adjustbox}
+        \caption{\textbf{Russia's biggest difference domains}\,---\,%
+        }
+        \label{tab:ru-diff}
+    \end{table}
 }
 
-\newcommand{\MODomainTable}{
-    \begin{tabular}{c|cc}
-        \hline\textbf{Domain} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
-        www.usafa.af.mil & 7 & 7\\
-        rottentomatoes.com & 7 & 7\\
-        www.uscg.mil & 6 & 7\\
-        www.northcom.mil & 7 & 6\\
-        www.jpeocbrnd.osd.mil & 7 & 6\\
-        www.dfas.mil & 7 & 6\\
-        www.defenselink.mil & 7 & 6\\
-        www.dcaa.mil & 7 & 6\\
-        www.afrc.af.mil & 7 & 6\\
-        www.whs.mil & 6 & 6\\
-        \hline
-    \end{tabular}
+\newcommand{\HKTopDomainTable}{
+    \begin{table}[ht]
+        \centering
+        \begin{adjustbox}{width=\textwidth}
+            \begin{tabular}{|c||ccc|}
+                \hline\textbf{Domain} & \textbf{Requested Record Type} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
+                eenadu.net & AAAA & 26 & 15\\
+                www.ned.org & A & 14 & 3\\
+                www.gov.uk & A & 12 & 2\\
+                www.netflix.com & A & 11 & 2\\
+                www.bittorrent.com & A & 10 & 2\\
+                google.com.co & AAAA & 5 & 6\\
+                www.nro.gov & A & 6 & 4\\
+                www.terredeshommes.nl & A & 7 & 2\\
+                mail.yahoo.com & A & 8 & 1\\
+                google.ro & AAAA & 6 & 3\\
+                \hline
+            \end{tabular}
+        \end{adjustbox}
+        \caption{\textbf{Hong Kong's most censored domains}\,---\,%
+        }
+        \label{tab:hk-top}
+    \end{table}
 }
 
-\newcommand{\EGDomainTable}{
-    \begin{tabular}{c|cc}
-        \hline\textbf{Domain} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
-        www.f-secure.com & 13 & 13\\
-        www.aljazeera.net & 13 & 13\\
-        www.aljazeera.com & 13 & 13\\
-        ultrasurf.us & 13 & 13\\
-        rsf.org & 13 & 13\\
-        www.hotspotshield.com & 13 & 12\\
-        www.torproject.org & 13 & 11\\
-        www.madamasr.com & 13 & 11\\
-        medium.com & 13 & 11\\
-        rottentomatoes.com & 13 & 10\\
-        \hline
-    \end{tabular}
+\newcommand{\HKDifferenceDomainTable}{
+    \begin{table}[ht]
+        \centering
+        \begin{adjustbox}{width=\textwidth}
+            \begin{tabular}{c|ccc}
+                \hline\textbf{Domain} & \textbf{Requested Record Type} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
+                www.ned.org & A & 14 & 3\\
+                eenadu.net & AAAA & 26 & 15\\
+                www.gov.uk & A & 12 & 2\\
+                www.netflix.com & A & 11 & 2\\
+                www.bittorrent.com & A & 10 & 2\\
+                mail.yahoo.com & A & 8 & 1\\
+                www.utorrent.com & A & 7 & 1\\
+                www.ftchinese.com & A & 6 & 0\\
+                www.familyequality.org & A & 7 & 1\\
+                it.wikipedia.org & A & 6 & 0\\
+                \hline
+            \end{tabular}
+        \end{adjustbox}
+        \caption{\textbf{Hong Kong's biggest difference domains}\,---\,%
+        }
+        \label{tab:hk-diff}
+    \end{table}
+}
+
+\newcommand{\CNTopDomainTable}{
+    \begin{table}[ht]
+        \centering
+        \begin{adjustbox}{width=\textwidth}
+            \begin{tabular}{|c||ccc|}
+                \hline\textbf{Domain} & \textbf{Requested Record Type} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
+                google.com.co & AAAA & 188 & 189\\
+                google.co.in & AAAA & 189 & 188\\
+                youtube.com & AAAA & 188 & 188\\
+                www.ned.org & A & 189 & 187\\
+                www.google.com & AAAA & 188 & 188\\
+                www.blogger.com & AAAA & 188 & 188\\
+                ultrasurf.us & AAAA & 188 & 188\\
+                sites.google.com & AAAA & 188 & 188\\
+                plus.google.com & AAAA & 188 & 188\\
+                groups.google.com & AAAA & 188 & 188\\
+                \hline
+            \end{tabular}
+        \end{adjustbox}
+        \caption{\textbf{China's most censored domains}\,---\,%
+        }
+        \label{tab:cn-top}
+    \end{table}
+}
+
+\newcommand{\CNDifferenceDomainTable}{
+    \begin{table}[ht]
+        \centering
+        \begin{adjustbox}{width=\textwidth}
+            \begin{tabular}{c|ccc}
+                \hline\textbf{Domain} & \textbf{Requested Record Type} & \textbf{Number of Censoring v4 Resolvers} & \textbf{Number of Censoring v6 Resolvers}\\\hline
+                google.com & A & 168 & 122\\
+                google.com & AAAA & 180 & 145\\
+                www.glaad.org & A & 30 & 6\\
+                eenadu.net & AAAA & 116 & 96\\
+                www.lanacion.com.ar & A & 20 & 1\\
+                premierbet.co.ao & A & 25 & 7\\
+                www.familyequality.org & A & 17 & 2\\
+                www.bittorrent.com & A & 18 & 4\\
+                qalam.withgoogle.com & A & 2 & 16\\
+                global.blackberry.com & A & 16 & 2\\
+                \hline
+            \end{tabular}
+        \end{adjustbox}
+        \caption{\textbf{China's biggest difference domains}\,---\,%
+        }
+        \label{tab:cn-diff}
+    \end{table}
 }
 
 \newcommand{\EveryCountryTable}{
