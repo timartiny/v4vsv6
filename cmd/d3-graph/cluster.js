@@ -9,7 +9,10 @@ var svg = d3.select("svg"),
 
 var color = d3.scaleOrdinal(d3.schemeCategory10).domain("1", "2", "3", "4");
 
-d3.json("cn.json").then(function(graph) {
+
+var params = new URLSearchParams(window.location.search)
+var id = params.get('id');
+d3.json(id).then(function(graph) {
 
 var label = {
     'nodes': [],
