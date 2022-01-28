@@ -26,10 +26,10 @@ type Question6Output struct {
 type CountryCodeDomainToQuestion6Output map[string]map[string]*Question6Output
 
 type ResolverStats struct {
-	ID              string   `json:"id"`
-	ResolverIP      string   `json:"resovler_ip"`
-	ResolverCountry string   `json:"resolver_country"`
-	ControlCount    int      `json:"control_count"`
+	ID              string              `json:"id"`
+	ResolverIP      string              `json:"resolver_ip"`
+	ResolverCountry string              `json:"resolver_country"`
+	ControlCount    int                 `json:"control_count"`
 	BlockedDomains  map[string]struct{} `json:"blocked_domains"`
 }
 
@@ -129,7 +129,7 @@ func resolverStats(
 		if isControlDomain(drr) && drr.CorrectControlResolution {
 			rs.ControlCount++
 		} else if isCensorship(drr) {
-			rs.BlockedDomains[drr.Domain] = struct{}{}
+			rs.BlockedDomains[drr.Domain+"-"+drr.RequestedAddressType] = struct{}{}
 		}
 		localResolvers[strID] = rs
 	}
@@ -212,7 +212,7 @@ func writeResolverStats(dataFolder string, localResolvers map[string]ResolverSta
 			}
 			dtq6o := ccdtq6o[localResolvers[strIDA].ResolverCountry]
 
-			for domain, _ := range localResolvers[strIDA].BlockedDomains {
+			for domain := range localResolvers[strIDA].BlockedDomains {
 				if dtq6o[domain] == nil {
 					t := new(Question6Output)
 					t.Domain = domain
@@ -228,7 +228,7 @@ func writeResolverStats(dataFolder string, localResolvers map[string]ResolverSta
 
 			dtq6o = ccdtq6o[localResolvers[strIDB].ResolverCountry]
 
-			for domain, _ := range localResolvers[strIDB].BlockedDomains {
+			for domain := range localResolvers[strIDB].BlockedDomains {
 				if dtq6o[domain] == nil {
 					t := new(Question6Output)
 					t.Domain = domain
