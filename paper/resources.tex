@@ -5,19 +5,20 @@ In this section, we focus on {\it identifying and characterizing differences in
 the handling of IPv4 and IPv6 resource records} in DNS censorship deployments.
 Specifically, we seek to answer the following questions: 
 %
-(\Cref{sec:resources:sig}) is the censorship of IPv4 resource records (DNS
-{\tt A} queries) significantly different than the censorship of IPv6 resource
-records (DNS {\tt AAAA} queries)?,
+(\Cref{sec:resources:country}) In which countries is the censorship of IPv4
+resource records (DNS {\tt A} queries) significantly different than the
+censorship of IPv6 resource records (DNS {\tt AAAA} queries)?,
 %
 (\Cref{sec:resources:resolvers}) what are the characteristics of the resolvers
-which frequently exhibit such differences?, and
+which exhibit differences in the handling of {\tt A} and {\tt AAAA} queries?,
+and 
 %
 (\Cref{sec:resources:domains}) what are the characteristics of domains in which
 these differences are frequently observed?
 %
 
-\subsection{Quantifying differences in the censorship of \texttt{A} and
-\texttt{AAAA} resource records} \label{sec:resources:sig}
+\subsection{Within-country differences in the censorship of
+\texttt{A} and \texttt{AAAA} resource records} \label{sec:resources:country}
 %
 We use the responses received from our {\tt A} and {\tt AAAA} queries sent to
 the same set of resolvers and for the same set of domains (\cf
@@ -26,8 +27,7 @@ process). We then apply the censorship determination methods described in
 \Cref{sec:methods:labeling} to measure the prevalence of censorship on our {\tt
 A} and {\tt AAAA} DNS queries. Finally, we perform statistical tests to
 identify significant differences in the prevalence of censorship of {\tt A} and
-{\tt AAAA} queries within a country, by individual resolvers, and for each
-domain. 
+{\tt AAAA} queries within each country.
 
 \para{Identifying differences within a country.} 
 To measure differences in DNS query handling within a specific country, we
@@ -55,7 +55,7 @@ mechanisms within that country (if a centralized mechanism for censorship
 exists) or that a significant number of resolvers within that country have
 inconsistencies in their censoring of each query type.
 
-\parait{Results.} 
+\para{Results.} 
 A summary of our results are presented in \Cref{tab:resources:countries}. In
 total, only seven countries showed a statistically significant difference in
 the rate at which {\tt AAAA} and {\tt A} DNS requests were blocked. 
@@ -112,7 +112,8 @@ Once again, China presents the only exception with a preference for blocking
   \label{tab:resources:countries}
 \end{table}
 
-\para{Identifying differences in individual resolvers.} 
+\subsection{Characteristics of inconsistent resolvers}
+\label{sec:resources:resolvers}
 Given our above results which suggest that there are a number of countries in
 which {\tt A} and {\tt AAAA} queries are censored differently, we now seek to
 understand the characteristics of the resolvers that cause these differences
@@ -123,6 +124,9 @@ censoring {\tt A} and {\tt AAAA} queries, while a broad spread across many ASes
 within the country would suggest the presence of a centralized censorship
 mechanism which contains inconsistencies in the handling of {\tt A} and {\tt
 AAAA} queries. 
+
+
+\para{Identifying differences in individual resolvers.} 
 %
 We begin our analysis by identifying the individual resolvers, within each of
 the seven countries listed above, that have a statistically significant
@@ -142,7 +146,13 @@ resolvers in our dataset (\fixme{XXX}).
 We then identify the ASes and geolocate each of these resolvers to identify
 their spread within a country.
 
-\parait{Results.}
+\para{Results.}
+
+
+
+
+\subsection{Characteristics of anomalous domains} 
+\label{sec:resources:domains}
 
 \para{Identifying differences in domain behaviors within a country.} 
 To uncover the domains which have their {\tt A} and {\tt AAAA} queries treated
@@ -163,10 +173,3 @@ undergoing different censorship mechanisms within the corresponding country.
 
 \parait{Results.}
 
-\subsection{Characteristics of misconfigured resolvers}
-\label{sec:resources:resolvers}
-
-
-
-\subsection{Characteristics of anomalous domains} 
-\label{sec:resources:domains}
