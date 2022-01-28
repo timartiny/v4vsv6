@@ -79,23 +79,30 @@ for {\tt AAAA} queries, with the exception of Iran.
     \toprule
     {\bf Country}&{\bf {\tt A} queries }&{\bf {\tt AAAA} queries} & {\bf All queries}
     \\ \midrule
-    Thailand (TH)      & -7.1\% & $ns$    & -3.7\%  \\
-    Iran (IR)          & -3.2\% & -3.0\%  & -3.1\%  \\ 
-    Bangladesh (BD)    & -5.5\% & $ns$    & -3.0\%  \\
-    Myanmar (MY)       & -3.6\% & $ns$    & -2.1\%  \\
-    United States (US) & -0.9\% & $ns$    & -0.5\%  \\
+    Thailand (TH)      & -7.1 pp (-86.3\%) & $ns$              & -3.7 pp (-78.1\%) \\
+    Iran (IR)          & -3.2 pp (-12.6\%) & -3.0 pp (-12.5\%) & -3.1 pp (-12.5\%) \\ 
+    Bangladesh (BD)    & -5.5 pp (-86.1\%) & $ns$              & -3.0 pp (-77.9\%) \\
+    Myanmar (MY)       & -3.6 pp (-74.2\%) & $ns$              & -2.1 pp (-62.3\%) \\
+    United States (US) & -0.9 pp (-64.8\%) & $ns$              & -0.5 pp (-42.6\%) \\
     \midrule
-    Korea (KR)         & -1.1\% & $ns$    & $ns$ \\
-    Chile (CL)         & -1.6\% & $ns$    & $ns$ \\
+    Korea (KR)         & -1.1pp (-46.5\%) & $ns$    & $ns$ \\
+    Chile (CL)         & -1.6pp (-58.7\%)  & $ns$    & $ns$ \\
     \bottomrule
   \end{tabular}
   }
   \caption{Differences in blocking rates of DNS queries sent to IPv4 and IPv6
-  interfaces of each resolver in a country (computed as IPv6 blocking rate
-  - IPv4 blocking rate). Only countries having a statistically significant
-  difference are reported. A negative value indicates that queries sent over
-  IPv4 observed higher blocking rates than those sent over IPv6. $ns$ indicates
-  the difference was not statistically significant and thus omitted.}
+  interfaces of each resolver in a country. `pp' denotes the change in
+  terms of percentage points (computed as blocking rate of IPv6 - blocking
+  rate of IPv4) and the \%age value denotes the percentage change in blocking rate
+  (computed as 
+  $
+  100 \times \frac{\text{blocking rate of IPv6} - \text{blocking rate of IPv4}}
+  {\text{blocking rate of IPv4}}
+  $). 
+  Only countries having a statistically
+  significant difference are reported. A negative value indicates that queries
+  sent over IPv4 observed higher blocking rates than those sent over IPv6. $ns$
+  indicates the difference was not statistically significant and thus omitted.}
   \label{tab:infrastructure:countries}
 \end{table}
 
