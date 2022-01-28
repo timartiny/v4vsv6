@@ -52,9 +52,9 @@ points and detects incorrect or inconsistent response information. Iris develops
 a method for identifying active manipulation in contrast to misconfiguration by
 leveraging metrics such as consistency and independent verifiability. Iris
 compares records returned by open resolvers to records returned a set of trusted
-resolvers matching IP addresses, content hash, TLS certificate, and more. Our work
-extends these strategies to investigate the consistency of DNS injection
-between IPv4 and IPv6.
+resolvers matching IP addresses, content hash, TLS certificate, and more.
+In order to identify open resolvers both Satellite and Iris rely on the zmap
+internet wide scanning tool~\cite{Durumeric13zmap} limiting themselves to the IPv4 address space.
 
 \subsection{IPv6 \& DNS}
 \label{subsec:v4vsv6}
@@ -90,3 +90,16 @@ covered in this work.
 %% Are there appliances that inject responses to AAAA requests upon seeing a
 %% block-listed domain name where the actual site doesn't support IPv6 - and
 %% should never provide AAAA records in response?
+\textbf{Discovering Dual-Stack Open Resolvers.}
+Hendricks et al. describe in depth a method for discovering and validating DNS
+resolvers that expose both IPv4 and IPv6 interfaces~\cite{hendriks2017potential}.
+They start with an initial
+set of IPv4 resolvers discovered using zmap. This set is then sent a query for a
+a specially crafted domain containing a subdomain whose nameserver supports only
+IPv6. In an attempt to recursively resolve the domain the resolver will connect
+to the controlled nameserver using an IPv6 address if one is available.
+Subsequent queries are then used to identify configurations that forward or
+distribute queries indicating address pairs that are not truly dual-stack resolvers.
+
+Our work combines these strategies to investigate the global prevalence of DNS
+injection in IPv6.
