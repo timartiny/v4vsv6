@@ -65,21 +65,25 @@ handling each query type in the seven countries (Thailand, Bangladesh,
 Pakistan, Chile, Vietnam, Korea, and China).
 %
 Of these, six (China being the only exception) were found to have lower
-blocking rates for {\tt AAAA} queries than {\tt A} queries --- suggesting that
-their censorship mechanisms for {\tt AAAA} queries that are associated with
-IPv6 connectivity are still lagging. 
+blocking rates for {\tt AAAA} queries than {\tt A} queries. In fact, the {\tt
+AAAA} censorship rates were between 36-78\% lower than the {\tt A} censorship
+rate suggesting that their censorship mechanisms for {\tt AAAA} queries that
+are associated with IPv6 connectivity are still lagging. 
 %
 Further analysis shows that the differences are mostly found on the IPv4
 interfaces of our resolvers (\cf {\it IPv4 resolvers} column in
-\Cref{tab:resources:countries}). 
+\Cref{tab:resources:countries}) where the {\tt AAAA} censorship rates were upto
+86\% lower than the {\tt A} censorship rates. 
 %
 This finding is indicative of a tendency for network operators to have
 focused efforts on maintaining infrastructure for censoring {\tt A} queries
 sent to IPv4 resolvers, while paying less attention to the handling of {\tt
-AAAA} queries and their IPv6 interfaces.
+AAAA} queries and their IPv6 interfaces. It also presents an opportunity for
+the developers of circumvention tools capable of dual-stack operations.
 %
 Once again, China presents the only exception with a preference for blocking
-{\tt AAAA} queries on both IPv4 and IPv6 interfaces of resolvers.
+{\tt AAAA} queries on both, IPv4 and IPv6, interfaces of resolvers with a 10\%
+and 13\% higher {\tt AAAA} censorship rate, respectively.
 
 \begin{table}[t]
   \centering
@@ -103,8 +107,15 @@ Once again, China presents the only exception with a preference for blocking
   \end{tabular}
   }
   \caption{Differences in blocking rates of {\tt A} and {\tt AAAA} queries
-  observed over IPv4, IPv6, and all resolvers per country (computed as {\tt
-  AAAA} blocking rate - {\tt A} blocking rate). Only countries having
+  observed over IPv4, IPv6, and all resolvers in a country. `pp' denotes the
+  change in terms of percentage points (computed as {\tt AAAA} blocking rate
+  - {\tt A} blocking rate) and the \%age value denotes the percentage change in
+  blocking rate (computed as
+  $
+  100\times\frac{\text{blocking rate of {\tt AAAA}} - \text{blocking rate of {\tt A}}}
+  {\text{blocking rate of {\tt A}}}
+  $). 
+  Only countries having
   a statistically significant difference are reported. A negative value
   indicates that {\tt A} queries observed higher blocking rates than {\tt AAAA}
   queries. $ns$ indicates the difference was not statistically significant and
