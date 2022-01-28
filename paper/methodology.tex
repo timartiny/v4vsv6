@@ -1,1 +1,106 @@
 \section{Dataset and Methodology}\label{sec:methodology}
+
+In order to measure the prevalence of censorship over IPv6 we have three main
+steps, which we explain in more detail in the following sections:
+\begin{packed_enumerate}
+    \item Identify IPv6 Resolvers (\Cref{ssec:ipv6-resolvers})
+    \item Identify Domains of interest (\Cref{ssec:censored-domains})
+    \item Determining DNS censorship (\Cref{ssec:determining-censorship})
+\end{packed_enumerate}
+
+
+\subsection{Identifying IPv6 Resolvers}\label{ssec:ipv6-resolvers} 
+
+In order to identify IPv6 resolvers we rely upon the work of
+\fixme{PAM-reference}. First we scan the entire IPv4 address space using
+\texttt{zmap}\fixme{cite} using a DNS query on port 53 for a control domain that
+we control and is uncensored. This provides a list of possible
+DNS resolvers over the IPv4 address space. 
+
+We then issue an encoded DNS query to each IPv4 address for an \texttt{A} Record
+of an uncensored domain that we control which is present in only a single Name
+Server that we also control that is hosted only on an IPv6 address. As IPv4
+addresses cannot directly communicate with IPv6 addresses the IPv4 resolver must
+ask its preferred IPv6 address to ask our Name Server for the address of the
+domain. Our encoded DNS query includes (as a subdomain) the IPv4 address of the
+resolver we made our query to. Thus, if our domain that is hosted only in our
+Name Server is \texttt{v6.tlsfingerprint.io} and we issued our \texttt{A} Record
+Request to Cloud Flare's public DNS resolver \texttt{1.1.1.1} our query would be
+for \texttt{1-1-1-1.v6.tlsfingerprint.io}.
+
+By capturing packets on the server hosting our Name Server we can see \texttt{A}
+record requests that come from IPv6 addresses for domains with embedded IPv4
+addresses. This allows us to associate IPv6 addresses we see in our packet
+capture with IPv4 resolvers.
+
+We immediately see that some IPv6 addresses are assocaited with multiple IPv4
+resolvers, \ie resolvers hosted on different IPv4 addresses will contact our Name
+Server over the same IPv6 address. In order to properly measure the differences
+between IPv6 and IPv4 resolvers we filter our list to IPv6 addresses that were
+only seen as a result of a single IPv4 resolver's query, \ie we ignore IPv6
+addresses that are associated with multiple IPv4 resolvers.
+
+Furthermore, the requests our Name Server receives are not guaranteed to come
+from resolvers. Thus we perform a follow up scan by issuing \texttt{A} and
+\texttt{AAAA} Record Requests to each IP address of each pair of IPv4 and IPv6
+address for uncensored domains we control using \texttt{zdns}\fixme{cite}. By
+examining the responses we can further filter our list to pairs of (IPv6, IPv4)
+resolvers that responded correctly to DNS queries to uncensored control domains
+over both Records.
+
+We then use Maxmind\fixme{cite} to geolocate the IPv4 and IPv6 resolvers by
+country. And further filter our list to those (IPv6, IPv4) resolver pairs that
+are located in the same country. Finally we filter our list of resolver pairs to
+those in countries with at least three resolver pairs allowing us to have
+multiple queries within a country on each Network Interface.
+
+This reduction leaves us with 7,788 resolver pairs from 89 countries to be the
+basis of our measurements.
+
+
+\subsection{Identifying Domains of interest}\label{ssec:censored-domains}
+
+Censored Planet's Satellite project\fixme{cite} has cultivated a list of domains
+that are potentially censored globally or by individual countries. This list
+provides a starting point for identifying domains of interest to our study.
+
+To measure how censorship varies over IPv4 and IPv6 Network Interfaces we
+restrict our list of domains to those that have both \texttt{A} and
+\texttt{AAAA} Records. To filter this list we again use \texttt{zdns} to perform
+both \texttt{A} and \texttt{AAAA} Record Requests for each domain from
+Satellite's global list through Google and Cloud Flare's public DNS resolvers
+(\texttt{8.8.8.8, 8.8.4.4, 1.1.1.1,} and \texttt{1.0.0.1}).
+
+We filter our domain list to those domains that have valid IPv4 addresses in
+their \texttt{A} Records and valid IPv6 addresses in their \texttt{AAAA}
+Records.
+
+To facilitate the next step of determining when a domain is censored we take the
+Answers provided from our DNS queries and issue follow up TLS connections using
+\texttt{zgrab2}\fixme{cite} and locally verify the returned TLS certificates.
+
+Our domain list is then filtered to those domains that:
+\begin{packed_enumerate}
+    \item Have an IPv4 address in their \texttt{A} Record
+    \item Have an IPv6 address in their \texttt{AAAA} Record
+    \item Issue a valid TLS certificate for the domain on both the IPv4 and IPv6
+    address in their \texttt{A/AAAA} Records
+\end{packed_enumerate}
+
+On January 24, 2022 this gave us 717 domains, originally identified by Censored
+Planet as potentially interesting from a censorship point of view that meet our
+criteria to measure censorship across network interfaces.
+
+\subsection{Determining DNS censorship}\label{ssec:determining-censorship}
+
+To measure DNS censorship across Network Interfaces we then perform both
+\texttt{A} and \texttt{AAAA} Record Requests for our filtered 717 domains from
+each IP address of all 7,788 resolver pairs.
+
+We then take each answer provided by every resolver and make a TLS connection
+with the Server Name of the domain we queried the resolver for and retrieve any
+returned TLS certificate.
+
+We then verify each DNS query we made to determine if any answers provided
+failed to successfully return a valid TLS certificate, if so we label that DNS
+query as censored.
