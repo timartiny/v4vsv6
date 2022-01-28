@@ -27,7 +27,7 @@ type CountryCodeDomainToQuestion6Output map[string]map[string]*Question6Output
 
 type ResolverStats struct {
 	ID              string              `json:"id"`
-	ResolverIP      string              `json:"resovler_ip"`
+	ResolverIP      string              `json:"resolver_ip"`
 	ResolverCountry string              `json:"resolver_country"`
 	ControlCount    int                 `json:"control_count"`
 	BlockedDomains  map[string]struct{} `json:"blocked_domains"`
