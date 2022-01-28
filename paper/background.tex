@@ -95,7 +95,7 @@ Hendricks et al. describe in depth a method for discovering and validating DNS
 resolvers that expose both IPv4 and IPv6 interfaces~\cite{hendriks2017potential}.
 They start with an initial
 set of IPv4 resolvers discovered using zmap. This set is then sent a query for a
-a specially crafted domain containing a subdomain whose nameserver supports only
+specially crafted domain containing a subdomain whose nameserver supports only
 IPv6. In an attempt to recursively resolve the domain the resolver will connect
 to the controlled nameserver using an IPv6 address if one is available.
 Subsequent queries are then used to identify configurations that forward or
