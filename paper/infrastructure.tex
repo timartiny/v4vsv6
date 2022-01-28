@@ -26,6 +26,76 @@ measure the prevalence of DNS censorship of queries sent over IPv4 and IPv6.
 Finally, we perform statistical tests to identify the countries that have
 significant differences in their censorship of IPv4 and IPv6 DNS traffic.
 
-\para{Identifying differences with a country.} 
+\para{Identifying differences within a country.} 
+To measure differences in the censorship of DNS queries sent over IPv4 and
+IPv6, we compare the prevalence of censorship on each by aggregating their
+responses across each resolver within a country. This presents us with two
+distributions (corresponding to the IPv4 and IPv6 interfaces of resolvers) of
+the fraction of censored domains from resolvers within the corresponding
+country.
+%
+We use a $t$-test to verify statistical significance of any observed
+differences between the two groups for each country. Similar to our approach in
+\Cref{sec:resources}, we apply a Sidak correction to control for Type I errors
+from multiple hypothesis testing. 
+%
+This requires $p \leq 1-{.05}^{1/n_{c}}$ for classifying a difference as
+significant, where $n_c$ is the total number of countries in our dataset
+(\fixme{XXX}). 
+%
+The presence of a statistically significant difference for a specific country
+would imply that the country appears to have different censorship mechanisms
+for IPv4 and IPv6 DNS traffic (if a centralized mechanism for censorship
+exists) or that a significant number of resolvers within that country are not
+consistent in their censorship of IPv6 and IPv4 traffic.
 
 \para{Results.}
+A summary of our results are presented in \Cref{tab:infrastructure:countries}.
+In total, we find only five countries (Thailand, Iran, Bangladesh, Myanmar, and
+the United States) with statistically significant differences in their handling
+of DNS queries over IPv4 and IPv6 traffic --- suggesting the use of independent
+censorship mechanisms for IPv4 and IPv6. 
+%
+Interestingly, all these countries appear to have gaps in their IPv6 censorship
+apparatus --- \ie IPv4 rates of blocking are higher than IPv6 rates in all
+countries with significant differences. Once again, this suggests a tendency
+for network operators to more effectively maintain IPv4 DNS censorship
+infrastructure than IPv6 infrastructure. These gaps present opportunities for
+the success of circumvention tools with IPv6 capabilities. 
+%
+This is particularly noteworthy for circumvention efforts in Thailand, Myanmar,
+and Iran where IPv6 adoption rates are high (between 15\% and 45\%).
+%
+Further analysis shows that these differences primarily arise due to the fact
+that DNS type {\tt A} queries are significantly more likely to be blocked over
+IPv4 connections than over an IPv6 connection. However, this is not the case
+for {\tt AAAA} queries, with the exception of Iran.
+
+\begin{table}[t]
+  \centering
+  \small
+  \scalebox{\tabularscale} {
+  \begin{tabular}{lccc}%p{.9in}p{.9in}}
+    \toprule
+    {\bf Country}&{\bf {\tt A} queries }&{\bf {\tt AAAA} queries} & {\bf All queries}
+    \\ \midrule
+    Thailand (TH)      & -7.1\% & $ns$    & -3.7\%  \\
+    Iran (IR)          & -3.2\% & -3.0\%  & -3.1\%  \\ 
+    Bangladesh (BD)    & -5.5\% & $ns$    & -3.0\%  \\
+    Myanmar (MY)       & -3.6\% & $ns$    & -2.1\%  \\
+    United States (US) & -0.9\% & $ns$    & -0.5\%  \\
+    \midrule
+    Korea (KR)         & -1.1\% & $ns$    & $ns$ \\
+    Chile (CL)         & -1.6\% & $ns$    & $ns$ \\
+    \bottomrule
+  \end{tabular}
+  }
+  \caption{Differences in blocking rates of DNS queries sent to IPv4 and IPv6
+  interfaces of each resolver in a country (computed as IPv6 blocking rate
+  - IPv4 blocking rate). Only countries having a statistically significant
+  difference are reported. A negative value indicates that queries sent over
+  IPv4 observed higher blocking rates than those sent over IPv6. $ns$ indicates
+  the difference was not statistically significant and thus omitted.}
+  \label{tab:infrastructure:countries}
+\end{table}
+
