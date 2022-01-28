@@ -58,18 +58,25 @@ censorship mechanisms for IPv4 and IPv6.
 %
 Interestingly, all these countries appear to have gaps in their IPv6 censorship
 apparatus --- \ie IPv4 rates of blocking are higher than IPv6 rates in all
-countries with significant differences. Once again, this suggests a tendency
-for network operators to more effectively maintain IPv4 DNS censorship
-infrastructure than IPv6 infrastructure. These gaps present opportunities for
-the success of circumvention tools with IPv6 capabilities. 
+countries with significant differences. These differences result in IPv6
+queries experiencing between 12\% and 78\% less censorship than their IPv4
+counterparts.
 %
-This is particularly noteworthy for circumvention efforts in Thailand, Myanmar,
-and Iran where IPv6 adoption rates are high (between 15\% and 45\%).
+Once again, this suggests a tendency for network operators to more effectively
+maintain IPv4 DNS censorship infrastructure than IPv6 infrastructure. These
+gaps present opportunities for the success of circumvention tools with IPv6
+capabilities.  
 %
 Further analysis shows that these differences primarily arise due to the fact
 that DNS type {\tt A} queries are significantly more likely to be blocked over
 IPv4 connections than over an IPv6 connection. However, this is not the case
 for {\tt AAAA} queries, with the exception of Iran.
+%
+Taken together, these findings are particularly noteworthy for circumvention
+efforts in Thailand, Myanmar, and Iran where IPv6 adoption rates are high
+(between 15\% and 45\%) and dual-stack tools may be used for circumvention of
+DNS censorship.
+%
 
 \begin{table}[t]
   \centering
@@ -96,8 +103,8 @@ for {\tt AAAA} queries, with the exception of Iran.
   rate of IPv4) and the \%age value denotes the percentage change in blocking rate
   (computed as 
   $
-  100 \times \frac{\text{blocking rate of IPv6} - \text{blocking rate of IPv4}}
-  {\text{blocking rate of IPv4}}
+  100 \times \frac{\text{IPv6 blocking rate} - \text{IPv4 blocking rate}}
+  {\text{IPv4 blocking rate}}
   $). 
   Only countries having a statistically
   significant difference are reported. A negative value indicates that queries
