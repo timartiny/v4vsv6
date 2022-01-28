@@ -11,11 +11,11 @@ steps, which we explain in more detail in the following sections:
 
 \subsection{Identifying IPv6 Resolvers}\label{ssec:ipv6-resolvers} 
 
-In order to identify IPv6 resolvers we rely upon the work of
-\fixme{PAM-reference}. First we scan the entire IPv4 address space using
-\texttt{zmap}\fixme{cite} using a DNS query on port 53 for a control domain that
-we control and is uncensored. This provides a list of possible
-DNS resolvers over the IPv4 address space. 
+In order to identify IPv6 resolvers we rely upon the work of Hendricks et
+al.~\cite{hendriks2017potential}. First we scan the entire IPv4 address space
+using \texttt{zmap}~\cite{Durumeric13zmap} using a DNS query on port 53 for a
+control domain that we control and is uncensored. This provides a list of
+possible DNS resolvers over the IPv4 address space. 
 
 We then issue an encoded DNS query to each IPv4 address for an \texttt{A} Record
 of an uncensored domain that we control which is present in only a single Name
@@ -43,10 +43,10 @@ addresses that are associated with multiple IPv4 resolvers.
 Furthermore, the requests our Name Server receives are not guaranteed to come
 from resolvers. Thus we perform a follow up scan by issuing \texttt{A} and
 \texttt{AAAA} Record Requests to each IP address of each pair of IPv4 and IPv6
-address for uncensored domains we control using \texttt{zdns}\fixme{cite}. By
-examining the responses we can further filter our list to pairs of (IPv6, IPv4)
-resolvers that responded correctly to DNS queries to uncensored control domains
-over both Records.
+address for uncensored domains we control using
+\texttt{zdns}~\cite{Durumeric13zmap}. By examining the responses we can further
+filter our list to pairs of (IPv6, IPv4) resolvers that responded correctly to
+DNS queries to uncensored control domains over both Records.
 
 We then use Maxmind\fixme{cite} to geolocate the IPv4 and IPv6 resolvers by
 country. And further filter our list to those (IPv6, IPv4) resolver pairs that
@@ -60,9 +60,10 @@ basis of our measurements.
 
 \subsection{Identifying Domains of interest}\label{ssec:censored-domains}
 
-Censored Planet's Satellite project\fixme{cite} has cultivated a list of domains
-that are potentially censored globally or by individual countries. This list
-provides a starting point for identifying domains of interest to our study.
+Censored Planet's Satellite project~\cite{sundara2020censored} has cultivated a
+list of domains that are potentially censored globally or by individual
+countries. This list provides a starting point for identifying domains of
+interest to our study.
 
 To measure how censorship varies over IPv4 and IPv6 Network Interfaces we
 restrict our list of domains to those that have both \texttt{A} and
@@ -77,7 +78,8 @@ Records.
 
 To facilitate the next step of determining when a domain is censored we take the
 Answers provided from our DNS queries and issue follow up TLS connections using
-\texttt{zgrab2}\fixme{cite} and locally verify the returned TLS certificates.
+\texttt{zgrab2}~\cite{Durumeric13zmap} and locally verify the returned TLS
+certificates.
 
 Our domain list is then filtered to those domains that:
 \begin{packed_enumerate}
@@ -102,5 +104,5 @@ with the Server Name of the domain we queried the resolver for and retrieve any
 returned TLS certificate.
 
 We then verify each DNS query we made to determine if any answers provided
-failed to successfully return a valid TLS certificate, if so we label that DNS
-query as censored.
+failed to successfully return a valid TLS certificate, if so we label the DNS
+query from that resolver for that domain and resource Record as censored.
