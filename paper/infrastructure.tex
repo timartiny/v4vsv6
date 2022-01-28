@@ -1,3 +1,31 @@
-\section{Differences Due To Network Infrastructure}
+\section{Censorship of IPv4 and IPv6 DNS Traffic}
 \label{sec:infrastructure}
 
+\para{Overview.} In this section, we focus on {\it identifying and
+characterizing the differences in handling DNS queries sent over IPv4 and IPv6
+networks} in DNS censorship mechanisms. 
+%
+Specifically, we answer the following questions:
+%
+(\Cref{sec:infrastructure:country}) In which countries are the DNS censorship
+mechanisms for IPv4 and IPv6 traffic significantly different?,
+%
+(\Cref{sec:infrastructure:resolvers}) what are the characteristics of resolvers
+that exhibit differences in the censorship of IPv4 and IPv6 traffic?, and
+%
+(\Cref{sec:infrastructure:domains}) what are the characteristics of the domains
+in which such differences are frequently exhibited?
+
+\subsection{Within-country differences in the censorship of IPv4 and IPv6 DNS
+queries} \label{sec:infrastructure:country}
+
+We use the responses received from the IPv4 and IPv6 interfaces of each of the
+dual-stack resolvers in our dataset for the same set of domains. We then apply
+the censorship detection mechanism detailed in \Cref{sec:methods:labeling} to
+measure the prevalence of DNS censorship of queries sent over IPv4 and IPv6.
+Finally, we perform statistical tests to identify the countries that have
+significant differences in their censorship of IPv4 and IPv6 DNS traffic.
+
+\para{Identifying differences with a country.} 
+
+\para{Results.}
