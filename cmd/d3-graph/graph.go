@@ -19,9 +19,10 @@ var (
 )
 
 type GraphFlags struct {
-	MaxEditDistance int  `arg:"-m,--max-edit-distance" help:"How far should links be created" default:"5" json:"max_edit_distance"`
-	DiscardEmpty    bool `arg:"-e,--discard-empty" help:"Don't compare empty blocklists" default: "false" json:"discard_empty"`
-	IncludeSingles  bool `arg:"-s,--include-single" help:"Include nodes that are unconnected from any other node" default: "false" json:"include_single"`
+	MaxEditDistance int `arg:"-m,--max-edit-distance" help:"How far should links be created" default:"5" json:"max_edit_distance"`
+	//DiscardEmpty    bool `arg:"-e,--discard-empty" help:"Don't compare empty blocklists" default: "false" json:"discard_empty"`
+	IncludeSingles bool `arg:"-i,--include-single" help:"Include nodes that are unconnected from any other node" default: "false" json:"include_single"`
+	MinListSize    int  `arg:"-s,--min-size" help:"Minimum list size to include in graph" default: "1" json:"min_size"`
 }
 
 type Output struct {
@@ -68,6 +69,15 @@ func setupArgs() GraphFlags {
 func updateNodeMaps(nodes *Nodes, ntbl map[string][]string, lc <-chan string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	ignoreDomains := map[string]bool{
+		"www.stratcom.mil-A":    true,
+		"www.stratcom.mil-AAAA": true,
+		"portal.hud.gov-A":      true,
+		"portal.hud.gov-AAAA":   true,
+		"www.hud.gov-A":         true,
+		"www.hud.gov-AAAA":      true,
+	}
+
 	for line := range lc {
 		var rs ResolverStats
 		json.Unmarshal([]byte(line), &rs)
@@ -81,11 +91,12 @@ func updateNodeMaps(nodes *Nodes, ntbl map[string][]string, lc <-chan string, wg
 		n.Id = rs.ID
 		*nodes = append(*nodes, n)
 
-		keys := make([]string, len(rs.BlockedDomains))
-		i := 0
+		var keys []string
 		for k := range rs.BlockedDomains {
-			keys[i] = k
-			i++
+			if ignoreDomains[k] {
+				continue
+			}
+			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		ntbl[rs.ID] = keys
@@ -141,15 +152,13 @@ func levenshtein(a, b []string) uint {
 	return current[n]
 }
 
-func updateLinkMap(links *Links, nonEmptyNodes map[string]bool, maxEditDistance int, discardEmpty bool, nc <-chan []NodeWithBlocklist, wg *sync.WaitGroup) {
+func updateLinkMap(links *Links, nonEmptyNodes map[string]bool, minListSize int, maxEditDistance int, nc <-chan []NodeWithBlocklist, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for ns := range nc {
 		n1, n2 := ns[0], ns[1]
-		if discardEmpty {
-			if len(n1.Blocklist) == 0 || len(n2.Blocklist) == 0 {
-				continue
-			}
+		if len(n1.Blocklist) < minListSize || len(n2.Blocklist) < minListSize {
+			continue
 		}
 		editDistance := levenshtein(n1.Blocklist, n2.Blocklist)
 		if editDistance <= uint(maxEditDistance) {
@@ -200,7 +209,7 @@ func main() {
 	connectedNodeIds := make(map[string]bool)
 
 	wg.Add(1)
-	go updateLinkMap(&links, connectedNodeIds, args.MaxEditDistance, args.DiscardEmpty, nodesChan, &wg)
+	go updateLinkMap(&links, connectedNodeIds, args.MinListSize, args.MaxEditDistance, nodesChan, &wg)
 
 	keys := make([]string, 0, len(nodeToBlockedList))
 	for k := range nodeToBlockedList {
