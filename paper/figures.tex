@@ -229,6 +229,59 @@
 }
 
 
+\newcommand{\TabBaseRate}{
+    \begin{table}[ht]
+        \centering
+        \small
+        \scalebox{\tabularscale} {
+        \begin{tabular}{l|ccccc}
+            \toprule
+                %\textbf{Country} & \textbf{Resolver pairs} & \textbf{v4/A} & \textbf{v4/AAAA} & \textbf{v6/A} & \textbf{v6/AAAA} \\
+                \textbf{} & \textbf{Resolver} & \textbf{v4} & \textbf{v4} & \textbf{v6} & \textbf{v6} \\
+                \textbf{Country} & \textbf{pairs} & \textbf{A} & \textbf{AAAA} & \textbf{A} & \textbf{AAAA} \\
+                \midrule
+                United States (US)    &   1228  & 1.4\% &   0.9\%  &   0.5\% &   0.9\% \\
+                Germany (DE)          &   753  & 1.0\% &   0.9\%  &   0.8\% &   0.8\% \\
+                South Korea (KR)      &   632  & 2.3\% &   1.1\%  &   1.2\% &   1.2\% \\
+                France (FR)           &   560  & 0.6\% &   0.5\%  &   0.4\% &   0.6\% \\
+                Russia (RU)           &   312  & 5.5\% &   4.8\%  &   4.5\% &   4.5\% \\
+                Iran (IR)             &   277  & 25.1\% &   24.5\%  &   22.0\% &   21.4\% \\
+                Vietnam (VN)          &   252  & 1.5\% &   0.9\%  &   1.4\% &   0.7\% \\
+                Taiwan (TW)           &   248  & 1.2\% &   1.0\%  &   0.9\% &   0.9\% \\
+                India (IN)            &   226  & 1.3\% &   1.5\%  &   1.0\% &   1.2\% \\
+                Canada (CA)           &   199  & 0.7\% &   0.4\%  &   0.2\% &   0.3\% \\
+                United Kingdom (GB)   &   196  & 1.1\% &   0.9\%  &   0.8\% &   1.0\% \\
+                China (CN)            &   194  & 29.3\% &   32.3\%  &   28.4\% &   32.1\% \\
+                Thailand (TH)         &   186  & 8.2\% &   1.2\%  &   1.1\% &   0.9\% \\
+                Brazil (BR)           &   160  & 2.7\% &   1.7\%  &   2.0\% &   2.1\% \\
+                Japan (JP)            &   152  & 1.1\% &   1.2\%  &   0.6\% &   1.0\% \\
+                Mexico (MX)           &   150  & 3.8\% &   2.0\%  &   1.7\% &   1.9\% \\
+                Turkey (TR)           &   114  & 1.3\% &   1.0\%  &   1.3\% &   1.0\% \\
+                Netherlands (NL)      &    97  & 1.2\% &   0.8\%  &   0.7\% &   0.7\% \\
+                South Africa (ZA)     &    93  & 2.4\% &   1.6\%  &   1.2\% &   1.4\% \\
+                Australia (AU)        &    72  & 1.6\% &   0.7\%  &   0.9\% &   0.7\% \\
+                Hong Kong (HK)        &    67  & 7.0\% &   5.6\%  &   4.9\% &   5.2\% \\
+                Chile (CL)            &    65  & 2.7\% &   0.7\%  &   1.1\% &   0.8\% \\
+                Switzerland (CH)      &    60  & 0.3\% &   0.3\%  &   0.3\% &   0.3\% \\
+                Indonesia (ID)        &    56  & 6.5\% &   3.0\%  &   2.4\% &   2.3\% \\
+                Lithuania (LT)        &    52  & 0.9\% &   0.8\%  &   0.5\% &   0.8\% \\
+                Singapore (SG)        &    50  & 1.8\% &   0.9\%  &   0.6\% &   0.8\% \\
+                Malaysia (MY)         &    50  & 4.9\% &   2.0\%  &   1.3\% &   1.4\% \\
+                \bottomrule
+        \end{tabular}
+        }
+        \caption{\textbf{DNS censorship base rate}\,---\,%
+            We discovered over 7,000 IPv4/IPv6 DNS resolver pairs around the world, and
+            use them to measure censorship in their respective countries.
+            We query each resolver pair (v4/v6 interfaces) with a list of over 700 domains
+            from censorship lists that support both IPv4 and IPv6 addresses. For these domains,
+            we request both \texttt{A} and \texttt{AAAA} records. We report on the average percent of censored
+            responses for resolver inteface (v4 or v6) combined with record type (\texttt{A} or \texttt{AAAA}).
+            }
+        \label{tab:country-resolvers}
+    \end{table}
+}
+
 \newcommand{\SomeCountryTable}{
     \begin{table}[ht]
         \centering
