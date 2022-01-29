@@ -19,7 +19,9 @@ var (
 )
 
 type GraphFlags struct {
-	MaxEditDistance int `arg:"-m,--max-edit-distance" help:"How far should links be created" default:"5" json:"max_edit_distance"`
+	MaxEditDistance int  `arg:"-m,--max-edit-distance" help:"How far should links be created" default:"5" json:"max_edit_distance"`
+	DiscardEmpty    bool `arg:"-e,--discard-empty" help:"Don't compare empty blocklists" default: "false" json:"discard_empty"`
+	IncludeSingles  bool `arg:"-s,--include-single" help:"Include nodes that are unconnected from any other node" default: "false" json:"include_single"`
 }
 
 type Output struct {
@@ -139,14 +141,23 @@ func levenshtein(a, b []string) uint {
 	return current[n]
 }
 
-func updateLinkMap(links *Links, maxEditDistance int, nc <-chan []NodeWithBlocklist, wg *sync.WaitGroup) {
+func updateLinkMap(links *Links, nonEmptyNodes map[string]bool, maxEditDistance int, discardEmpty bool, nc <-chan []NodeWithBlocklist, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for ns := range nc {
 		n1, n2 := ns[0], ns[1]
+		if discardEmpty {
+			if len(n1.Blocklist) == 0 || len(n2.Blocklist) == 0 {
+				continue
+			}
+		}
 		editDistance := levenshtein(n1.Blocklist, n2.Blocklist)
 		if editDistance <= uint(maxEditDistance) {
 			*links = append(*links, &Link{Source: n1.Id, Target: n2.Id, Value: maxEditDistance - int(editDistance)})
+
+			nonEmptyNodes[n1.Id] = true
+			nonEmptyNodes[n2.Id] = true
+
 		}
 	}
 }
@@ -186,9 +197,10 @@ func main() {
 
 	var links Links
 	nodesChan := make(chan []NodeWithBlocklist, 10)
+	connectedNodeIds := make(map[string]bool)
 
 	wg.Add(1)
-	go updateLinkMap(&links, args.MaxEditDistance, nodesChan, &wg)
+	go updateLinkMap(&links, connectedNodeIds, args.MaxEditDistance, args.DiscardEmpty, nodesChan, &wg)
 
 	keys := make([]string, 0, len(nodeToBlockedList))
 	for k := range nodeToBlockedList {
@@ -210,7 +222,15 @@ func main() {
 	if len(links) > 0 {
 		infoLogger.Printf("first link: %v\n", links[0])
 	}
-	out := Output{Nodes: nodes, Links: links}
+
+	var connectedNodes Nodes
+	for _, node := range nodes {
+		if _, ok := connectedNodeIds[node.Id]; ok || args.IncludeSingles {
+			connectedNodes = append(connectedNodes, node)
+		}
+	}
+
+	out := Output{Nodes: connectedNodes, Links: links}
 	bs, err := json.MarshalIndent(&out, "", "  ")
 	if err != nil {
 		errorLogger.Fatalf("Error writing output to bytes: %v\n", err)
