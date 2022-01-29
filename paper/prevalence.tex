@@ -1,2 +1,54 @@
 \section{Prevalence of DNS Censorship}\label{sec:prevalence}
 
+
+Before investigating the difference in censorship between IPv4 and IPv6, we
+frist study \textbf{what countries censor DNS} in the first place?
+We use our collected dataset described in Section~\ref{sec:methodology} to
+answer this question.
+
+
+%Many censors block using DNS injection~\cite{satellite,global}.
+
+
+\SomeCountryTable
+
+% DNS censorship not the only kind.
+% ...
+
+Table~\ref{tab:country-resolvers} shows the 27~countries that have more than 50
+resolver pairs (IPv4 and IPv6 interfaces) that geolocate within the country.
+For each of our 7,000 resolver pair, we send our list of 700+ domains (for both A
+and AAAA records). We label a domain as \emph{censored} if over half of the
+resolvers in a given country return a result consistent with blocking. This
+helps to eliminate seemingly spurious censorship events, either due to geo-location
+errors, configuration issues, or custom blocklists deployed at single resolvers.
+
+Notably, China, Russia, Iran, and Hong Kong can clearly be seen to host
+resolvers that consistently block many domains, demonstrating these countries have
+deployed largely uniform national censorship policies. On the other hand,
+countries that are known to censor may still appear to have no uniformly blocked
+domains. This could be due to a country primarily using a different technology
+to censor (such as HTTP, SNI, or IP blocking), bias in the set of domains we
+queried, or in the set of resolvers used.
+
+One illustrative example is India, a country where widespread Internet censorship has
+been observed and studied~\cite{singh2020india,Yadav2018a}. Given the number
+of resolvers we discover and the country's proclivity to censor, we would expect to see
+some domains censored across the country, but instead our data suggests no
+domains are censored uniformly. One explanation for this discrepancy is that
+India's censorship is not as centralized as in other countries: private ISPs in
+India are given lists of URLs to block, but it is up to the ISP how to carry out
+this blocking~\cite{Gosain2017a}, leading to heterogeneity in what is blocked,
+what techniques are used, and how often updates occur.  Figure~\ref{fig:india}
+shows a clustering of Indian resolvers by what domains they block, illustrating the non-uniformity in
+conducting censorship in the country. We draw resolvers as nodes sized proportional
+to their blocklist size, and draw an edge between two resolver
+nodes if the set of domains they block has a high similarity (Levenshtein edit
+distance less than a threshold). The largest censored list found in India contained 31
+censored domains, while many other resolvers censored few or no domains.
+% jq 'select(.resolver_country=="IN" and .id=="4335-A").blocked_domains | keys | .[]' ../../data/resolver-blocks-jan-aaaa.json -r | awk -F'-' '{print $1}' | sort | uniq | wc -l
+
+
+\FigIndiaCluster
+
+

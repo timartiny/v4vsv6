@@ -228,6 +228,81 @@
     \end{table}
 }
 
+
+\newcommand{\SomeCountryTable}{
+    \begin{table}[ht]
+        \centering
+        \begin{tabular}{c|cc}
+            \toprule
+            \textbf{Country} & \textbf{Resolver pairs} & \textbf{Censored domains} \\
+            \hline
+                United States (US) & 1228 & 0\\
+                Germany (DE) & 753 & 0\\
+                South Korea (KR) & 632 & 0\\
+                France (FR) & 560 & 0\\
+                Russia (RU) & 312 & 30\\     % used to be 33??
+                Iran (IR) & 277 & 169\\     % previously 172
+                Vietnam (VN) & 252 & 0\\
+                Taiwan (TW) & 248 & 0\\
+                India (IN) & 226 & 0\\
+                Canada (CA) & 199 & 0\\
+                United Kingdom (GB) & 196 & 0\\
+                China (CN) & 194 & 200\\
+                Thailand (TH) & 186 & 0\\
+                Brazil (BR) & 160 & 0\\
+                Japan (JP) & 152 & 0\\
+                Mexico (MX) & 150 & 0\\
+                Turkey (TR) & 114 & 0\\     % used to be 3?
+                Netherlands (NL) & 97 & 0\\
+                South Africa (ZA) & 93 & 0\\
+                Australia (AU) & 72 & 0\\
+                Hong Kong (HK) & 67 & 30\\  % used to be 33
+                Chile (CL) & 65 & 0\\
+                Switzerland (CH) & 60 & 0\\
+                Indonesia (ID) & 56 & 0\\
+                Lithuania (LT) & 52 & 0\\
+                Singapore (SG) & 50 & 0\\
+                Malaysia (MY) & 50 & 0\\
+
+                % UA & 35 & 1 \\        % dfas.mil
+                % EG & 14 & 15 \\
+                % KE & 8 & 2 \\
+                % MO & 6 & 31 \\
+                % AE & 6 & 6 \\
+                % BY & 5 & 1 \\
+                % TN & 2 & 1 \\
+                % OM & 2 & 1 \\
+                % MK & 2 & 47 \\
+                % LA & 2 & 1 \\
+                % IL & 2 & 30 \\
+            \toprule
+        \end{tabular}
+        \caption{\textbf{DNS resolvers}\,---\,%
+            We discovered over 7,000 IPv4/IPv6 DNS resolver pairs around the world, and
+            use them to measure censorship in their respective countries.
+            We queried each resolver with a list of over 700 domains from censorship
+            lists that support both IPv4 and IPv6. We identify a domain as \texttt{censored}
+            in a given country if over half of the country's resolvers blocked it.
+            }
+        \label{tab:country-resolvers}
+    \end{table}
+}
+
+\newcommand{\FigIndiaCluster}{
+    \begin{figure}[t]
+     \centering
+     \includegraphics[width=0.9\linewidth]{figures/india.png}
+     \caption{\textbf{India DNS censorship}\,---\,%
+            We formed clusters of DNS resolvers using the levenshtein distance between
+            the lists resolvers censor. Resolvers that block similar lists are connected,
+            with node sizes proportional to the number of distinct domains blocked. We color
+            IPv4 resolver interfaces blue, and IPv6 interfaces orange. This example illustrates
+            the non-uniformity of India, with some ISPs censoring a large number of domains, and
+            many others with small or non-existent block lists.}
+    \label{fig:india}
+    \end{figure}
+}
+
 \newcommand{\EveryCountryTable}{
     \begin{table}[ht]
         \centering
