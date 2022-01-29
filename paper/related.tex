@@ -1,1 +1,104 @@
 \section{Related Work}\label{sec:related_work}
+
+There is a significant body of previous work investigating DNS based censorship
+strategies which can be generally broken down along a few major
+fault lines. The first is duration: snapshot studies as compared with longitudinal
+measurements. Many initial investigations into censorship techniques and proposals
+for measurement methodology provide an evaluation of DNS censorship during a
+single snapshot in time~\cite{Anonymous2020:TripletCensors,global2002great,vandersloot2018quack,scott2016satellite,pearce2017global}. Similarly, a snapshot
+can capture DNS censorship centering around a specific event like an election or
+social uprising~\cite{aryan2013internet}. Established methodology can then be used to
+gain perspectives on the way that censorship evolves over time as part of  a
+longitudinal measurement~\cite{USESEC21:GFWatch,filasto2012ooni,sundara2020censored,niaki2020iclab}.
+
+The second major fault line that studies split across is scope: studies that focus
+in on the DNS censorship strategies used by individual countries as contrasted with global
+measurement. Censorship strategies are not universal and each censor is unique
+to some degree. Targeted measurement studies contribute to a better
+understanding of block-list infrastructure~\cite{ramesh2020decentralized,USESEC21:GFWatch}
+and explain blocking phenomena~\cite{global2002great,Anonymous2020:TripletCensors}.
+Global studies provide high level view on the use of DNS censorship internationally
+providing context and and understanding of prevalence to specific censorship
+techniques~\cite{vandersloot2018quack,scott2016satellite,pearce2017global,sundara2020censored,niaki2020iclab}.
+
+% Quack~\cite{vandersloot2018quack}
+
+% satellite~\cite{scott2016satellite},
+
+% Iris: global DNS interference Measurement~\cite{pearce2017global}
+
+% censored planet~\cite{sundara2020censored}
+
+% ICLab: Longitudinal DNS measurement~\cite{niaki2020iclab}
+
+% GFW DNS censorship measurement~\cite{USESEC21:GFWatch}
+% % Uses two hosts they control in china and multiple external vantage points to probe
+
+% Triplet Censors: Demystifying GFWs {DNS} Censorship Behavior~\cite{Anonymous2020:TripletCensors}
+
+% OONI
+
+This work describes a methodology for collecting global measurement of IPv6 DNS
+censorship data and provides a snapshot analysis of several countries of interest.
+
+\textbf{Using Open Resolvers.}
+Open DNS resolvers provide a unique vantage point from which to study the internet
+and a significant number of past measurement studies rely on their potentially censored
+traversals to measure suspect or adversarial behavior.  Here we present a
+non-exhaustive timeline to distinguish methodology and describe primary
+contributions of related work relying on open resolvers over last two decades.
+
+In 2007 Lowe et al. queried open resolvers hosted within China
+eliciting injected responses to characterize Chinese censorship infrastructure
+and strategy~\cite{lowe2007great}. In 2008 Dagon et al.
+performed a survey of open DNS resolvers looking for resolvers that would
+intentionally provide incorrect of malicious DNS records relating to
+phishing attempts~\cite{dagon2008corrupted}.
+In 2012 anonymous authors focused in more closely on the explicit censorship of
+the GFW DNS injection and the collateral poisoning effect that it had on open
+resolvers around the world~\cite{levis2012collateral}. In 2014 Wander et al.
+used open resolvers to look more broadly for global poisoning of DNS resolution
+by any censoring country finding that spoofed addresses were leaking primarily
+from China and Iran ~\cite{wander2014measurement}. Similar to Dagon et al., in 2015
+K{\"u}hrer et al. performed a global study of the reliability of open DNS resolution
+finding evidence of censorship, injected advertisements, and other suspicious
+or malicious behavior by returned addresses~\cite{kuhrer2015going}.
+
+Satellite (2016) outlines a methodology for regularly discovering the set of
+available open resolvers and querying hosts in order to detect paths
+that return incorrect or inconsistent resource records~\cite{scott2016satellite}.
+Iris (2017) relies on a very similar scanning methodology but develops a set of
+metrics using follow-up scans and requests that allow the authors to differentiate
+between inconsistency, misconfiguration, and manipulation~\cite{pearce2017global}.
+These metrics are based
+on things like address consistency, TLS certificate validation, HTTP content hash,
+geolocation, DNS PTR lookup, and AS information. These supplemental elements
+allow Iris to handle cases like CDNs, virtual hosting, distributed / forwarded
+resolution requests and more. The 2020 Censored Planet project incorporates
+and extends the methods of the Satellite and Iris as part of a comprehensive
+and longitudinal global censorship measurement study~\cite{sundara2020censored}.
+The measurement platform improves the filtering of open resolvers using a set of
+trusted resolvers as a base of truth and validates TLS certificates for returned
+resource records. However as with Satellite and Iris, resolvers are discovered
+using zmap, limiting the measurement to the IPv4 address space.
+
+\textbf{IPv6 Censorship Measurement}
+Previous censorship studies primarily focus on measurements in IPv4
+assuming that the mechanisms and block-lists are largely equivalent or finding
+that results were close enough to be considered noise relative to the independent
+question at hand. However, several efforts explicitly cover IPv6 results.
+
+In March 2020 Hoang et al. began collection of DNS records injected by the GFW in order to
+classify the addresses provided, block-pages injected, and the set of hostnames
+that receive injections~\cite{USESEC21:GFWatch}. Their analysis investigates the
+commonality of addresses injected by the GFW, finding that all injected
+\texttt{AAAA} responses are drawn from the reserved teredo subnet \texttt{2001::/32}.
+The longitudinal study does not directly compare the injection rates
+of A vs AAAA or differences in injection to DNS queries sent over IPv4 versus IPv6.
+
+A 2021 investigation of HTTP keyword block-lists associated with the GFW
+found that results are largely the same between IPv4 and IPv6~\cite{weinberg2021chinese}.
+However, the authors note that the GFW failed to apply the temporary 90 second ``penalty box''
+blocking subsequent connections between the two hosts described by numerous
+previous studies~\cite{xu2011internet,clayton2006ignoring}. This indicates that for now the GFW
+infrastructure supporting IPv4 and IPv6 are implemented and/or deployed independently.
