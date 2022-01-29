@@ -139,8 +139,9 @@ AAAA} queries.
 
 \para{Identifying differences in individual resolvers.} 
 %
-We begin our analysis by identifying the individual resolvers, within each of
-the seven countries listed above, that have a statistically significant
+We begin our analysis by identifying the individual resolver pairs (\ie we
+consider the IPv4- and IPv6-interfaces of a resolver as a unit), within each
+of the seven countries listed above, that have a statistically significant
 difference in their censorship of {\tt A} and {\tt AAAA} queries.
 %
 To measure differences in DNS query handling of individual resolvers, we
@@ -151,13 +152,47 @@ We use a two-proportion $z$-test to verify the statistical significance of any
 observed difference in the ratios between the two groups for each resolver.
 Similar to our within-country analysis, we apply a Sidak correction to account
 for our testing of multiple hypotheses and use $p \leq 1-{.05}^{1/n_r}$ to
-classify a difference as significant, where $n_r$ is the total number of
-resolvers in our dataset (\fixme{XXX}).
-%
-We then identify the ASes and geolocate each of these resolvers to identify
-their spread within a country.
+classify a difference as significant, where $n_{r_c}$ is the total number of
+resolvers in our dataset belonging to country $c$.
 
 \para{Results.}
+
+\begin{table*}[t]
+  \centering
+  \small
+  \scalebox{\tabularscale} {
+    \begin{tabular}{lccp{2in}cp{1.5in}}
+    \toprule
+      {\bf Country} & 
+      {\bf Total pairs} & {\bf Inconsistent pairs} & 
+      {\bf Most inconsistent AS} & 
+      {\bf AS diversity ($\Delta_{AS}$)} &
+      {\bf Most inconsistent type} 
+    \\ \midrule
+      Thailand (TH)       & 186 & 152 (81.7\%)  &  AS9835 Government IT Services (40/41)  & 4.50 (0.14) & Corporate (38/43) \\
+      Bangladesh (BD)     & 29  & 18 (62.1\%) & AS 9230 Bangladesh Online (4/4)           & 4.10 (0.48) & Cable/DSL (18/29) \\    
+      Pakistan (PK)       & 23  & 15 (65.2\%) & AS 17911 Brain Telecom (3/3)              & 3.06 (0.25) & Cable/DSL (12/15) \\    
+      Chile (CL)          & 65  & 20 (30.1\%) & AS 27651 Entel Chile (13/13)              & 1.14 (1.18) & Cable/DSL (7/12) \\    
+      Vietnam (VN)        & 252 & 64 (25.4\%) & AS 131353 NhanHoa Software (37/63)        & 2.22 (0.71) & Cable/DSL (60/207) \\    
+      Korea (KR)          & 632 & 80 (12.7\%) & AS 9848 Sejong Telecom (13/13) & 4.17 (1.30) & Cable/DSL (58/452) \\    
+      China (CN)          & 194 & 6 (3.1\%)   & AS 55933 Cloudie Limited (2/2) & 2.25 (2.56) & Corporate (4/15)   \\    
+    \midrule
+      United States (US)  & 1,228 & 175 (14.3\%)  & AS 30475 WEHOSTWEBSITES (35/36) & 4.69 (1.31) & Corporate (129/757) \\    
+      Myanmar (MY)        & 50  & 30 (60\%)   & AS 136170 Exabytes Network (10/10) & 2.42 (0.48) & Corporate (26/30) \\    
+    \bottomrule
+  \end{tabular}
+  }
+  \caption{Characteristics of the resolvers which demonstrated a statistically
+  significant difference in their handling of {\tt A} and {\tt AAAA} queries in
+  each country. `AS diversity' denotes the entropy of inconsistent resolver
+  distribution across a country's ASes and `$\Delta_{AS}$' represents its
+  Kullback-Leibler divergence from the distribution of all resolvers in the
+  country's ASes. `Most inconsistent type' denotes the connection type which
+  experienced the most inconsistencies in {\tt A} and {\tt AAAA} query
+  handling.}
+  \label{tab:resources:resolvers}
+\end{table*}
+
 
 
 
