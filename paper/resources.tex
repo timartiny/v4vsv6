@@ -130,15 +130,18 @@ and 13\% higher {\tt AAAA} censorship rate, respectively.
 \label{sec:resources:resolvers}
 Given our above results which suggest that there are a number of countries in
 which {\tt A} and {\tt AAAA} queries are censored differently, we now seek to
-understand the characteristics of the resolvers that cause these differences
---- specifically, are they spread out across many Autonomous Systems (ASes)
-within a country? Finding that these resolvers are concentrated within a few
-ASes would indicate which network operators have inconsistent mechanisms for
-censoring {\tt A} and {\tt AAAA} queries, while a broad spread across many ASes
-within the country would suggest the presence of a centralized censorship
-mechanism which contains inconsistencies in the handling of {\tt A} and {\tt
-AAAA} queries. 
-
+understand the characteristics of the resolvers that cause these differences.
+%
+We first focus on identifying the fraction of resolvers in each country that
+have statistically different behaviors for {\tt A} and {\tt AAAA} queries.
+Then, we compare the AS distributions of these resolvers with the set of all
+resolvers in a country. This comparison allows us to hypothesize about the
+presence of a centralized DNS censorship mechanism is responsible for the
+observed inconsistencies or if they should be attributed to local network
+operators responsible for implementing DNS censorship. Finally, we identify the
+types of networks hosting inconsistent resolvers to get a measure of whether
+users in residential networks may exploit these DNS inconsistencies for
+circumvention.
 
 \para{Identifying differences in individual resolvers.} 
 %
