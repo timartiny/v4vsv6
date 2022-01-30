@@ -1,29 +1,153 @@
 \section{Prevalence of DNS Censorship}\label{sec:prevalence}
 
-
-Before investigating the difference in censorship between IPv4 and IPv6, we
-frist study \textbf{what countries censor DNS} in the first place?
 We use our collected dataset described in Section~\ref{sec:methodology} to
-answer this question.
-
+understand the prevalence of DNS censorship around the world, in both IPv4
+and IPv6.
 
 %Many censors block using DNS injection~\cite{satellite,global}.
 
 
 %\SomeCountryTable
 \TabBaseRate
+%\TabBaseRateMedian % Nah don't use this one;
 
 % DNS censorship not the only kind.
 % ...
 
-Table~\ref{tab:country-resolvers} shows the 27~countries that have more than 50
+Table~\ref{tab:base-rate} shows the top 27~countries that have 50 or more
 resolver pairs (IPv4 and IPv6 interfaces) that geolocate within the country.
-For each of our 7,000 resolver pair, we send our list of 700+ domains (for both A
-and AAAA records). We label a domain as \emph{censored} if over half of the
-resolvers in a given country return a result consistent with blocking. This
-helps to eliminate seemingly spurious censorship events, either due to geo-location
-errors, configuration issues, or custom blocklists deployed at single resolvers.
+For each of our 7,000 resolver pair, we measure the base rate of censored domains
+(from our list of 700+ domains). Table~\ref{tab:base-rate} breaks this down into
+four categories:
+\texttt{A} records to IPv4 resolvers,
+\texttt{AAAA} to IPv4 resolvers,
+\texttt{A} records to IPv6 resolvers,
+and \texttt{AAAA} records to IPv6 resolvers.
 
+
+
+Because our dataset is balanced (all the domains have both A and AAAA records,
+and each resolver pair consists of an IPv4 and IPv6 address), if censorship is
+applied uniformly, we would expect the rate of censorship to be uniform within a
+country across records and resolver interfaces. However, we find several cases
+where this is not true.
+
+\paragraph{Thailand} One prominent example is Thailand, where 8.2\% of
+\texttt{A} records were blocked by IPv4 resolvers, compared to around 1\% for
+\texttt{AAAA} records or IPv6 resolvers in the country. The reason for this is
+that many instances of IPv4 resolvers predominantly (or exclusively) saw
+blocking on only \texttt{A} records, while their IPv6 pair saw little or no
+blocking on either \texttt{A} or \texttt{AAAA} records. For instance, one of the
+larger resolvers by blocked domains had an IPv4 endpoint that blocked
+240 \texttt{A} records, but only 15 \texttt{AAAA} records from our domain list.
+Meanwhile, its IPv6 counterpart did not block any domains (either \texttt{A} or
+\texttt{AAAA} records).
+
+% jq -r 'select(.resolver_country=="TH" and .id=="4934-A").blocked_domains | keys | .[]' ../../data/resolver-blocks-jan-aaaa.json | grep -e '-AAAA$' | wc -l
+% Removed 3 domains manually: www.stratcom.mil, www.hud.gov, portal.hud.gov
+
+
+
+
+\paragraph{China}
+China shows an unusual preference \textbf{toward} blocking \texttt{AAAA}
+records over \texttt{A} records. While it is known that the Great Firewall
+can block \texttt{AAAA} records and injects IPv6 traffic, it is not clear why it
+would block those records more than \texttt{A} records. Manual investigation reveals
+21 domains that almost exclusively have their \texttt{AAAA} record blocked, but
+not their \texttt{A} record. For example, \texttt{gmail.com}'s \texttt{AAAA}
+record is blocked by over 95\% of resolvers in China, but the corresponding
+\texttt{A} record for \texttt{gmail.com} is only blocked by 1\% of resolvers.
+The other 20 domains have similar patterns, leading to China's slight preference
+in blocking \texttt{AAAA} records over \texttt{A} records. We do not find any
+instances of domains in China that are similarly exclusively blocked by
+\texttt{A} record but not \texttt{AAAA}.
+
+%{"domain":"www.gmail.com-AAAA","country_code":"CN","v4_censored_count":186,"v6_censored_count":185}
+%{"domain":"www.gmail.com-A","country_code":"CN","v4_censored_count":4,"v6_censored_count":1}
+
+%{"domain":"www.apple.com-AAAA","country_code":"CN","v4_censored_count":189,"v6_censored_count":191}
+%{"domain":"www.apple.com-A","country_code":"CN","v4_censored_count":5,"v6_censored_count":8}
+
+% ~/v6/v4vsv6/cmd/baseRate$ python3 q6.py < ./CN.json 
+%blocked in AAAA but not A: 21 domains
+%translate.google.com
+%learndigital.withgoogle.com
+%www.snapchat.com
+%news.google.com
+%play.google.com
+%video.google.com
+%picasa.google.com
+%www.projectbaseline.com
+%googleblog.com
+%hangouts.google.com
+%messages.android.com
+%www.apple.com
+%android.com
+%google.dz
+%raseef22
+%qalam.withgoogle.com
+%www.gmail.com
+%doubleclick.net
+%gmail.com
+%www.hacktivismo.com
+%allo.google.com
+%blocked in A but not AAAA: 0 domains
+
+
+
+
+
+\paragraph{Iran}
+While Iran supports both IPv6 and IPv4, it is more effective at blocking IPv4
+resolvers (both \texttt{A} and \texttt{AAAA} records). We find this is due to
+many of the IPv6 resolvers in Iran are actually \textbf{6to4 bridges}: these
+are IPv6 addresses that are not native IPv6, but instead an encoding of an IPv4
+address. For example, sending an IPv6 packet to \texttt{2002:0102:0304::} will
+send the packet encapsulated in an IPv4 packet to 1.2.3.4 (at the 6to4 gateway),
+whose 32-bit address is encoded in the IPv6 address (\texttt{0102:0304}).
+However, this can result in the packet passing encapsulated past the censor, who
+will observe an IPv4 packet with a protocol field denoting IPv6 encapsulation,
+instead of the usual UDP-carrying DNS. A naive censor may ignore such packets,
+allowing the domain lookup through unchecked uncensored. We observe 272 IPv6
+resolvers are actually 6to4 bridges in Iran, all of which block at lower
+(but non-zero) rates, compared to their corresponding IPv4 resolver.
+%The reason
+%that these hosts still see blocking at all is that they occasionally must
+%recursively resolve the host, which may induce censorship on the outbound
+%packet. % (how did they get a correct cached entry in the first place tho?)
+
+% $ cat ../../data/resolver-blocks-jan-aaaa.json | jq '[.resovler_ip, .resolver_country] | @tsv' -r | awk '{print $1, $2}' | grep '2002:' | awk '{print $2}' | sort | uniq -c | sort -rn | head
+%    628 KR
+%    467 US
+%    364 FR
+%    272 IR
+%    255 RU
+%    244 DE
+%    225 VN
+%    175 IN
+%    146 CA
+%    127 GB
+%
+
+
+
+% 5.56.132.126 2002:538:847e::538:847e
+
+\paragraph{Trends}
+We observe two general trends that apply to many censoring countries in our data.
+First, \textbf{IPv4 resolvers are more heavily censored than IPv6 resolvers}.
+This may be because censors in those regions only inspect IPv4 packets, or that
+censors are more widely deployed on IPv4 networks. Second, \textbf{Native record
+types are more heavily censored than non-native records}. In other words, an
+\texttt{A} record requested from an IPv4 resolver is more likely to be censored
+than a \texttt{AAAA} record from the same interface. But conversely, we find
+that \texttt{AAAA} records are also more often censored on IPv6 resolvers than
+\texttt{A} records. This could be because a censor only supports detecting
+\texttt{AAAA} records in IPv6 traffic, and only \texttt{A} records in IPv4.
+
+
+\if0
 Notably, China, Russia, Iran, and Hong Kong can clearly be seen to host
 resolvers that consistently block many domains, demonstrating these countries have
 deployed largely uniform national censorship policies. On the other hand,
@@ -51,5 +175,6 @@ censored domains, while many other resolvers censored few or no domains.
 
 
 \FigIndiaCluster
+\fi
 
 
