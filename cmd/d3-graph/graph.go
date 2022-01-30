@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"os"
 	"sort"
+	"strconv"
 	"sync"
 
 	"github.com/alexflint/go-arg"
@@ -21,8 +23,9 @@ var (
 type GraphFlags struct {
 	MaxEditDistance int `arg:"-m,--max-edit-distance" help:"How far should links be created" default:"5" json:"max_edit_distance"`
 	//DiscardEmpty    bool `arg:"-e,--discard-empty" help:"Don't compare empty blocklists" default: "false" json:"discard_empty"`
-	IncludeSingles bool `arg:"-i,--include-single" help:"Include nodes that are unconnected from any other node" default: "false" json:"include_single"`
-	MinListSize    int  `arg:"-s,--min-size" help:"Minimum list size to include in graph" default: "1" json:"min_size"`
+	IncludeSingles bool    `arg:"-i,--include-single" help:"Include nodes that are unconnected from any other node" default: "false" json:"include_single"`
+	MinListSize    int     `arg:"-s,--min-size" help:"Minimum list size to include in graph" default: "1" json:"min_size"`
+	BubbleScale    float64 `arg:"-b,--bubble-scale" help:"Amount to scale down bubble sizes (for big countries)" default: "1" json:"bubble_scale"`
 }
 
 type Output struct {
@@ -66,7 +69,7 @@ func setupArgs() GraphFlags {
 	return ret
 }
 
-func updateNodeMaps(nodes *Nodes, ntbl map[string][]string, lc <-chan string, wg *sync.WaitGroup) {
+func updateNodeMaps(nodes *Nodes, ntbl map[string][]string, bs float64, lc <-chan string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	ignoreDomains := map[string]bool{
@@ -87,7 +90,6 @@ func updateNodeMaps(nodes *Nodes, ntbl map[string][]string, lc <-chan string, wg
 		} else {
 			n.Group = 2
 		}
-		n.Value = "5" // default size, can change to larger/smaller if needed
 		n.Id = rs.ID
 		*nodes = append(*nodes, n)
 
@@ -98,6 +100,7 @@ func updateNodeMaps(nodes *Nodes, ntbl map[string][]string, lc <-chan string, wg
 			}
 			keys = append(keys, k)
 		}
+		n.Value = strconv.Itoa(int(math.Round(float64(len(keys)) * bs))) // size proportional to blocklist
 		sort.Strings(keys)
 		ntbl[rs.ID] = keys
 	}
@@ -189,7 +192,7 @@ func main() {
 	lineChan := make(chan string, 10)
 
 	wg.Add(1)
-	go updateNodeMaps(&nodes, nodeToBlockedList, lineChan, &wg)
+	go updateNodeMaps(&nodes, nodeToBlockedList, args.BubbleScale, lineChan, &wg)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
