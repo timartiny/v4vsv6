@@ -262,7 +262,7 @@
         \begin{tabular}{lccccc}
             \toprule
                 %\textbf{Country} & \textbf{Resolver pairs} & \textbf{v4/A} & \textbf{v4/AAAA} & \textbf{v6/A} & \textbf{v6/AAAA} \\
-                \textbf{} & \textbf{Resolver} & \textbf{v4} & \textbf{v4} & \textbf{v6} & \textbf{v6} \\
+                \textbf{} & \textbf{Resolver} & \textbf{IPv4} & \textbf{IPv4} & \textbf{IPv6} & \textbf{IPv6} \\
                 \textbf{Country} & \textbf{pairs} & \textbf{A} & \textbf{AAAA} & \textbf{A} & \textbf{AAAA} \\
                 \midrule
 
@@ -297,7 +297,7 @@ Malaysia (MY)         &    50  & \cellcolor{red1} 4.9\% & 2.0\% & \cellcolor{gre
 
 
                 \hline
-                \textbf{Shown countries}            & \textbf{ 6501} & \textbf{3.8\%} & \textbf{3.2\%} & \textbf{2.8\%} & \textbf{3.0\%} \\
+                %\textbf{Shown countries}            & \textbf{ 6501} & \textbf{3.8\%} & \textbf{3.2\%} & \textbf{2.8\%} & \textbf{3.0\%} \\
                 \textbf{Global}            & \textbf{ 7441} & \textbf{3.6\%} & \textbf{3.0\%} & \textbf{2.6\%} & \textbf{2.7\%} \\
                 \bottomrule
         \end{tabular}
@@ -308,11 +308,66 @@ Malaysia (MY)         &    50  & \cellcolor{red1} 4.9\% & 2.0\% & \cellcolor{gre
             We query each resolver pair (v4/v6 interfaces) with a list of over 700 domains
             from censorship lists that support both IPv4 and IPv6 addresses. For these domains,
             we request both \texttt{A} and \texttt{AAAA} records. We report on the average percent of censored
-            responses for resolver inteface (v4 or v6) combined with record type (\texttt{A} or \texttt{AAAA}).
+            responses for resolver inteface (v4 or v6) combined with record type (\texttt{A} or \texttt{AAAA}). Items significantly above (below) a country's average are colored red (green). We observe a general trend that IPv4 resolvers see more blocking than IPv6 resolvers.
+            %and to a lesser extent, that IPv4 \texttt{A} records and IPv6 \texttt{AAAA} records are blocked more than IPv4 \texttt{AAAA} or IPv6 \texttt{A} records
             }
-        \label{tab:country-resolvers}
+        \label{tab:base-rate}
     \end{table}
 }
+
+
+\newcommand{\TabBaseRateMedian}{
+    \begin{table}[ht]
+        \centering
+        \small
+        \scalebox{\tabularscale} {
+        \begin{tabular}{lccccc}
+            \toprule
+                %\textbf{Country} & \textbf{Resolver pairs} & \textbf{v4/A} & \textbf{v4/AAAA} & \textbf{v6/A} & \textbf{v6/AAAA} \\
+                \textbf{} & \textbf{Resolver} & \textbf{v4} & \textbf{v4} & \textbf{v6} & \textbf{v6} \\
+                \textbf{Country} & \textbf{pairs} & \textbf{A} & \textbf{AAAA} & \textbf{A} & \textbf{AAAA} \\
+                \midrule
+
+
+                United States (US)    &   1228  & \cellcolor{green0} 0.1\% & 0.3\% & \cellcolor{green0} 0.1\% & 0.3\% \\  % avg 0.9 stdev 2.6 med 0.1
+Germany (DE)          &   753  & 0.4\% & 0.4\% & 0.3\% & 0.4\% \\  % avg 0.9 stdev 3.3 med 0.4
+South Korea (KR)      &   632  & 1.0\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.6\% \\  % avg 1.5 stdev 2.9 med 0.6
+France (FR)           &   560  & 0.1\% & 0.3\% & 0.1\% & 0.3\% \\  % avg 0.5 stdev 1.8 med 0.1
+Russia (RU)           &   312  & 4.9\% & 4.9\% & 4.8\% & 4.9\% \\  % avg 4.8 stdev 3.6 med 4.9
+Iran (IR)             &   277  & \cellcolor{red1} 25.4\% & \cellcolor{red0} 24.8\% & \cellcolor{green0} 21.8\% & \cellcolor{green0} 21.7\% \\  % avg 23.3 stdev 3.4 med 24.4
+Vietnam (VN)          &   252  & 0.8\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.4\% \\  % avg 1.1 stdev 1.9 med 0.6
+Taiwan (TW)           &   248  & 0.3\% & 0.4\% & 0.3\% & 0.4\% \\  % avg 1.0 stdev 4.0 med 0.3
+India (IN)            &   226  & 1.0\% & 1.0\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.8\% \\  % avg 1.2 stdev 1.4 med 0.8
+Canada (CA)           &   199  & 0.3\% & 0.3\% & 0.1\% & 0.1\% \\  % avg 0.4 stdev 1.2 med 0.1
+United Kingdom (GB)   &   196  & 0.3\% & 0.3\% & 0.1\% & 0.3\% \\  % avg 1.0 stdev 3.3 med 0.3
+China (CN)            &   194  & \cellcolor{green0} 28.6\% & \cellcolor{red0} 32.1\% & \cellcolor{green0} 28.2\% & 31.9\% \\  % avg 30.5 stdev 5.9 med 31.4
+Thailand (TH)         &   186  & \cellcolor{red5}  8.7\% & \cellcolor{green1} 0.6\% & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.4\% \\  % avg 2.9 stdev 4.3 med 0.6
+Brazil (BR)           &   160  & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.6\% \\  % avg 2.1 stdev 4.7 med 0.6
+Japan (JP)            &   152  & 0.1\% & 0.3\% & 0.1\% & 0.1\% \\  % avg 1.0 stdev 3.4 med 0.1
+Mexico (MX)           &   150  & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.3\% \\  % avg 2.4 stdev 5.0 med 0.3
+Turkey (TR)           &   114  & 0.7\% & 0.4\% & 0.4\% & 0.4\% \\  % avg 1.1 stdev 3.2 med 0.4
+Netherlands (NL)      &    97  & \cellcolor{green0} 0.1\% & 0.3\% & \cellcolor{green0} 0.1\% & 0.3\% \\  % avg 0.8 stdev 2.3 med 0.3
+South Africa (ZA)     &    93  & \cellcolor{green0} 0.4\% & 0.7\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.6\% \\  % avg 1.6 stdev 4.2 med 0.6
+Australia (AU)        &    72  & 0.3\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.1\% \\  % avg 1.0 stdev 2.9 med 0.1
+Hong Kong (HK)        &    67  & 5.2\% & 4.8\% & 4.8\% & 4.8\% \\  % avg 5.7 stdev 4.9 med 4.8
+Chile (CL)            &    65  & 1.3\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.6\% \\  % avg 1.3 stdev 1.8 med 0.7
+Switzerland (CH)      &    60  & \cellcolor{green0} 0.1\% & 0.3\% & \cellcolor{green0} 0.1\% & 0.3\% \\  % avg 0.3 stdev 0.5 med 0.1
+Indonesia (ID)        &    56  & 4.9\% & \cellcolor{green0} 1.0\% & \cellcolor{green0} 1.0\% & \cellcolor{green0} 0.8\% \\  % avg 3.5 stdev 6.3 med 1.1
+Lithuania (LT)        &    52  & 0.4\% & 0.6\% & 0.4\% & 0.4\% \\  % avg 0.8 stdev 1.6 med 0.4
+Singapore (SG)        &    50  & 0.7\% & 0.7\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.6\% \\  % avg 1.0 stdev 1.5 med 0.6
+Malaysia (MY)         &    50  & \cellcolor{red2} 5.2\% & \cellcolor{green0} 0.7\% & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.6\% \\  % avg 2.4 stdev 3.5 med 0.6
+
+                \bottomrule
+        \end{tabular}
+        }
+        \caption{\textbf{Base rate; medians}}
+    \end{table}
+}
+ 
+
+
+
+
 
 \newcommand{\SomeCountryTable}{
     \begin{table}[ht]

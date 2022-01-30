@@ -23,10 +23,21 @@ for line in sys.stdin.readlines():
 
 
 
+AAAAnotA = []
+AnotAAAA = []
 
 for domain in domA.keys():
     v4A, v6A = domA[domain]
     v4AAAA, v6AAAA = domAAAA[domain]
 
     if v4AAAA > 160 and v6AAAA > 160 and v4A < 20 and v6A < 20:
-        print(domain)
+        AAAAnotA.append(domain)
+    if v4AAAA < 20 and v6AAAA < 20 and v4A > 160 and v6A > 160:
+        AnotAAAA.append(domain)
+
+
+print('blocked in AAAA but not A: %d domains' % len(AAAAnotA))
+print('\n'.join(AAAAnotA))
+
+print('blocked in A but not AAAA: %d domains' % len(AnotAAAA))
+print('\n'.join(AnotAAAA))

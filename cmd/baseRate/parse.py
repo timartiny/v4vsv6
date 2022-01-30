@@ -43,6 +43,10 @@ for line in sys.stdin.readlines():
 
 N = 714 # jq 'select(.has_v4 and .has_v6 and .has_v4_tls and .has_v6_tls).domain' satellite-full-details-jan-24.json -r | wc -l
 
+
+def median(a):
+    return sorted(a)[len(a)//2]
+
 # takes v4A[country], v4AAAA[country], etc
 # returns (avg, stdev, fc) where fc is a function that colors accordingly
 def getMeta(A, B, C, D):
@@ -51,6 +55,8 @@ def getMeta(A, B, C, D):
     avg = 100*sum(allSamples) / (N*len(allSamples))
     sq = [((100*s/N)-avg)**2 for s in allSamples]
     stdev = math.sqrt(sum(sq) / len(sq))
+
+    med = 100*median(allSamples)/N
 
     # format and color
     def fc(p):
@@ -66,7 +72,8 @@ def getMeta(A, B, C, D):
                 return '\cellcolor{%s%d} %.1f\\%%' % (color, i-2, p)
         return '\cellcolor{%s5} % .1f\\%%' % (color, p)
 
-    return (avg, stdev, fc)
+    return (avg, stdev, med, fc)
+
 
 
 
@@ -95,12 +102,20 @@ for country, resolvers in sorted(nResolvers.items(), key=lambda x: x[1], reverse
         v6Aavg = 100*sum(v6A[country]) / (N*len(v6A[country]))
         v6AAAAavg = 100*sum(v6AAAA[country]) / (N*len(v6AAAA[country]))
 
-        avg, stdev, fc = getMeta(v4A[country], v4AAAA[country], v6A[country], v6AAAA[country])
+        v4Amed = 100*median(v4A[country])/N
+        v4AAAAmed = 100*median(v4AAAA[country])/N
+        v6Amed = 100*median(v6A[country])/N
+        v6AAAAmed = 100*median(v6AAAA[country])/N
+
+        avg, stdev, med, fc = getMeta(v4A[country], v4AAAA[country], v6A[country], v6AAAA[country])
 
         cs = '%s (%s)' % (country_name, country)
         cs = cs.ljust(20)
-        print('%s  &  % 4d  & %s & %s & %s & %s \\\\  %% avg %.1f stdev %.1f' % \
-            (cs, resolvers, fc(v4Aavg), fc(v4AAAAavg), fc(v6Aavg), fc(v6AAAAavg), avg, stdev))
+        #print('%s  &  % 4d  & %s & %s & %s & %s \\\\  %% avg %.1f stdev %.1f' % \
+        #    (cs, resolvers, fc(v4Aavg), fc(v4AAAAavg), fc(v6Aavg), fc(v6AAAAavg), avg, stdev))
+
+        print('%s  &  % 4d  & %s & %s & %s & %s \\\\  %% avg %.1f stdev %.1f med %.1f' % \
+            (cs, resolvers, fc(v4Amed), fc(v4AAAAmed), fc(v6Amed), fc(v6AAAAmed), avg, stdev, med))
     except ZeroDivisionError as e:
         print('%s   (incomplete) %d    %d/%d   %d/%d   %d/%d   %d/%d' % \
             (country, resolvers,
