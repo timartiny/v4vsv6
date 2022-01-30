@@ -65,7 +65,7 @@ def getMeta(A, B, C, D):
         if p > avg:
             color = 'red'
         sds = stdev/4
-        if d < sds:
+        if d < sds or (sds==0 and d==0):
             return '%.1f\\%%' % p    # no color
         for i in range(2,5):
             if d < sds*i:
@@ -111,11 +111,11 @@ for country, resolvers in sorted(nResolvers.items(), key=lambda x: x[1], reverse
 
         cs = '%s (%s)' % (country_name, country)
         cs = cs.ljust(20)
-        #print('%s  &  % 4d  & %s & %s & %s & %s \\\\  %% avg %.1f stdev %.1f' % \
-        #    (cs, resolvers, fc(v4Aavg), fc(v4AAAAavg), fc(v6Aavg), fc(v6AAAAavg), avg, stdev))
-
         print('%s  &  % 4d  & %s & %s & %s & %s \\\\  %% avg %.1f stdev %.1f med %.1f' % \
-            (cs, resolvers, fc(v4Amed), fc(v4AAAAmed), fc(v6Amed), fc(v6AAAAmed), avg, stdev, med))
+            (cs, resolvers, fc(v4Aavg), fc(v4AAAAavg), fc(v6Aavg), fc(v6AAAAavg), avg, stdev, med))
+
+        #print('%s  &  % 4d  & %s & %s & %s & %s \\\\  %% avg %.1f stdev %.1f med %.1f' % \
+        #    (cs, resolvers, fc(v4Amed), fc(v4AAAAmed), fc(v6Amed), fc(v6AAAAmed), avg, stdev, med))
     except ZeroDivisionError as e:
         print('%s   (incomplete) %d    %d/%d   %d/%d   %d/%d   %d/%d' % \
             (country, resolvers,
@@ -128,7 +128,7 @@ for country, resolvers in sorted(nResolvers.items(), key=lambda x: x[1], reverse
 
 print('\\hline')
 
-#goodCountries = v4A.keys()
+goodCountries = v4A.keys()
 
 totRes = sum([nResolvers[cc] for cc in goodCountries])/2
 
@@ -146,10 +146,10 @@ tv4AAAA = 100*sum(all_v4AAAA) / (N*len(all_v4AAAA))
 tv6A = 100*sum(all_v6A) / (N*len(all_v6A))
 tv6AAAA = 100*sum(all_v6AAAA) / (N*len(all_v6AAAA))
 
-avg, stdev, fc = getMeta(all_v4A, all_v4AAAA, all_v6A, all_v6AAAA)
+avg, stdev, med, fc = getMeta(all_v4A, all_v4AAAA, all_v6A, all_v6AAAA)
 
-print('\\textbf{Global}            & \\textbf{% 5d} & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} \\\\ %% avg %.1f stdev %.1f' % \
-        (totRes, fc(tv4A), fc(tv4AAAA), fc(tv6A), fc(tv6AAAA), avg, stdev))
+print('\\textbf{Global}            & \\textbf{% 5d} & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} & \\textbf{%s} \\\\ %% avg %.1f stdev %.1f med %.1f' % \
+        (totRes, fc(tv4A), fc(tv4AAAA), fc(tv6A), fc(tv6AAAA), avg, stdev, med))
 
 
 
