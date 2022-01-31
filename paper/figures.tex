@@ -250,6 +250,9 @@
 \definecolor{green0}{rgb}{0.8,1,0.8}
 \definecolor{green1}{rgb}{0.7,1,0.7}
 \definecolor{green2}{rgb}{0.6,1,0.6}
+\definecolor{green3}{rgb}{0.5,1,0.5}
+\definecolor{green4}{rgb}{0.4,1,0.4}
+\definecolor{green5}{rgb}{0.3,1,0.3}
 
 
 
@@ -727,7 +730,274 @@ Malaysia (MY)         &    50  & \cellcolor{red2} 5.2\% & \cellcolor{green0} 0.7
     \end{table}
 }
 
+
+
+\newcommand{\TabBaseRateAllCountriesMedian}{
+    \begin{table}[ht]
+        \centering
+        \small
+        \scalebox{\tabularscale} {
+        \begin{tabular}{lccccc}
+            \toprule
+                %\textbf{Country} & \textbf{Resolver pairs} & \textbf{v4/A} & \textbf{v4/AAAA} & \textbf{v6/A} & \textbf{v6/AAAA} \\
+                \textbf{} & \textbf{Resolver} & \textbf{IPv4} & \textbf{IPv4} & \textbf{IPv6} & \textbf{IPv6} \\
+                \textbf{Country} & \textbf{pairs} & \textbf{A} & \textbf{AAAA} & \textbf{A} & \textbf{AAAA} \\
+                \midrule
+
+
+Spain (ES)            &    49  & 0.4\% & 0.3\% & 0.1\% & 0.3\% \\  % avg 1.3 stdev 5.5 med 0.3
+Poland (PL)           &    48  & 0.7\% & 0.6\% & 0.6\% & 0.4\% \\  % avg 1.7 stdev 5.7 med 0.6
+Argentina (AR)        &    47  & 2.4\% & \cellcolor{green1} 0.8\% & \cellcolor{green1} 0.6\% & \cellcolor{green1} 0.4\% \\  % avg 3.0 stdev 4.4 med 0.7
+Romania (RO)          &    44  & 0.7\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% \\  % avg 1.3 stdev 2.9 med 0.4
+Czechia (CZ)          &    41  & 0.4\% & 0.6\% & 0.4\% & 0.6\% \\  % avg 0.9 stdev 2.0 med 0.4
+Italy (IT)            &    38  & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.6\% \\  % avg 2.3 stdev 5.0 med 0.6
+Sweden (SE)           &    34  & 0.1\% & 0.1\% & 0.1\% & 0.1\% \\  % avg 0.4 stdev 1.0 med 0.1
+Finland (FI)          &    34  & \cellcolor{green0} 0.4\% & 0.6\% & \cellcolor{green0} 0.4\% & 0.6\% \\  % avg 0.6 stdev 0.4 med 0.6
+Ukraine (UA)          &    34  & 3.1\% & \cellcolor{green0} 1.3\% & \cellcolor{green0} 0.8\% & \cellcolor{green0} 1.3\% \\  % avg 3.4 stdev 5.9 med 1.3
+Belgium (BE)          &    31  & 0.6\% & \cellcolor{green0} 0.3\% & 0.4\% & \cellcolor{green0} 0.3\% \\  % avg 1.2 stdev 3.5 med 0.3
+Bulgaria (BG)         &    30  & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% \\  % avg 2.1 stdev 5.9 med 0.4
+Bangladesh (BD)       &    29  & \cellcolor{red5}  8.3\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.6\% \\  % avg 2.4 stdev 3.7 med 0.7
+Colombia (CO)         &    27  & 1.8\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.4\% \\  % avg 2.3 stdev 5.6 med 0.7
+Saudi Arabia (SA)     &    24  & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.7\% \\  % avg 1.8 stdev 4.1 med 0.7
+Pakistan (PK)         &    23  & \cellcolor{red1} 4.5\% & \cellcolor{green1} 1.7\% & \cellcolor{red0} 3.8\% & \cellcolor{green1} 1.4\% \\  % avg 3.0 stdev 2.2 med 2.1
+Hungary (HU)          &    22  & \cellcolor{green1} 0.1\% & 0.3\% & \cellcolor{green1} 0.1\% & 0.3\% \\  % avg 0.3 stdev 0.3 med 0.3
+Ecuador (EC)          &    21  & 1.1\% & 0.4\% & 0.4\% & 0.4\% \\  % avg 1.8 stdev 6.3 med 0.4
+Greece (GR)           &    20  & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.3\% & 0.4\% \\  % avg 0.7 stdev 1.4 med 0.3
+Kazakhstan (KZ)       &    19  & \cellcolor{green0} 1.0\% & \cellcolor{green0} 0.8\% & \cellcolor{green0} 0.8\% & \cellcolor{green0} 1.0\% \\  % avg 2.4 stdev 4.3 med 0.8
+Philippines (PH)      &    18  & 3.4\% & \cellcolor{green0} 1.7\% & \cellcolor{green1} 0.6\% & \cellcolor{green1} 0.6\% \\  % avg 2.8 stdev 4.0 med 1.3
+Norway (NO)           &    16  & 0.3\% & \cellcolor{red0} 0.4\% & 0.3\% & \cellcolor{red0} 0.4\% \\  % avg 0.3 stdev 0.3 med 0.3
+Egypt (EG)            &    14  & 3.4\% & 3.1\% & \cellcolor{green0} 2.4\% & \cellcolor{green0} 2.8\% \\  % avg 4.1 stdev 4.5 med 2.9
+Slovakia (SK)         &    14  & 0.3\% & 0.3\% & 0.3\% & \cellcolor{red2} 0.4\% \\  % avg 0.2 stdev 0.2 med 0.3
+Denmark (DK)          &    13  & \cellcolor{green0} 0.4\% & 0.6\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.3\% \\  % avg 1.2 stdev 3.0 med 0.4
+Peru (PE)             &    11  & 1.0\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.4\% \\  % avg 1.0 stdev 1.5 med 0.6
+Portugal (PT)         &    11  & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.0\% & \cellcolor{green0} 0.1\% \\  % avg 0.8 stdev 2.1 med 0.1
+Nigeria (NG)          &     9  & 1.7\% & \cellcolor{green1} 0.6\% & 1.7\% & \cellcolor{green0} 1.3\% \\  % avg 2.0 stdev 2.5 med 1.7
+Austria (AT)          &     8  & 0.1\% & \cellcolor{red2} 0.3\% & 0.1\% & 0.1\% \\  % avg 0.2 stdev 0.1 med 0.1
+Kenya (KE)            &     8  & \cellcolor{red5}  9.9\% & \cellcolor{green0} 1.4\% & \cellcolor{green0} 1.1\% & \cellcolor{green0} 1.1\% \\  % avg 2.8 stdev 4.0 med 1.3
+Moldova (MD)          &     7  & \cellcolor{green1} 0.1\% & \cellcolor{green1} 0.3\% & \cellcolor{green1} 0.3\% & \cellcolor{green1} 0.7\% \\  % avg 3.7 stdev 6.0 med 0.3
+Serbia (RS)           &     7  & 0.1\% & \cellcolor{red1} 0.3\% & 0.1\% & \cellcolor{red1} 0.3\% \\  % avg 0.2 stdev 0.1 med 0.1
+Slovenia (SI)         &     7  & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.1\% \\  % avg 1.0 stdev 2.4 med 0.1
+New Zealand (NZ)      &     7  & \cellcolor{red5}  6.4\% & \cellcolor{green0} 0.1\% & 0.7\% & \cellcolor{green0} 0.1\% \\  % avg 1.3 stdev 2.5 med 0.1
+Nepal (NP)            &     7  & 0.8\% & 0.8\% & \cellcolor{green1} 0.4\% & \cellcolor{green0} 0.7\% \\  % avg 1.0 stdev 0.8 med 0.7
+Macao (MO)            &     6  & \cellcolor{green2} 4.3\% & 4.5\% & \cellcolor{green2} 4.3\% & 4.5\% \\  % avg 4.5 stdev 0.2 med 4.5
+United Arab Emirates (AE)  &     6  & \cellcolor{red5}  1.7\% & \cellcolor{green1} 0.8\% & \cellcolor{green0} 1.0\% & \cellcolor{green0} 1.0\% \\  % avg 1.1 stdev 0.5 med 1.0
+Estonia (EE)          &     6  & 0.6\% & 0.6\% & 0.4\% & 0.6\% \\  % avg 0.7 stdev 1.4 med 0.4
+Costa Rica (CR)       &     6  & \cellcolor{red1} 7.3\% & \cellcolor{green0} 0.7\% & \cellcolor{green1} 0.6\% & \cellcolor{green1} 0.4\% \\  % avg 3.8 stdev 6.4 med 0.6
+Uruguay (UY)          &     6  & \cellcolor{red1} 0.6\% & 0.4\% & \cellcolor{green0} 0.3\% & \cellcolor{green1} 0.1\% \\  % avg 0.4 stdev 0.3 med 0.3
+Libya (LY)            &     5  & \cellcolor{green0} 0.4\% & 0.7\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% \\  % avg 0.8 stdev 0.9 med 0.6
+Mongolia (MN)         &     5  & \cellcolor{red0} 1.3\% & 0.8\% & 0.8\% & \cellcolor{green0} 0.7\% \\  % avg 1.0 stdev 0.9 med 0.8
+Venezuela (VE)        &     5  & \cellcolor{red5}  8.0\% & \cellcolor{green0} 0.8\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.7\% \\  % avg 2.5 stdev 3.9 med 0.8
+Belarus (BY)          &     5  & 0.8\% & \cellcolor{green1} 0.3\% & \cellcolor{green1} 0.3\% & 0.7\% \\  % avg 0.7 stdev 0.7 med 0.4
+Armenia (AM)          &     5  & \cellcolor{green1} 0.4\% & \cellcolor{green2} 0.3\% & \cellcolor{green1} 0.4\% & 0.7\% \\  % avg 0.7 stdev 0.6 med 0.4
+Panama (PA)           &     5  & 1.7\% & \cellcolor{green0} 0.8\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.3\% \\  % avg 2.1 stdev 4.1 med 0.7
+Sudan (SD)            &     5  & 3.1\% & 3.8\% & \cellcolor{green1} 1.3\% & \cellcolor{green1} 1.4\% \\  % avg 3.4 stdev 3.0 med 2.8
+Bosnia and Herzegovina (BA)  &     4  & \cellcolor{red1} 2.1\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% \\  % avg 1.1 stdev 1.5 med 0.4
+Guatemala (GT)        &     4  & 0.4\% & \cellcolor{red0} 0.6\% & \cellcolor{green1} 0.3\% & \cellcolor{green1} 0.3\% \\  % avg 0.4 stdev 0.3 med 0.4
+Luxembourg (LU)       &     4  & 0.1\% & 0.1\% & \cellcolor{green0} 0.0\% & 0.1\% \\  % avg 0.6 stdev 1.7 med 0.1
+Iraq (IQ)             &     4  & \cellcolor{green0} 1.0\% & \cellcolor{green0} 0.8\% & \cellcolor{green0} 1.0\% & \cellcolor{green0} 1.1\% \\  % avg 2.6 stdev 3.7 med 0.8
+Latvia (LV)           &     4  & \cellcolor{green2} 0.0\% & 0.1\% & 0.1\% & 0.1\% \\  % avg 0.1 stdev 0.1 med 0.1
+Albania (AL)          &     4  & \cellcolor{green0} 0.4\% & 0.6\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% \\  % avg 0.5 stdev 0.3 med 0.4
+Jordan (JO)           &     4  & 0.3\% & 0.3\% & \cellcolor{green1} 0.1\% & \cellcolor{red2} 0.6\% \\  % avg 0.3 stdev 0.3 med 0.3
+Belize (BZ)           &     4  & \cellcolor{red5}  8.7\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.4\% \\  % avg 1.8 stdev 3.0 med 0.6
+Bolivia (BO)          &     4  & 0.6\% & 0.6\% & \cellcolor{green0} 0.3\% & 0.4\% \\  % avg 0.6 stdev 0.7 med 0.4
+Croatia (HR)          &     3  & \cellcolor{green1} 0.1\% & \cellcolor{red5}  0.3\% & \cellcolor{green1} 0.1\% & \cellcolor{green1} 0.1\% \\  % avg 0.2 stdev 0.1 med 0.1
+Lebanon (LB)          &     3  & \cellcolor{red5}  0.7\% & 0.4\% & 0.4\% & 0.4\% \\  % avg 0.4 stdev 0.2 med 0.4
+Afghanistan (AF)      &     3  & \cellcolor{red2} 2.7\% & \cellcolor{green0} 1.4\% & \cellcolor{green0} 1.4\% & 1.5\% \\  % avg 1.8 stdev 1.1 med 1.5
+Honduras (HN)         &     3  & 1.3\% & \cellcolor{red1} 1.5\% & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.4\% \\  % avg 1.1 stdev 0.9 med 1.1
+Dominican Republic (DO)  &     3  & \cellcolor{red5}  6.0\% & \cellcolor{green0} 0.6\% & \cellcolor{green1} 0.3\% & \cellcolor{green0} 0.4\% \\  % avg 1.6 stdev 2.3 med 0.6
+North Macedonia (MK)  &     2  & \cellcolor{red5}  18.9\% & \cellcolor{red2} 12.6\% & \cellcolor{red0} 9.1\% & \cellcolor{red0} 9.5\% \\  % avg 6.4 stdev 6.8 med 9.1
+Georgia (GE)          &     2  & \cellcolor{red2} 2.2\% & \cellcolor{red5}  2.4\% & \cellcolor{red5}  2.7\% & \cellcolor{red1} 1.8\% \\  % avg 1.2 stdev 1.1 med 1.8
+Israel (IL)           &     2  & \cellcolor{red5}  5.2\% & \cellcolor{red5}  5.2\% & \cellcolor{red2} 5.0\% & \cellcolor{red5}  5.2\% \\  % avg 2.8 stdev 2.4 med 5.0
+Lao People's Democratic Republic (LA)  &     2  & \cellcolor{red5}  9.7\% & \cellcolor{green0} 0.8\% & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.6\% \\  % avg 2.6 stdev 3.9 med 0.6
+El Salvador (SV)      &     2  & \cellcolor{red5}  1.1\% & 0.4\% & \cellcolor{green2} 0.1\% & \cellcolor{green0} 0.3\% \\  % avg 0.4 stdev 0.3 med 0.3
+Chad (TD)             &     2  & \cellcolor{red5}  5.5\% & \cellcolor{red0} 2.1\% & 1.3\% & \cellcolor{red0} 2.2\% \\  % avg 1.4 stdev 1.7 med 1.3
+Nicaragua (NI)        &     2  & \cellcolor{red5}  7.1\% & \cellcolor{green0} 0.4\% & 0.7\% & \cellcolor{green0} 0.1\% \\  % avg 1.1 stdev 2.3 med 0.4
+Uganda (UG)           &     2  & \cellcolor{green0} 0.8\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 1.0\% & \cellcolor{red5}  13.0\% \\  % avg 2.0 stdev 4.2 med 0.7
+Guam (GU)             &     2  & \cellcolor{red5}  8.7\% & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.0\% & \cellcolor{green1} 0.4\% \\  % avg 2.2 stdev 3.4 med 0.4
+Trinidad and Tobago (TT)  &     2  & \cellcolor{red5}  0.6\% & \cellcolor{red2} 0.3\% & 0.1\% & \cellcolor{green2} 0.0\% \\  % avg 0.1 stdev 0.2 med 0.1
+Tunisia (TN)          &     2  & \cellcolor{red1} 0.6\% & \cellcolor{red1} 0.6\% & \cellcolor{red1} 0.6\% & \cellcolor{red5}  0.8\% \\  % avg 0.4 stdev 0.2 med 0.6
+Ethiopia (ET)         &     2  & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.7\% & \cellcolor{red5}  51.1\% & \cellcolor{green0} 0.6\% \\  % avg 6.7 stdev 16.8 med 0.4
+Oman (OM)             &     2  & \cellcolor{red5}  10.8\% & 1.3\% & \cellcolor{green0} 0.7\% & 1.0\% \\  % avg 1.8 stdev 3.4 med 0.7
+Cyprus (CY)           &     2  & \cellcolor{red5}  9.5\% & 1.4\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.6\% \\  % avg 1.6 stdev 3.0 med 0.6
+Liechtenstein (LI)    &     1  & \cellcolor{green5}  0.0\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.1\% & \cellcolor{red5}  0.6\% \\  % avg 0.2 stdev 0.2 med 0.1
+Madagascar (MG)       &     1  & \cellcolor{red0} 1.1\% & \cellcolor{red5}  1.4\% & \cellcolor{green5}  0.4\% & \cellcolor{red0} 1.1\% \\  % avg 1.0 stdev 0.4 med 1.1
+Myanmar (MM)          &     1  & \cellcolor{red5}  0.7\% & \cellcolor{red5}  0.7\% & \cellcolor{green5}  0.3\% & \cellcolor{green5}  0.3\% \\  % avg 0.5 stdev 0.2 med 0.7
+Zambia (ZM)           &     1  & \cellcolor{red5}  2.8\% & \cellcolor{green1} 0.8\% & \cellcolor{green1} 0.8\% & \cellcolor{green1} 0.8\% \\  % avg 1.3 stdev 0.8 med 0.8
+Kyrgyzstan (KG)       &     1  & \cellcolor{green5}  0.4\% & \cellcolor{red5}  2.7\% & \cellcolor{red2} 2.4\% & \cellcolor{green1} 1.0\% \\  % avg 1.6 stdev 0.9 med 2.4
+Ghana (GH)            &     1  & \cellcolor{red5}  8.8\% & \cellcolor{green0} 0.8\% & \cellcolor{green1} 0.1\% & \cellcolor{green1} 0.4\% \\  % avg 2.6 stdev 3.6 med 0.8
+Gibraltar (GI)        &     1  & \cellcolor{red5}  1.3\% & \cellcolor{red0} 1.0\% & \cellcolor{green1} 0.7\% & \cellcolor{green5}  0.6\% \\  % avg 0.9 stdev 0.3 med 1.0
+Haiti (HT)            &     1  & \cellcolor{red5}  8.5\% & \cellcolor{green1} 0.3\% & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.0\% \\  % avg 2.3 stdev 3.6 med 0.4
+Togo (TG)             &     1  & \cellcolor{red5}  3.9\% & \cellcolor{green0} 1.5\% & \cellcolor{green5}  0.8\% & 1.8\% \\  % avg 2.0 stdev 1.1 med 1.8
+Somalia (SO)          &     1  & \cellcolor{red5}  6.0\% & \cellcolor{green1} 0.6\% & \cellcolor{green1} 0.0\% & \cellcolor{green0} 0.7\% \\  % avg 1.8 stdev 2.4 med 0.7
+Azerbaijan (AZ)       &     1  & \cellcolor{green1} 0.1\% & \cellcolor{red5}  0.3\% & \cellcolor{green1} 0.1\% & \cellcolor{green1} 0.1\% \\  % avg 0.2 stdev 0.1 med 0.1
+Saint Lucia (LC)      &     1  & \cellcolor{green5}  0.0\% & \cellcolor{green5}  0.0\% & \cellcolor{green5}  0.0\% & \cellcolor{green5}  0.0\% \\  % avg 0.0 stdev 0.0 med 0.0
+French Polynesia (PF)  &     1  & 0.3\% & \cellcolor{red5}  0.6\% & \cellcolor{green5}  0.0\% & 0.3\% \\  % avg 0.3 stdev 0.2 med 0.3
+Kuwait (KW)           &     1  & \cellcolor{green1} 0.1\% & \cellcolor{red5}  1.1\% & \cellcolor{green1} 0.1\% & \cellcolor{green0} 0.3\% \\  % avg 0.4 stdev 0.4 med 0.3
+Angola (AO)           &     1  & \cellcolor{red5}  6.7\% & \cellcolor{green0} 1.0\% & \cellcolor{green1} 0.3\% & \cellcolor{green1} 0.6\% \\  % avg 2.1 stdev 2.7 med 1.0
+Maldives (MV)         &     1  & \cellcolor{red5}  8.3\% & \cellcolor{green5}  1.1\% & 5.3\% & \cellcolor{red1} 6.7\% \\  % avg 5.4 stdev 2.7 med 6.7
+Fiji (FJ)             &     1  & \cellcolor{red5}  0.4\% & 0.3\% & \cellcolor{green5}  0.1\% & 0.3\% \\  % avg 0.3 stdev 0.1 med 0.3
+Mozambique (MZ)       &     1  & \cellcolor{red5}  11.2\% & \cellcolor{green0} 3.8\% & \cellcolor{green1} 3.2\% & \cellcolor{green1} 2.8\% \\  % avg 5.3 stdev 3.5 med 3.8
+Sri Lanka (LK)        &     1  & 0.3\% & \cellcolor{red5}  0.8\% & \cellcolor{green1} 0.1\% & \cellcolor{green1} 0.1\% \\  % avg 0.4 stdev 0.3 med 0.3
+Paraguay (PY)         &     1  & \cellcolor{red5}  1.5\% & \cellcolor{green0} 1.1\% & \cellcolor{green5}  1.0\% & \cellcolor{green0} 1.1\% \\  % avg 1.2 stdev 0.2 med 1.1
+Seychelles (SC)       &     1  & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.4\% & \cellcolor{red5}  0.6\% & \cellcolor{green1} 0.4\% \\  % avg 0.5 stdev 0.1 med 0.4
+Tanzania (TZ)         &     1  & \cellcolor{red5}  7.3\% & 2.5\% & \cellcolor{green2} 0.6\% & \cellcolor{green2} 0.7\% \\  % avg 2.8 stdev 2.7 med 2.5
+Cameroon (CM)         &     1  & \cellcolor{green5}  0.1\% & 0.3\% & 0.3\% & \cellcolor{red5}  0.4\% \\  % avg 0.3 stdev 0.1 med 0.3
+Anguilla (AI)         &     1  & \cellcolor{red5}  25.9\% & \cellcolor{green0} 12.7\% & \cellcolor{green1} 11.1\% & \cellcolor{green2} 9.8\% \\  % avg 14.9 stdev 6.5 med 12.7
+\hline
+\textbf{Global}            & \textbf{ 7441} & \textbf{3.6\%} & \textbf{3.0\%} & \textbf{2.6\%} & \textbf{2.7\%} \\ % avg 3.0 stdev 7.0 med 0.4
+                \bottomrule
+        \end{tabular}
+        }
+        \caption{\textbf{Base rate medians; rest of countries not included in Table~\ref{tab:base-rate}}}
+    \end{table}
+}
+ 
+
+
+
+\newcommand{\TabBaseRateAllCountries}{
+    \begin{table}[ht]
+        \centering
+        \small
+        \scalebox{\tabularscale} {
+        \begin{tabular}{lccccc}
+            \toprule
+                %\textbf{Country} & \textbf{Resolver pairs} & \textbf{v4/A} & \textbf{v4/AAAA} & \textbf{v6/A} & \textbf{v6/AAAA} \\
+                \textbf{} & \textbf{Resolver} & \textbf{IPv4} & \textbf{IPv4} & \textbf{IPv6} & \textbf{IPv6} \\
+                \textbf{Country} & \textbf{pairs} & \textbf{A} & \textbf{AAAA} & \textbf{A} & \textbf{AAAA} \\
+                \midrule
+
+
+Spain (ES)            &    49  & 0.9\% & 0.8\% & 1.4\% & 2.0\% \\  % avg 1.3 stdev 5.5 med 0.3
+Poland (PL)           &    48  & 2.0\% & 1.1\% & 2.9\% & 1.0\% \\  % avg 1.7 stdev 5.7 med 0.6
+Argentina (AR)        &    47  & \cellcolor{red0} 5.2\% & 3.5\% & 2.2\% & \cellcolor{green0} 1.3\% \\  % avg 3.0 stdev 4.4 med 0.7
+Romania (RO)          &    44  & \cellcolor{red0} 2.3\% & 1.0\% & 0.8\% & 0.9\% \\  % avg 1.3 stdev 2.9 med 0.4
+Czechia (CZ)          &    41  & \cellcolor{red0} 1.6\% & 1.1\% & 0.5\% & 0.5\% \\  % avg 0.9 stdev 2.0 med 0.4
+Italy (IT)            &    38  & 2.4\% & 2.1\% & 2.2\% & 2.5\% \\  % avg 2.3 stdev 5.0 med 0.6
+Sweden (SE)           &    34  & 0.4\% & 0.3\% & 0.5\% & 0.2\% \\  % avg 0.4 stdev 1.0 med 0.1
+Finland (FI)          &    34  & \cellcolor{red0} 0.7\% & 0.6\% & \cellcolor{green0} 0.4\% & 0.5\% \\  % avg 0.6 stdev 0.4 med 0.6
+Ukraine (UA)          &    34  & \cellcolor{red0} 6.0\% & 2.7\% & 2.4\% & 2.7\% \\  % avg 3.4 stdev 5.9 med 1.3
+Belgium (BE)          &    31  & 1.6\% & 1.3\% & 0.9\% & 1.0\% \\  % avg 1.2 stdev 3.5 med 0.3
+Bulgaria (BG)         &    30  & 3.2\% & 2.9\% & 1.1\% & 1.1\% \\  % avg 2.1 stdev 5.9 med 0.4
+Bangladesh (BD)       &    29  & \cellcolor{red5}  6.4\% & \cellcolor{green0} 1.3\% & \cellcolor{green0} 0.9\% & \cellcolor{green0} 0.8\% \\  % avg 2.4 stdev 3.7 med 0.7
+Colombia (CO)         &    27  & 3.4\% & 3.3\% & 1.4\% & 1.1\% \\  % avg 2.3 stdev 5.6 med 0.7
+Saudi Arabia (SA)     &    24  & 2.2\% & 1.8\% & 1.6\% & 1.6\% \\  % avg 1.8 stdev 4.1 med 0.7
+Pakistan (PK)         &    23  & \cellcolor{red0} 3.7\% & \cellcolor{green1} 1.6\% & \cellcolor{red1} 4.6\% & \cellcolor{green0} 1.9\% \\  % avg 3.0 stdev 2.2 med 2.1
+Hungary (HU)          &    22  & 0.3\% & 0.3\% & 0.2\% & 0.3\% \\  % avg 0.3 stdev 0.3 med 0.3
+Ecuador (EC)          &    21  & 3.3\% & 2.9\% & 0.4\% & 0.8\% \\  % avg 1.8 stdev 6.3 med 0.4
+Greece (GR)           &    20  & 0.5\% & \cellcolor{red0} 1.2\% & 0.4\% & 0.6\% \\  % avg 0.7 stdev 1.4 med 0.3
+Kazakhstan (KZ)       &    19  & 2.9\% & 2.0\% & 2.4\% & 2.3\% \\  % avg 2.4 stdev 4.3 med 0.8
+Philippines (PH)      &    18  & \cellcolor{red0} 4.3\% & 2.4\% & 2.5\% & 2.0\% \\  % avg 2.8 stdev 4.0 med 1.3
+Norway (NO)           &    16  & 0.3\% & 0.3\% & 0.3\% & \cellcolor{red0} 0.4\% \\  % avg 0.3 stdev 0.3 med 0.3
+Egypt (EG)            &    14  & \cellcolor{red0} 5.6\% & 4.2\% & 3.1\% & 3.5\% \\  % avg 4.1 stdev 4.5 med 2.9
+Slovakia (SK)         &    14  & 0.2\% & 0.3\% & 0.2\% & 0.3\% \\  % avg 0.2 stdev 0.2 med 0.3
+Denmark (DK)          &    13  & 1.7\% & 1.3\% & 0.9\% & 1.0\% \\  % avg 1.2 stdev 3.0 med 0.4
+Peru (PE)             &    11  & \cellcolor{red1} 2.0\% & 0.8\% & 0.7\% & \cellcolor{green0} 0.6\% \\  % avg 1.0 stdev 1.5 med 0.6
+Portugal (PT)         &    11  & \cellcolor{red1} 2.2\% & 0.4\% & \cellcolor{green0} 0.2\% & 0.3\% \\  % avg 0.8 stdev 2.1 med 0.1
+Nigeria (NG)          &     9  & \cellcolor{red1} 3.4\% & 1.4\% & 1.6\% & 1.4\% \\  % avg 2.0 stdev 2.5 med 1.7
+Austria (AT)          &     8  & \cellcolor{green0} 0.1\% & \cellcolor{red1} 0.2\% & \cellcolor{green1} 0.1\% & \cellcolor{red0} 0.2\% \\  % avg 0.2 stdev 0.1 med 0.1
+Kenya (KE)            &     8  & \cellcolor{red5}  7.8\% & \cellcolor{green0} 1.4\% & \cellcolor{green0} 1.1\% & \cellcolor{green0} 1.1\% \\  % avg 2.8 stdev 4.0 med 1.3
+Moldova (MD)          &     7  & \cellcolor{red0} 5.5\% & 3.6\% & 2.9\% & 3.0\% \\  % avg 3.7 stdev 6.0 med 0.3
+Serbia (RS)           &     7  & 0.2\% & 0.2\% & 0.1\% & 0.2\% \\  % avg 0.2 stdev 0.1 med 0.1
+Slovenia (SI)         &     7  & \cellcolor{red5}  3.5\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.2\% \\  % avg 1.0 stdev 2.4 med 0.1
+New Zealand (NZ)      &     7  & \cellcolor{red5}  4.3\% & \cellcolor{green0} 0.2\% & \cellcolor{green0} 0.5\% & \cellcolor{green0} 0.2\% \\  % avg 1.3 stdev 2.5 med 0.1
+Nepal (NP)            &     7  & 1.1\% & 1.2\% & \cellcolor{green0} 0.8\% & 1.0\% \\  % avg 1.0 stdev 0.8 med 0.7
+Macao (MO)            &     6  & 4.4\% & 4.5\% & 4.4\% & \cellcolor{red0} 4.5\% \\  % avg 4.5 stdev 0.2 med 4.5
+United Arab Emirates (AE)  &     6  & \cellcolor{red5}  1.6\% & \cellcolor{green1} 0.9\% & 1.1\% & \cellcolor{green1} 0.9\% \\  % avg 1.1 stdev 0.5 med 1.0
+Estonia (EE)          &     6  & \cellcolor{red1} 1.6\% & 0.4\% & \cellcolor{green0} 0.3\% & 0.4\% \\  % avg 0.7 stdev 1.4 med 0.4
+Costa Rica (CR)       &     6  & \cellcolor{red1} 8.6\% & 2.5\% & \cellcolor{green0} 2.2\% & \cellcolor{green0} 2.1\% \\  % avg 3.8 stdev 6.4 med 0.6
+Uruguay (UY)          &     6  & \cellcolor{red2} 0.7\% & 0.4\% & \cellcolor{green0} 0.2\% & \cellcolor{green1} 0.2\% \\  % avg 0.4 stdev 0.3 med 0.3
+Libya (LY)            &     5  & \cellcolor{red1} 1.4\% & 0.8\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% \\  % avg 0.8 stdev 0.9 med 0.6
+Mongolia (MN)         &     5  & \cellcolor{red2} 1.9\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.6\% & \cellcolor{green0} 0.7\% \\  % avg 1.0 stdev 0.9 med 0.8
+Venezuela (VE)        &     5  & \cellcolor{red5}  6.7\% & 1.6\% & \cellcolor{green0} 0.8\% & \cellcolor{green0} 0.7\% \\  % avg 2.5 stdev 3.9 med 0.8
+Belarus (BY)          &     5  & \cellcolor{red0} 1.0\% & 0.7\% & \cellcolor{green0} 0.4\% & 0.6\% \\  % avg 0.7 stdev 0.7 med 0.4
+Armenia (AM)          &     5  & \cellcolor{red0} 0.9\% & 0.6\% & 0.6\% & 0.7\% \\  % avg 0.7 stdev 0.6 med 0.4
+Panama (PA)           &     5  & \cellcolor{red0} 3.8\% & \cellcolor{red0} 4.0\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.4\% \\  % avg 2.1 stdev 4.1 med 0.7
+Sudan (SD)            &     5  & \cellcolor{red0} 4.6\% & \cellcolor{red0} 4.5\% & \cellcolor{green0} 2.4\% & \cellcolor{green0} 2.3\% \\  % avg 3.4 stdev 3.0 med 2.8
+Bosnia and Herzegovina (BA)  &     4  & \cellcolor{red2} 2.2\% & 0.7\% & \cellcolor{green0} 0.6\% & 0.7\% \\  % avg 1.1 stdev 1.5 med 0.4
+Guatemala (GT)        &     4  & \cellcolor{red1} 0.6\% & \cellcolor{red0} 0.6\% & 0.4\% & \cellcolor{green2} 0.2\% \\  % avg 0.4 stdev 0.3 med 0.4
+Luxembourg (LU)       &     4  & \cellcolor{red2} 1.9\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.1\% & 0.2\% \\  % avg 0.6 stdev 1.7 med 0.1
+Iraq (IQ)             &     4  & \cellcolor{red0} 3.6\% & 2.5\% & 2.1\% & 2.1\% \\  % avg 2.6 stdev 3.7 med 0.8
+Latvia (LV)           &     4  & 0.1\% & 0.1\% & 0.1\% & 0.1\% \\  % avg 0.1 stdev 0.1 med 0.1
+Albania (AL)          &     4  & \cellcolor{red1} 0.7\% & 0.6\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% \\  % avg 0.5 stdev 0.3 med 0.4
+Jordan (JO)           &     4  & 0.3\% & 0.2\% & \cellcolor{green1} 0.1\% & \cellcolor{red1} 0.5\% \\  % avg 0.3 stdev 0.3 med 0.3
+Belize (BZ)           &     4  & \cellcolor{red5}  5.9\% & \cellcolor{green0} 0.5\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.4\% \\  % avg 1.8 stdev 3.0 med 0.6
+Bolivia (BO)          &     4  & \cellcolor{red2} 1.2\% & 0.5\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.3\% \\  % avg 0.6 stdev 0.7 med 0.4
+Croatia (HR)          &     3  & \cellcolor{green1} 0.1\% & \cellcolor{red2} 0.2\% & 0.2\% & \cellcolor{green1} 0.1\% \\  % avg 0.2 stdev 0.1 med 0.1
+Lebanon (LB)          &     3  & \cellcolor{red5}  0.6\% & 0.4\% & \cellcolor{green1} 0.3\% & 0.4\% \\  % avg 0.4 stdev 0.2 med 0.4
+Afghanistan (AF)      &     3  & \cellcolor{red0} 2.2\% & \cellcolor{green1} 1.1\% & 1.9\% & 1.8\% \\  % avg 1.8 stdev 1.1 med 1.5
+Honduras (HN)         &     3  & \cellcolor{red0} 1.5\% & \cellcolor{red0} 1.4\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.6\% \\  % avg 1.1 stdev 0.9 med 1.1
+Dominican Republic (DO)  &     3  & \cellcolor{red5}  4.8\% & \cellcolor{green0} 0.7\% & \cellcolor{green1} 0.3\% & \cellcolor{green0} 0.5\% \\  % avg 1.6 stdev 2.3 med 0.6
+
+                \bottomrule
+        \end{tabular}
+
+        \begin{tabular}{lccccc}
+            \toprule
+                %\textbf{Country} & \textbf{Resolver pairs} & \textbf{v4/A} & \textbf{v4/AAAA} & \textbf{v6/A} & \textbf{v6/AAAA} \\
+                \textbf{} & \textbf{Resolver} & \textbf{IPv4} & \textbf{IPv4} & \textbf{IPv6} & \textbf{IPv6} \\
+                \textbf{Country} & \textbf{pairs} & \textbf{A} & \textbf{AAAA} & \textbf{A} & \textbf{AAAA} \\
+                \midrule
+
+North Macedonia (MK)  &     2  & \cellcolor{red0} 9.5\% & 6.4\% & 4.7\% & 4.8\% \\  % avg 6.4 stdev 6.8 med 9.1
+Georgia (GE)          &     2  & 1.2\% & 1.3\% & 1.4\% & 1.0\% \\  % avg 1.2 stdev 1.1 med 1.8
+Israel (IL)           &     2  & 2.7\% & 2.9\% & 2.7\% & 2.7\% \\  % avg 2.8 stdev 2.4 med 5.0
+Lao People's Democratic Republic (LA)  &     2  & \cellcolor{red5}  9.2\% & \cellcolor{green1} 0.6\% & \cellcolor{green1} 0.2\% & \cellcolor{green1} 0.3\% \\  % avg 2.6 stdev 3.9 med 0.6
+El Salvador (SV)      &     2  & \cellcolor{red5}  0.8\% & 0.4\% & \cellcolor{green2} 0.1\% & \cellcolor{green1} 0.2\% \\  % avg 0.4 stdev 0.3 med 0.3
+Chad (TD)             &     2  & \cellcolor{red1} 2.7\% & 1.1\% & \cellcolor{green0} 0.6\% & 1.3\% \\  % avg 1.4 stdev 1.7 med 1.3
+Nicaragua (NI)        &     2  & \cellcolor{red5}  3.8\% & \cellcolor{green0} 0.3\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.1\% \\  % avg 1.1 stdev 2.3 med 0.4
+Uganda (UG)           &     2  & \cellcolor{green0} 0.5\% & \cellcolor{green0} 0.5\% & \cellcolor{green0} 0.6\% & \cellcolor{red5}  6.7\% \\  % avg 2.0 stdev 4.2 med 0.7
+Guam (GU)             &     2  & \cellcolor{red5}  8.1\% & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.0\% & \cellcolor{green1} 0.4\% \\  % avg 2.2 stdev 3.4 med 0.4
+Trinidad and Tobago (TT)  &     2  & \cellcolor{red5}  0.4\% & 0.1\% & \cellcolor{green0} 0.1\% & \cellcolor{green2} 0.0\% \\  % avg 0.1 stdev 0.2 med 0.1
+Tunisia (TN)          &     2  & \cellcolor{green0} 0.4\% & 0.4\% & \cellcolor{green0} 0.4\% & \cellcolor{red1} 0.6\% \\  % avg 0.4 stdev 0.2 med 0.6
+Ethiopia (ET)         &     2  & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.6\% & \cellcolor{red5}  25.6\% & \cellcolor{green0} 0.4\% \\  % avg 6.7 stdev 16.8 med 0.4
+Oman (OM)             &     2  & \cellcolor{red5}  5.5\% & \cellcolor{green0} 0.7\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.7\% \\  % avg 1.8 stdev 3.4 med 0.7
+Cyprus (CY)           &     2  & \cellcolor{red5}  4.8\% & \cellcolor{green0} 0.8\% & \cellcolor{green0} 0.4\% & \cellcolor{green0} 0.3\% \\  % avg 1.6 stdev 3.0 med 0.6
+Liechtenstein (LI)    &     1  & \cellcolor{green5}  0.0\% & \cellcolor{green0} 0.1\% & \cellcolor{green0} 0.1\% & \cellcolor{red5}  0.6\% \\  % avg 0.2 stdev 0.2 med 0.1
+Madagascar (MG)       &     1  & \cellcolor{red0} 1.1\% & \cellcolor{red5}  1.4\% & \cellcolor{green5}  0.4\% & \cellcolor{red0} 1.1\% \\  % avg 1.0 stdev 0.4 med 1.1
+Myanmar (MM)          &     1  & \cellcolor{red5}  0.7\% & \cellcolor{red5}  0.7\% & \cellcolor{green5}  0.3\% & \cellcolor{green5}  0.3\% \\  % avg 0.5 stdev 0.2 med 0.7
+Zambia (ZM)           &     1  & \cellcolor{red5}  2.8\% & \cellcolor{green1} 0.8\% & \cellcolor{green1} 0.8\% & \cellcolor{green1} 0.8\% \\  % avg 1.3 stdev 0.8 med 0.8
+Kyrgyzstan (KG)       &     1  & \cellcolor{green5}  0.4\% & \cellcolor{red5}  2.7\% & \cellcolor{red2} 2.4\% & \cellcolor{green1} 1.0\% \\  % avg 1.6 stdev 0.9 med 2.4
+Ghana (GH)            &     1  & \cellcolor{red5}  8.8\% & \cellcolor{green0} 0.8\% & \cellcolor{green1} 0.1\% & \cellcolor{green1} 0.4\% \\  % avg 2.6 stdev 3.6 med 0.8
+Gibraltar (GI)        &     1  & \cellcolor{red5}  1.3\% & \cellcolor{red0} 1.0\% & \cellcolor{green1} 0.7\% & \cellcolor{green5}  0.6\% \\  % avg 0.9 stdev 0.3 med 1.0
+Haiti (HT)            &     1  & \cellcolor{red5}  8.5\% & \cellcolor{green1} 0.3\% & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.0\% \\  % avg 2.3 stdev 3.6 med 0.4
+Togo (TG)             &     1  & \cellcolor{red5}  3.9\% & \cellcolor{green0} 1.5\% & \cellcolor{green5}  0.8\% & 1.8\% \\  % avg 2.0 stdev 1.1 med 1.8
+Somalia (SO)          &     1  & \cellcolor{red5}  6.0\% & \cellcolor{green1} 0.6\% & \cellcolor{green1} 0.0\% & \cellcolor{green0} 0.7\% \\  % avg 1.8 stdev 2.4 med 0.7
+Azerbaijan (AZ)       &     1  & \cellcolor{green1} 0.1\% & \cellcolor{red5}  0.3\% & \cellcolor{green1} 0.1\% & \cellcolor{green1} 0.1\% \\  % avg 0.2 stdev 0.1 med 0.1
+Saint Lucia (LC)      &     1  & 0.0\% & 0.0\% & 0.0\% & 0.0\% \\  % avg 0.0 stdev 0.0 med 0.0
+French Polynesia (PF)  &     1  & 0.3\% & \cellcolor{red5}  0.6\% & \cellcolor{green5}  0.0\% & 0.3\% \\  % avg 0.3 stdev 0.2 med 0.3
+Kuwait (KW)           &     1  & \cellcolor{green1} 0.1\% & \cellcolor{red5}  1.1\% & \cellcolor{green1} 0.1\% & \cellcolor{green0} 0.3\% \\  % avg 0.4 stdev 0.4 med 0.3
+Angola (AO)           &     1  & \cellcolor{red5}  6.7\% & \cellcolor{green0} 1.0\% & \cellcolor{green1} 0.3\% & \cellcolor{green1} 0.6\% \\  % avg 2.1 stdev 2.7 med 1.0
+Maldives (MV)         &     1  & \cellcolor{red5}  8.3\% & \cellcolor{green5}  1.1\% & 5.3\% & \cellcolor{red1} 6.7\% \\  % avg 5.4 stdev 2.7 med 6.7
+Fiji (FJ)             &     1  & \cellcolor{red5}  0.4\% & 0.3\% & \cellcolor{green5}  0.1\% & 0.3\% \\  % avg 0.3 stdev 0.1 med 0.3
+Mozambique (MZ)       &     1  & \cellcolor{red5}  11.2\% & \cellcolor{green0} 3.8\% & \cellcolor{green1} 3.2\% & \cellcolor{green1} 2.8\% \\  % avg 5.3 stdev 3.5 med 3.8
+Sri Lanka (LK)        &     1  & 0.3\% & \cellcolor{red5}  0.8\% & \cellcolor{green1} 0.1\% & \cellcolor{green1} 0.1\% \\  % avg 0.4 stdev 0.3 med 0.3
+Paraguay (PY)         &     1  & \cellcolor{red5}  1.5\% & \cellcolor{green0} 1.1\% & \cellcolor{green5}  1.0\% & \cellcolor{green0} 1.1\% \\  % avg 1.2 stdev 0.2 med 1.1
+Seychelles (SC)       &     1  & \cellcolor{green1} 0.4\% & \cellcolor{green1} 0.4\% & \cellcolor{red5}  0.6\% & \cellcolor{green1} 0.4\% \\  % avg 0.5 stdev 0.1 med 0.4
+Tanzania (TZ)         &     1  & \cellcolor{red5}  7.3\% & 2.5\% & \cellcolor{green2} 0.6\% & \cellcolor{green2} 0.7\% \\  % avg 2.8 stdev 2.7 med 2.5
+Cameroon (CM)         &     1  & \cellcolor{green5}  0.1\% & 0.3\% & 0.3\% & \cellcolor{red5}  0.4\% \\  % avg 0.3 stdev 0.1 med 0.3
+Anguilla (AI)         &     1  & \cellcolor{red5}  25.9\% & \cellcolor{green0} 12.7\% & \cellcolor{green1} 11.1\% & \cellcolor{green2} 9.8\% \\  % avg 14.9 stdev 6.5 med 12.7
+\hline
+\textbf{Global}            & \textbf{ 7441} & \textbf{3.6\%} & \textbf{3.0\%} & \textbf{2.6\%} & \textbf{2.7\%} \\ % avg 3.0 stdev 7.0 med 0.4
+
+
+        \bottomrule
+        \end{tabular}
+        }
+
+
+
+        \caption{\textbf{Base rate; rest of countries not included in Table~\ref{tab:base-rate}}}
+    \end{table}
+}
+
+
+
+
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "main"
 %%% End:
+
+
