@@ -1,61 +1,84 @@
 \section{Dataset and Methodology}\label{sec:methodology}
 
-In order to measure the prevalence of censorship over IPv6 we have three main
-steps, which we explain in more detail in the following sections:
-\begin{packed_enumerate}
-    \item Identify IPv6 Resolvers (\Cref{ssec:ipv6-resolvers})
-    \item Identify Domains of interest (\Cref{ssec:censored-domains})
-    \item Determining DNS censorship (\Cref{ssec:determining-censorship})
-\end{packed_enumerate}
+The analysis presented in the remainder of this paper is based on the results
+of 21.3M DNS {\tt A} and {\tt AAAA} resolution requests for 717 domains sent to
+7,428 IPv4- and IPv6-capable resolvers located in a 106 countries. 
+%
+In this section, we explain our process for identifying resolver targets for
+our queries (\Cref{sec:methodology:resolvers}), domains that are the subject of
+our queries (\Cref{sec:methodology:domains}), and our process for identifying
+the occurrence of a censorship event from the results of each query
+(\Cref{sec:methodology:censorship}).
 
+\subsection{Selecting resolvers} \label{sec:methodology:resolvers}
+%
+Our work is aimed at characterizing the inconsistencies that exist in the
+handling of IPv4- and IPv6-related DNS queries --- \ie differences in the
+handling of {\tt A} and {\tt AAAA} query types over IPv4 and IPv6
+connections. Therefore, we required that each resolver used for our
+measurements was IPv4- and IPv6-capable.
+%
 
-\subsection{Identifying IPv6 Resolvers}\label{ssec:ipv6-resolvers} 
+\para{Identifying resolvers with IPv4- and IPv6-capabilities.}
+Our approach, described below, borrows from the work of Hendricks \etal
+\cite{hendriks2017potential} who identified IPv6 open resolvers to measure the
+potential for IPv6-based DDoS attacks. 
 
-In order to identify IPv6 resolvers we rely upon the work of Hendricks et
-al.~\cite{hendriks2017potential}. First we scan the entire IPv4 address space
-using \texttt{zmap}~\cite{Durumeric13zmap} using a DNS query on port 53 for a
-control domain that we control and is uncensored. This provides a list of
-possible DNS resolvers over the IPv4 address space. 
+\parait{Creating control domains.}
+We begin by creating two new domains, owned and controlled by us and used
+exclusively for this study. The Name Servers for each domain were also
+controlled by us. The Name Server for one of these domains was hosted on
+an IPv6-only network without the capability of communicating with IPv4. 
+%
+Note that because these domains were newly registered, they could not have been
+present on the blocklists of any censor. We refer to these domains as our
+{control and and IPv6-only NS domains}.
+%
 
-We then issue an encoded DNS query to each IPv4 address for an \texttt{A} Record
-of an uncensored domain that we control which is present in only a single Name
-Server that we also control that is hosted only on an IPv6 address. As IPv4
-addresses cannot directly communicate with IPv6 addresses the IPv4 resolver must
-ask its preferred IPv6 address to ask our Name Server for the address of the
-domain. Our encoded DNS query includes (as a subdomain) the IPv4 address of the
-resolver we made our query to. Thus, if our domain that is hosted only in our
-Name Server is \texttt{v6.tlsfingerprint.io} and we issued our \texttt{A} Record
-Request to Cloud Flare's public DNS resolver \texttt{1.1.1.1} our query would be
-for \texttt{1-1-1-1.v6.tlsfingerprint.io}.
+\parait{Identifying IPv4-capable resolvers.}
+We then use {\tt zmap} \cite{Durumeric13zmap} to scan the entire IPv4 address
+space and issue a DNS {\tt A} query on port 53 for our IPv4 control
+domain. This yields an initial list of IPv4 DNS resolvers.
+%
 
-By capturing packets on the server hosting our Name Server we can see \texttt{A}
-record requests that come from IPv6 addresses for domains with embedded IPv4
-addresses. This allows us to associate IPv6 addresses we see in our packet
-capture with IPv4 resolvers.
+\parait{Verifying IPv6 capabilities of IPv4-capable resolvers.}
+Next, we issue a DNS {\tt A} query for a resolver-specific subdomain of our
+IPv6 control domain to each of these IPv4 DNS resolvers. The subdomain encoded
+the IPv4 address of the resolver being targeted. Therefore, if our domain was
+{\tt v6onlyNS.io} and our resolver target was {\tt 1.1.1.1}, our DNS query
+requested the {\tt A} record for {\tt 1-1-1-1.v6onlyNS.io}. 
+%
+Since IPv4-only resolvers will not be able to communicate with our IPv6-only
+Name Server, we expect this resolution to fail. On the other hand, resolvers
+with any form of IPv6 connectivity will be able to connect to our IPv6-only
+Name Server.
+%
+Thus, by examining the logs of our IPv6-only NS domain, we are able
+to identify the set of resolvers that successfully reached our server and
+their corresponding IPv4 addresses. The associated IPv6 address for each
+successful query is extracted from packet captures of the IPv6-only Name
+Server giving us an (IPv4, IPv6) address pair for each resolver.
 
-We immediately see that some IPv6 addresses are assocaited with multiple IPv4
-resolvers, \ie resolvers hosted on different IPv4 addresses will contact our Name
-Server over the same IPv6 address. In order to properly measure the differences
-between IPv6 and IPv4 resolvers we filter our list to IPv6 addresses that were
-only seen as a result of a single IPv4 resolver's query, \ie we ignore IPv6
-addresses that are associated with multiple IPv4 resolvers.
-
-Furthermore, the requests our Name Server receives are not guaranteed to come
-from resolvers. Thus we perform a follow up scan by issuing \texttt{A} and
-\texttt{AAAA} Record Requests to each IP address of each pair of IPv4 and IPv6
-address for uncensored domains we control using
-\texttt{zdns}~\cite{Durumeric13zmap}. By examining the responses we can further
-filter our list to pairs of (IPv6, IPv4) resolvers that responded correctly to
-DNS queries to uncensored control domains over both Records.
-
-We then use Maxmind\fixme{cite} to geolocate the IPv4 and IPv6 resolvers by
-country. And further filter our list to those (IPv6, IPv4) resolver pairs that
-are located in the same country. Finally we filter our list of resolver pairs to
-those in countries with at least three resolver pairs allowing us to have
-multiple queries within a country on each Network Interface.
-
-This reduction leaves us with 7,788 resolver pairs from 89 countries to be the
-basis of our measurements.
+\para{Filtering and geolocating resolvers.}
+The approach detailed above yields pairs that suggest the presence of
+`infrastructure' resolvers --- \eg multiple IPv4 resolvers have the same IPv6
+address associated with them. These are cases where the IPv4 resolver simply
+forwards requests to a dedicated multi-machine DNS infrastructure rather than
+performing the resolution by itself. Although this does not change the validity
+of our results regarding the IPv6-related inconsistencies of resolvers, we
+still remove these cases in order to minimize the influence of such
+infrastructure resolvers.
+%
+Finally, to confirm the correctness of our list of IPv4/IPv6 resolver pairs,
+we: (1) perform a follow up scan by issuing {\tt A} and {\tt AAAA} requests for
+both our control domains using {\tt zdns} \cite{Durumeric13zmap} and filter out
+those pairs where an incorrect response was received, (2) we use the Maxmind
+GeoIP dataset \cite{maxmind-connectiondb} to geolocate the IPv4 and IPv6
+addresses of a resolver pair and only those which belong to the same region.
+% 
+In total, we obtained 7,428 resolvers in 106 different countries.
+\Cref{sec:appendix:resolver-distribution} illustrates how these resolvers were
+geographically distributed.
 
 
 \subsection{Identifying Domains of interest}\label{ssec:censored-domains}
