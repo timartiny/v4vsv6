@@ -1,6 +1,33 @@
 \section{Prevalence of DNS Censorship}
 \label{sec:prevalence}
 
+\para{Overview.} In this section, we focus on \emph{providing a high-level
+understanding on the prevalence of DNS censorship on IPv4 and IPv6 networks}.
+Specifically, we measure the global prevalence of DNS censorship that occur in
+the following four cases: 
+%
+(1) a DNS {\tt A} query is sent over IPv4, 
+(2) a DNS {\tt AAAA} query is sent over IPv4, 
+(3) a DNS {\tt A} query is sent over IPv6, and 
+(4) a DNS {\tt AAAA} query is sent over IPv6.
+%
+While much of prior work has focused on case (1), the increased adoption of
+IPv6 necessitates the analysis of cases (2-4) which are provided in our work.
+%
+In each case, we use our collected dataset (\cf \Cref{sec:methodology}) to
+summarize the base rate of censorship (\Cref{sec:prevalence:rates}) and the
+domains being censored in each country (\Cref{sec:prevalence:domains}).
+
+\subsection{Base rates of DNS censorship} \label{sec:prevalence:rates}
+\input{tab-prevalence-rates-shaded.tex}
+
+A summary of the base rates observed in each of our four {\tt A/AAAA}-IPv4/IPv6
+combinations is illustrated in \Cref{tab:prevalence:rates}. 
+
+
+
+
+
 
 
 We use our collected dataset described in Section~\ref{sec:methodology} to
@@ -11,7 +38,7 @@ and IPv6.
 
 
 %\SomeCountryTable
-\TabBaseRate
+% \TabBaseRate
 %\TabBaseRateMedian % Nah don't use this one;
 
 % DNS censorship not the only kind.
