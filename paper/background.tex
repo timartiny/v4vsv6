@@ -2,7 +2,10 @@
 
 
 Network based censorship is a common barrier to global internet access today.
-State actors have the ability to incorporate large scale network monitoring
+% \FIXME{Corporate censorship}
+In some instances this manifests as corporate access control mechanisms deployed
+to protect internal networks and intellectual property. However,
+state actors have the ability to incorporate large scale network monitoring
 systems into national network infrastructure preventing access to information
 through either active interference or threat of retribution. There
 have been many studies on censorship techniques both
@@ -23,6 +26,9 @@ the trajectory of network censorship efforts more broadly.
 
 
 \subsection{DNS Censorship Measurement}
+
+\FigDNSCensorship
+
 The Domain Name System (DNS) underpins the global internet by providing a
 mapping from human readable hostnames to routable IP addresses making domain name
 resolution the first step in almost all connection establishment flows. However,
@@ -33,21 +39,25 @@ connections and in some cases inject falsified responses to interfere.
 The Chinese traffic inspection system, called the Great Firewall (GFW),
 is documented injecting falsified DNS responses as early as 2002~\cite{global2002great}.
 This censorship has been shown to be a packet injection from an on-path adversary
-monitoring for hostname in DNS queries that match regular
+monitoring for hostnames in DNS queries that match regular
 expressions~\cite{USESEC21:GFWatch}. An on-path adversary
 operates on a copy of traffic transiting a specific link or gateway in a network.
 This contrasts with an in-path adversary which operates on traffic inline with
 the capability to drop or modify packets on the fly. These traffic inspection
 devices can be housed at or near border gateways~\cite{xu2011internet} or
 distributed throughout regional ISPs~\cite{ramesh2020decentralized} within
-censoring countries.
+censoring countries. Notably the GFW and other on-path DNS censorship appliances
+will inject responses in either direction (downstream into the country or
+upstream out out of the country) to the source of the query. This allows
+measurements of deployed censorship infrastructure to be launched from outside
+of the country in question as long as the query transits a monitored link.
 
 Common strategies for measuring censorship via DNS injection involve routing DNS queries for
 block-listed hostnames across a censoring link in a controlled environment where
-the returned resource records can independently validated. Two notable previous
+the returned resource records can be independently validated. Two notable previous
 studies Satellite and Iris~\cite{scott2016satellite,pearce2017global} identify
 open DNS resolvers across the internet by scanning the entire IPv4 space on port~53.
-Satellite probes reliably available open resolvers from distributed set of vantage
+Satellite probes reliably available open resolvers from a set of distributed vantage
 points and detects incorrect or inconsistent response information. Iris develops
 a method for identifying active manipulation in contrast to misconfiguration by
 leveraging metrics such as consistency and independent verifiability. Iris
@@ -65,6 +75,8 @@ According to the APNIC internet registry over a quarter of the users
 on the internet now route their traffic using IPv6~\cite{Huston-APNIC2021}.
 Similarly Google metrics indicate that over 50\% of users access services using
 IPv6 in India, Saudi Arabia, Germany and several other countries~\cite{Google-IPv6}.
+As with many other critical internet protocols, DNS implements an IPv6 extension
+to maintain relative uniformity in connection establishment flows.
 
 \textbf{A vs AAAA.} DNS \texttt{A} queries and records respectively request and provide
 resources to resolve hostnames into IPv4 addresses. \texttt{AAAA} queries and
@@ -82,7 +94,7 @@ A theoretically comprehensive DNS censorship strategy using response injection
 requires traffic monitoring infrastructure to analyze both IPv4 and IPv6
 traffic and parse both \texttt{A} and \texttt{AAAA} queries accounting for hostnames
 that may not implement resource records of one type or the other. Such a strategy
-would impede connections that use plaintext DNS (as outlined in the
+would only impede connections that use plaintext DNS (as outlined in the
 original specifications~\cite{RFC1035,RFC3596}) - it would not effect more secure DNS
 protocols such as DoT, DoH, or censorship resistance strategies which are not
 covered in this work.

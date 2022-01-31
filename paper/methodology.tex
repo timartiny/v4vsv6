@@ -2,7 +2,7 @@
 
 The analysis presented in the remainder of this paper is based on the results
 of 21.3M DNS {\tt A} and {\tt AAAA} resolution requests for 717 domains sent to
-7,428 IPv4- and IPv6-capable resolvers located in a 106 countries. 
+7,428 IPv4- and IPv6-capable resolvers located in a 106 countries.
 %
 In this section, we explain our process for identifying resolver targets for
 our queries (\Cref{sec:methodology:resolvers}), domains that are the subject of
@@ -22,13 +22,13 @@ measurements was IPv4- and IPv6-capable.
 \para{Identifying resolvers with IPv4- and IPv6-capabilities.}
 Our approach, described below, borrows from the work of Hendricks \etal
 \cite{hendriks2017potential} who identified IPv6 open resolvers to measure the
-potential for IPv6-based DDoS attacks. 
+potential for IPv6-based DDoS attacks.
 
 \parait{Creating control domains.}
 We begin by creating two new domains, owned and controlled by us and used
 exclusively for this study. The Name Servers for each domain were also
 controlled by us. The Name Server for one of these domains was hosted on
-an IPv6-only network without the capability of communicating with IPv4. 
+an IPv6-only network without the capability of communicating with IPv4.
 %
 Note that because these domains were newly registered, they could not have been
 present on the blocklists of any censor. We refer to these domains as our
@@ -46,7 +46,7 @@ Next, we issue a DNS {\tt A} query for a resolver-specific subdomain of our
 IPv6 control domain to each of these IPv4 DNS resolvers. The subdomain encoded
 the IPv4 address of the resolver being targeted. Therefore, if our domain was
 {\tt v6onlyNS.io} and our resolver target was {\tt 1.1.1.1}, our DNS query
-requested the {\tt A} record for {\tt 1-1-1-1.v6onlyNS.io}. 
+requested the {\tt A} record for {\tt 1-1-1-1.v6onlyNS.io}.
 %
 Since IPv4-only resolvers will not be able to communicate with our IPv6-only
 Name Server, we expect this resolution to fail. On the other hand, resolvers
@@ -81,7 +81,7 @@ In total, we obtained 7,428 resolvers in 106 different countries.
 geographically distributed.
 
 
-\subsection{Identifying Domains of interest}\label{ssec:censored-domains}
+\subsection{Identifying Domains of interest}\label{sec:methodology:domains}
 
 Censored Planet's Satellite project~\cite{sundara2020censored} has cultivated a
 list of domains that are potentially censored globally or by individual
@@ -92,7 +92,7 @@ To measure how censorship varies over IPv4 and IPv6 Network Interfaces we
 restrict our list of domains to those that have both \texttt{A} and
 \texttt{AAAA} Records. To filter this list we again use \texttt{zdns} to perform
 both \texttt{A} and \texttt{AAAA} Record Requests for each domain from
-Satellite's global list through Google and Cloud Flare's public DNS resolvers
+Satellite's global list through Google and Cloudflare's public DNS resolvers
 (\texttt{8.8.8.8, 8.8.4.4, 1.1.1.1,} and \texttt{1.0.0.1}).
 
 We filter our domain list to those domains that have valid IPv4 addresses in
@@ -116,7 +116,7 @@ On January 24, 2022 this gave us 717 domains, originally identified by Censored
 Planet as potentially interesting from a censorship point of view that meet our
 criteria to measure censorship across network interfaces.
 
-\subsection{Determining DNS censorship}\label{ssec:determining-censorship}
+\subsection{Determining DNS censorship}\label{sec:methodology:censorship}
 
 To measure DNS censorship across Network Interfaces we then perform both
 \texttt{A} and \texttt{AAAA} Record Requests for our filtered 717 domains from

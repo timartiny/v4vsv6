@@ -991,8 +991,22 @@ Anguilla (AI)         &     1  & \cellcolor{red5}  25.9\% & \cellcolor{green0} 1
     \end{table}
 }
 
+\newcommand{\FigDNSCensorship}{
+    \begin{figure}[h!]
+        \centering
+        \includegraphics[width=0.8\linewidth]{figures/dns_censorship.pdf}
+        \caption{DNS censorship is carried out by on-path or in-path deep packet
+        inspection (DPI) appliances that monitor for block-listed keywords or
+        expressions in DNS queries and inject forged responses. The original
+        request and subsequent response are not typically dropped by the
+        adversary, but will arrive after the forged response rendering them
+        useless. DPI appliances can be deployed in local infrastructure,
+        regional ISPs, or national border gateways and inject the forged response
+        toward the query source in either direction.}
+        \label{fig:dns_censorship}
+      \end{figure}
 
-
+}
 
 
 %%% Local Variables:
