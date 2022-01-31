@@ -129,3 +129,60 @@ returned TLS certificate.
 We then verify each DNS query we made to determine if any answers provided
 failed to successfully return a valid TLS certificate, if so we label the DNS
 query from that resolver for that domain and resource Record as censored.
+
+\subsection{Ethics}\label{sec:methodology:ethics}
+Our experimental design has incorporated ethical
+considerations into the decision-making process at multiple stages. We concern
+ourselves primarily with the security and autonomy of human users and their
+ability to securely access the internet. Given the prevalence of self-censorship,
+understanding and documenting the mechanisms and scope of censorship
+strategies can assist users in better evaluating their own risk. However,
+censorship measurement naturally entails interacting with and occasionally
+violating the rules of access control systems. We rely on The Menlo
+Report~\cite{menlo}, its companion guide~\cite{menlo-companion}, and the
+censorship specific ethical measurement guidelines discussed by
+Jones et al.~\cite{jones2015ethical} to provide structure and guidance to our
+experimental design.
+
+
+\textbf{Consent.}
+To align with the guiding principle of \textit{respect for persons} we structure the
+data collection to implicate as few individuals as possible. Specifically we rely
+on open resolvers which typically have little or no direct association with
+individuals in lieu of measurement from client based software.
+While we cannot acquire direct or proxy consent from the operators of the open
+resolvers we consider the trade-off between the implied consent standard and the
+value in the measurements we make. Understanding the extent and mechanisms of
+censorship infrastructure can help to demystify and clarify risks to real users
+seeking to safely access the internet. It is important to note that the
+goal of our ethical analysis is not to eliminate risk, but to minimize it wherever possible. As noted by
+Jones et al. in some cases acquiring consent from operators may not only be
+impossible, but increase the risk to operators as it introduces their
+acknowledgement of, or active participation in, the measurement at
+hand~\cite{jones2015ethical}. This analysis aligns with previous work relying
+on open resolvers to collect impactful results while minimizing risk on
+individuals~\cite{pearce2017global,scott2016satellite,sundara2020censored}.
+
+\textbf{Privacy.}
+Our study collects no personal data about any end~users
+or individual open resolver operators. The analysis
+completed herein uses resolver addresses, public Anonymous System (AS) identifiers,
+and country codes.  All measurements are initiated from within the United
+States at little to no risk of repercussions to citizens in the countries
+that we examine. Beyond this, measurement domains are not drawn from any human
+browsing patterns or history as the suspected censored domains are a subset of
+the Satellite measurement results as discussed in \Cref{sec:methodology:domains}.
+
+\textbf{Resource Usage.}
+The vantage that was used for data collection is connected to the internet with
+a 1 Gbps interface that scanned using the default rates for zmap and zgrab2 tools
+(line rate). However, the structure of the scan was established such that
+individual resolvers and domains for the DNS probe and TLS certificate validation
+respectively would be accessed in round robin order. That is -- when probing the
+7843 open resolvers every target would receive a preliminary request before any
+target would receive the subsequent request.  Equivalently for
+validating TLS certificates, each of the 717 target domains would receive a preliminary
+attempted handshake before any target would receive a subsequent handshake.
+While we do not have an upper bound on the bandwidth that was sent to individual
+resolvers or tls endpoints we believe this strategy provides a reasonable
+limitation to the impact of measurement.
