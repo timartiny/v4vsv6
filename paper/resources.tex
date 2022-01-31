@@ -126,19 +126,22 @@ and 13\% higher {\tt AAAA} censorship rate, respectively.
   \label{tab:resources:countries}
 \end{table}
 
-\subsection{Characteristics of inconsistent resolvers}
+\subsection{Characteristics of {\tt A/AAAA}-inconsistent resolvers}
 \label{sec:resources:resolvers}
 Given our above results which suggest that there are a number of countries in
 which {\tt A} and {\tt AAAA} queries are censored differently, we now seek to
-understand the characteristics of the resolvers that cause these differences
---- specifically, are they spread out across many Autonomous Systems (ASes)
-within a country? Finding that these resolvers are concentrated within a few
-ASes would indicate which network operators have inconsistent mechanisms for
-censoring {\tt A} and {\tt AAAA} queries, while a broad spread across many ASes
-within the country would suggest the presence of a centralized censorship
-mechanism which contains inconsistencies in the handling of {\tt A} and {\tt
-AAAA} queries. 
-
+understand the characteristics of the resolvers that cause these differences.
+%
+We first focus on identifying the fraction of resolvers in each country that
+have statistically different behaviors for {\tt A} and {\tt AAAA} queries.
+Then, we compare the AS distributions of these resolvers with the set of all
+resolvers in a country. This comparison allows us to hypothesize about the
+presence of a centralized DNS censorship mechanism is responsible for the
+observed inconsistencies or if they should be attributed to local network
+operators responsible for implementing DNS censorship. Finally, we identify the
+types of networks hosting inconsistent resolvers to get a measure of whether
+users in residential networks may exploit these DNS inconsistencies for
+circumvention.
 
 \para{Identifying differences in individual resolvers.} 
 %
@@ -178,7 +181,7 @@ the distribution of the inconsistent resolvers in the country
 diversity of ASes observed in both cases. 
 %
 In order to compare the two measures, we use the Kullback-Leibler divergence
-($\nabla_{\text{query}}$) metric \cite{KLdiversity}. In simple terms, the
+($\nabla_{\text{query}}$) metric \cite{KLdivergence}. In simple terms, the
 KL-divergence metric between two distributions ($X$, $Y$) measures the number
 of additional bits required to encode $Y$ given the optimal encoding for $X$.
 %
@@ -217,7 +220,7 @@ resolvers in just 5 ASes (of 249 ASes with resolvers) account for 56\% of all
       {\bf Country} & {\bf Total pairs} & {\bf Inconsistent pairs} & {\bf Most inconsistent AS} & \multicolumn{3}{c}{\bf AS diversity} & {\bf Most inconsistent type} \\ 
       & & {(\% of total pairs)}& {(\# inconsistent pairs)} & $S^{\text{all}}_{\text{query}}$ & $S^{\text{inconsistent}}_{\text{query}}$ & $\nabla_{\text{query}}$  & {(\# inconsistent pairs)} \\
       \midrule
-      Thailand (TH)       & 186 & 152 (81.7\%)  &  AS9835 Government IT Services (40)  & 4.50 & 4.10 & 0.14 & Cable/DSL (110) \\
+      Thailand (TH)       & 186 & 152 (81.7\%)  &  AS9835 Government IT Services (40)  & 4.50 & 4.06 & 0.14 & Cable/DSL (110) \\
       Bangladesh (BD)     & 29  & 18 (62.1\%) & AS 9230 Bangladesh Online (4)          & 4.10 & 3.61 & 0.48 & Cable/DSL (18) \\    
       Pakistan (PK)       & 23  & 15 (65.2\%) & AS 17911 Brain Telecom (3)             & 3.43 & 3.06 & 0.25 & Cable/DSL (12) \\    
       Chile (CL)          & 65  & 20 (30.1\%) & AS 27651 Entel Chile (13)              & 3.08 & 1.14 & 1.18 & Corporate (13) \\    
@@ -237,9 +240,10 @@ resolvers in just 5 ASes (of 249 ASes with resolvers) account for 56\% of all
   `AS diversity' denotes the entropies of (all) resolver distribution
   ($S^{\text{all}}_{\text{query}}$) and {\tt A/AAAA}-inconsistent resolver
   distribution ($S^{\text{inconsistent}}_{\text{query}}$) across a country's
-  ASes, and `$\nabla_{AS}$' represents the Kullback-Leibler divergence of the
-  distribution of inconsistent resolvers from the distribution of all resolvers
-  in the country's ASes (\cf \Cref{sec:resources:resolvers}).
+  ASes, and `$\nabla_{\text{query}}$' represents the Kullback-Leibler
+  divergence of the distribution of inconsistent resolvers from the
+  distribution of all resolvers in the country's ASes (\cf
+  \Cref{sec:resources:resolvers}).
   %
   `Most inconsistent type' denotes the connection type with the most number of
   {\tt A/AAAA}-inconsistent resolvers.}
