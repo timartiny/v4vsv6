@@ -37,7 +37,7 @@ us with a two distributions (one each for the group of {\tt A} and {\tt AAAA}
 queries) of the fraction of censored domains observed from resolvers in the
 country.
 %
-We use a $t$-test to verify statistical significance of any observed
+We use a two-sample $t$-test to verify statistical significance of any observed
 differences between the two groups for each country. In our statistical
 analysis, we aim to achieve a significance level of 5\% ($p \leq$  .05)
 \emph{over all our findings}. Therefore, we apply a Sidak correction
@@ -154,7 +154,7 @@ To measure differences in DNS query handling of individual resolvers, we
 compare the ratios of censored responses observed from our {\tt A} and {\tt
 AAAA} queries {from each resolver}.  
 %
-We use a two-proportion $z$-test to verify the statistical significance of any
+We use a two-proportion $\chi^2$-test to verify the statistical significance of any
 observed difference in the ratios between the two groups for each resolver.
 Similar to our within-country analysis, we apply a Sidak correction to account
 for our testing of multiple hypotheses and use $p \leq 1-{.05}^{1/n_{r_c}}$ to
@@ -226,7 +226,7 @@ resolvers in just 5 ASes (of 249 ASes with resolvers) account for 56\% of all
       Chile (CL)          & 65  & 20 (30.1\%) & AS 27651 Entel Chile (13)              & 3.08 & 1.14 & 1.18 & Corporate (13) \\    
       Vietnam (VN)        & 252 & 64 (25.4\%) & AS 131353 NhanHoa Software (37)        & 3.89 & 2.22 & 0.71 & Cable/DSL (59) \\    
       Korea (KR)          & 632 & 80 (12.7\%) & AS 9848 Sejong Telecom (13)            & 3.12 & 4.17 & 1.30 & Cable/DSL (58) \\    
-      China (CN)          & 194 & 6 (3.1\%)   & AS 55933 Cloudie Limited (2)           & 3.89 & 2.25 & 2.56 & Corporate (4)   \\    
+      China (CN)          & 194 & 6 (3.1\%)   & AS 4538 China Education and Research Network (2) & 3.89 & 2.25 & 2.56 & Corporate (4)   \\    
     \midrule
       United States (US)  & 1,228 & 175 (14.3\%)  & AS 30475 WEHOSTWEBSITES (35) & 6.28 & 4.69 & 1.31 & Corporate (129) \\    
       Myanmar (MY)        & 50  & 30 (60\%)   & AS 136170 Exabytes Network (10)  & 3.31 & 2.42 & 0.48 & Corporate (26) \\    
