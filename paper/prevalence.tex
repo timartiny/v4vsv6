@@ -61,18 +61,7 @@ country.
 The only exception to both these generalizations is China --- the most
 censoring country in our data. China shows an unusual {\em preference towards
 blocking {\tt AAAA} records regardless of whether they are sent over IPv4 or
-IPv6}. While it is known that the Great Firewall is capable of blocking {\tt
-AAAA} records and injecting IPv6 traffic, it is yet unclear why {\tt A}
-records, which it has been long capable of blocking, are less censored.
-A manual inspection shows that 21 of our tested domains exclusively have their
-{\tt AAAA} record blocked, but not their {\tt A} record. For example, {\tt
-gmail.com} has its {\tt AAAA} record blocked by 95\% of all our resolvers in
-China, but the {\tt A} record is blocked by only 1\% of the resolvers. Similar
-patterns hold for the other 20 domains. We do not find any instances where
-a domain has its {\tt A} record blocked but not its {\tt AAAA} record. 
-%
-It remains unknown if this is the result of a migration of priorities towards
-IPv6 traffic in China. We explore China and several other countries with
+IPv6}. We explore China and several other countries with
 interesting patterns as specific case studies in \Cref{sec:cases}.
 
 %% Moving all this to the case studies in cases.tex
