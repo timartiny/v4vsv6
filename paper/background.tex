@@ -1,4 +1,42 @@
 \section{Background}\label{sec:background}
+Our work is focused on uncovering differences in {\em censorship} that occur
+from {\em DNS censorship} mechanisms' failure to effectively adapt to the Internet's
+{\em adoption of the IPv6 protocol}. 
+%
+In this section, we provide a working definition of censorship, an overview of
+DNS censorship implementations, and an overview of parts of the IPv6 protocol
+that are relevant to DNS censorship mechanisms and their measurement.
+
+\subsection{Internet censorship}\label{sec:background:censorship}
+
+\para{What constitutes Internet censorship?}
+Internet censorship can be broadly defined as the act of filtering or blocking
+access to Internet content \cite{townsend}. Like previous work, we also use
+this definition which applies to any Internet traffic filtering or blocking
+actions, regardless of the entities that perform them --- \ie they may be
+corporate network firewalls, ISPs, or national censorship apparatus.
+
+\para{Distinguishing between corporate and national censorship.}
+Although we use a broad definition of censorship, throughout our work, we
+take care to identify when it is likely that our measurements are reporting
+instances of corporate censorship rather than national censorship. 
+This classification is done with the use of Maxmind's
+Connection Type database \cite{maxmind-connectiondb} which characterizes IP
+end-points as `Corporate', `Cable/DSL' (associated typically with residential
+networks), or `Cellular'.
+%
+This is important in order to provide context for some of our results.
+For example, from our study we find that 0.9\% of our tests in the United
+States were censored. Without the additional context that: (1) more that 50\%
+of all our measurement vantage points in the US were placed in corporate
+networks and (2) these end-points were responsible for the identified
+censorship events, this finding would be confusing or, worse, assumed
+incorrect. 
+
+\para{Internet censorship mechanisms.} Blocking access to content can occur in
+a variety of ways. 
+
+\subsection{DNS censorship}\label{sec:background:dns}
 
 
 Network based censorship is a common barrier to global internet access today.
