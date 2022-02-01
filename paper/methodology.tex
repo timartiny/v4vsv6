@@ -76,113 +76,128 @@ those pairs where an incorrect response was received, (2) we use the Maxmind
 GeoIP dataset \cite{maxmind-connectiondb} to geolocate the IPv4 and IPv6
 addresses of a resolver pair and only those which belong to the same region.
 % 
-In total, we obtained 7,428 resolvers in 106 different countries.
-\Cref{sec:appendix:resolver-distribution} illustrates how these resolvers were
+In total, we obtained 7,788 resolvers in 106 different countries.
+\Cref{tab:appendix:rates} illustrates how these resolvers were
 geographically distributed.
 
 
-\subsection{Identifying Domains of interest}\label{sec:methodology:domains}
+\subsection{Selecting target domains}
+\label{sec:methodology:domains}
+In order to identify inconsistencies in IPv4/IPv6-related DNS censorship we
+require that the domains we use are: (1) sensitive and likely to be censored in
+a large number of countries and (2) have valid {\tt A} and {\tt AAAA} records
+associated with them.
 
-Censored Planet's Satellite project~\cite{sundara2020censored} has cultivated a
-list of domains that are potentially censored globally or by individual
-countries. This list provides a starting point for identifying domains of
-interest to our study.
+\para{Identifying sensitive domains.} Censored Planet's `Satellite' project,
+which performs global longitudinal measurements of DNS censorship,
+\cite{sundara2020censored} maintains a list of domains that combines sensitive
+domains in each country with popular domains randomly chosen from the Alexa
+Top-10K. The sensitive domains in this list were gathered by the Citizen Lab
+using regional experts to curate lists for each country
+\cite{citizenlab-blocklists}. Given the input from experts and the availability
+of comparable validation data from Censored Planet, we
+utilize this list as the starting point for our study as well.  
 
-To measure how censorship varies over IPv4 and IPv6 Network Interfaces we
-restrict our list of domains to those that have both \texttt{A} and
-\texttt{AAAA} Records. To filter this list we again use \texttt{zdns} to perform
-both \texttt{A} and \texttt{AAAA} Record Requests for each domain from
-Satellite's global list through Google and Cloudflare's public DNS resolvers
-(\texttt{8.8.8.8, 8.8.4.4, 1.1.1.1,} and \texttt{1.0.0.1}).
+\para{Identifying usable domains.} Not all the domains on the Satellite list
+are usable in our study since they do not have IPv6 connectivity or {\tt AAAA}
+records.
+%
+We filter out unusable domains by using {\tt zdns} to perform {\tt A} and {\tt
+AAAA} resource record requests from Google and CloudFlare's four public DNS
+resolvers ({\tt 8.8.8.8}, {\tt 8.8.4.4}, {\tt 1.1.1.1}, and {\tt 1.0.0.1}) and
+removing those with invalid {\tt A} or {\tt AAAA} records. A record is invalid
+if it does not contain valid IPv4 or IPv6 addresses.
+%
+Finally, we follow-up by making TLS connections (using {\tt zgrab2}), from our
+uncensored vantage point, to each of the IP addresses contained in the DNS
+responses. We locally verify the obtained TLS certificates and exclude all
+domains whose verification fails. 
+%
+This final list contains 717 sensitive domains whose TLS certificates and IPv4
+and IPv6 addresses are valid. We use this list for all the measurements
+reported in this paper.
 
-We filter our domain list to those domains that have valid IPv4 addresses in
-their \texttt{A} Records and valid IPv6 addresses in their \texttt{AAAA}
-Records.
+\subsection{Identifying DNS censorship events} \label{sec:methodology:censorship}
+In general, our goal is to err on the side of caution and avoid false-positives
+in our censorship determination. We achieve this by accounting for
+unreliability of resolvers and domains in our lists.
 
-To facilitate the next step of determining when a domain is censored we take the
-Answers provided from our DNS queries and issue follow up TLS connections using
-\texttt{zgrab2}~\cite{Durumeric13zmap} and locally verify the returned TLS
-certificates.
+\para{Removing unstable resolvers.}
+For each of the 7,788 (IPv4, IPv6) resolver pairs and 717 sensitive domains, we
+send a DNS {\tt A} and {\tt AAAA} resource record request for a domain to the
+IPv4 and IPv6 addresses associated with the resolver. We follow this up with
+a {\tt A} and {\tt AAAA} resource record request for a set of 3 control domains
+(owned and operated by us).
+%
+We discard data from resolver pairs which failed to resolve any of our control
+domains correctly since this is a sign of resolver instability. This left us
+with data from 7,428 stable resolver pairs.
+%
 
-Our domain list is then filtered to those domains that:
-\begin{packed_enumerate}
-    \item Have an IPv4 address in their \texttt{A} Record
-    \item Have an IPv6 address in their \texttt{AAAA} Record
-    \item Issue a valid TLS certificate for the domain on both the IPv4 and IPv6
-    address in their \texttt{A/AAAA} Records
-\end{packed_enumerate}
-
-On January 24, 2022 this gave us 717 domains, originally identified by Censored
-Planet as potentially interesting from a censorship point of view that meet our
-criteria to measure censorship across network interfaces.
-
-\subsection{Determining DNS censorship}\label{sec:methodology:censorship}
-
-To measure DNS censorship across Network Interfaces we then perform both
-\texttt{A} and \texttt{AAAA} Record Requests for our filtered 717 domains from
-each IP address of all 7,788 resolver pairs.
-
-We then take each answer provided by every resolver and make a TLS connection
-with the Server Name of the domain we queried the resolver for and retrieve any
-returned TLS certificate.
-
-We then verify each DNS query we made to determine if any answers provided
-failed to successfully return a valid TLS certificate, if so we label the DNS
-query from that resolver for that domain and resource Record as censored.
+\para{Distinguishing censorship from domain instability.}
+For the remaining resolvers, we extract the IPv4 and IPv6 resource records
+returned for each domain. Next, we use {\tt openssl} to establish TLS
+connections to the IP addresses contained in the resource records. In each of
+these connections, we set the TLS SNI (using the {\tt -servername} option) to
+be the domain whose records were requested. We then verify the validity of the
+retrieved TLS certificates.
+%
+Since the domains themselves might be unreliable, we repeat this verification
+procedure three times. Only if this step fails all three times do we conclude
+that the response from that resolver for that domain was censored. 
 
 \subsection{Ethics}\label{sec:methodology:ethics}
-Our experimental design has incorporated ethical
-considerations into the decision-making process at multiple stages. We concern
-ourselves primarily with the security and autonomy of human users and their
-ability to securely access the internet. Given the prevalence of self-censorship,
-understanding and documenting the mechanisms and scope of censorship
-strategies can assist users in better evaluating their own risk. However,
-censorship measurement naturally entails interacting with and occasionally
-violating the rules of access control systems. We rely on The Menlo
-Report~\cite{menlo}, its companion guide~\cite{menlo-companion}, and the
-censorship specific ethical measurement guidelines discussed by
-Jones et al.~\cite{jones2015ethical} to provide structure and guidance to our
-experimental design.
+Our experimental design has incorporated ethical considerations into the
+decision-making process at multiple stages. We concern ourselves primarily with
+the security and autonomy of human users and their ability to securely access
+the internet. Given the prevalence of self-censorship, understanding and
+documenting the mechanisms and scope of censorship strategies can assist users
+in better evaluating their own risk. However, censorship measurement naturally
+entails interacting with and occasionally violating the rules of access control
+systems. We rely on The Menlo Report~\cite{menlo}, its companion
+guide~\cite{menlo-companion}, and the censorship specific ethical measurement
+guidelines discussed by Jones \etal \cite{jones2015ethical} to provide
+structure and guidance to our experimental design.
 
-
-\textbf{Consent.}
-To align with the guiding principle of \textit{respect for persons} we structure the
-data collection to implicate as few individuals as possible. Specifically we rely
-on open resolvers which typically have little or no direct association with
-individuals in lieu of measurement from client based software.
-While we cannot acquire direct or proxy consent from the operators of the open
-resolvers we consider the trade-off between the implied consent standard and the
-value in the measurements we make. Understanding the extent and mechanisms of
-censorship infrastructure can help to demystify and clarify risks to real users
-seeking to safely access the internet. It is important to note that the
-goal of our ethical analysis is not to eliminate risk, but to minimize it wherever possible. As noted by
-Jones et al. in some cases acquiring consent from operators may not only be
-impossible, but increase the risk to operators as it introduces their
-acknowledgement of, or active participation in, the measurement at
-hand~\cite{jones2015ethical}. This analysis aligns with previous work relying
-on open resolvers to collect impactful results while minimizing risk on
+\para{Consent.}
+To align with the guiding principle of \textit{respect for persons} we
+structure the data collection to implicate as few individuals as possible.
+Specifically we rely on open resolvers which typically have little or no direct
+association with individuals in lieu of measurement from client based
+software. While we cannot acquire direct or proxy consent from the operators of
+the open resolvers we consider the trade-off between the implied consent
+standard and the value in the measurements we make. Understanding the extent
+and mechanisms of censorship infrastructure can help to demystify and clarify
+risks to real users seeking to safely access the internet. It is important to
+note that the goal of our ethical analysis is not to eliminate risk, but to
+minimize it wherever possible. As noted by Jones \etal in some cases acquiring
+consent from operators may not only be impossible, but increase the risk to
+operators as it introduces their acknowledgement of, or active participation
+in, the measurement at hand~\cite{jones2015ethical}. This analysis aligns with
+previous work relying on open resolvers to collect impactful results while
+minimizing risk on
 individuals~\cite{pearce2017global,scott2016satellite,sundara2020censored}.
 
-\textbf{Privacy.}
-Our study collects no personal data about any end~users
-or individual open resolver operators. The analysis
-completed herein uses resolver addresses, public Anonymous System (AS) identifiers,
-and country codes.  All measurements are initiated from within the United
-States at little to no risk of repercussions to citizens in the countries
-that we examine. Beyond this, measurement domains are not drawn from any human
-browsing patterns or history as the suspected censored domains are a subset of
-the Satellite measurement results as discussed in \Cref{sec:methodology:domains}.
+\para{Privacy.} 
+Our study collects no personal data about any end~users or individual open
+resolver operators. The analysis completed herein uses resolver addresses,
+public Anonymous System (AS) identifiers, and country codes.  All measurements
+are initiated from within the United States at little to no risk of
+repercussions to citizens in the countries that we examine. Beyond this,
+measurement domains are not drawn from any human browsing patterns or history
+as the suspected censored domains are a subset of the Satellite measurement
+results as discussed in \Cref{sec:methodology:domains}.
 
-\textbf{Resource Usage.}
+\para{Resource Usage.} 
 The vantage that was used for data collection is connected to the internet with
-a 1 Gbps interface that scanned using the default rates for zmap and zgrab2 tools
-(line rate). However, the structure of the scan was established such that
-individual resolvers and domains for the DNS probe and TLS certificate validation
-respectively would be accessed in round robin order. That is -- when probing the
-7843 open resolvers every target would receive a preliminary request before any
-target would receive the subsequent request.  Equivalently for
-validating TLS certificates, each of the 717 target domains would receive a preliminary
-attempted handshake before any target would receive a subsequent handshake.
-While we do not have an upper bound on the bandwidth that was sent to individual
-resolvers or tls endpoints we believe this strategy provides a reasonable
-limitation to the impact of measurement.
+a 1 Gbps interface that scanned using the default rates for {\tt zmap} and {\tt
+zgrab2} tools (line rate). However, the structure of the scan was established
+such that individual resolvers and domains for the DNS probe and TLS
+certificate validation respectively would be accessed in round robin order ---
+\ie when probing the open resolvers every target would receive a preliminary
+request before any target would receive the subsequent request.  Equivalently
+for validating TLS certificates, each of the 717 target domains would receive
+a preliminary attempted handshake before any target would receive a subsequent
+handshake. While we do not have an upper bound on the bandwidth that was sent
+to individual resolvers or TLS endpoints we believe this strategy provides
+a reasonable limitation to the impact of the measurements in this study.
