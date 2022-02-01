@@ -20,8 +20,8 @@ in which such differences are frequently exhibited?
 queries} \label{sec:infrastructure:country}
 
 We use the responses received from the IPv4 and IPv6 interfaces of each of the
-dual-stack resolvers in our dataset for the same set of domains. We then apply
-the censorship detection mechanism detailed in \Cref{sec:methods:labeling} to
+resolvers in our dataset for the same set of domains. We then apply
+the censorship detection mechanism detailed in \Cref{sec:methodology:censorship} to
 measure the prevalence of DNS censorship of queries sent over IPv4 and IPv6.
 Finally, we perform statistical tests to identify the countries that have
 significant differences in their censorship of IPv4 and IPv6 DNS traffic.
@@ -41,7 +41,7 @@ from multiple hypothesis testing.
 %
 This requires $p \leq 1-{.05}^{1/n_{c}}$ for classifying a difference as
 significant, where $n_c$ is the total number of countries in our dataset
-(\fixme{XXX}). 
+(106). 
 %
 The presence of a statistically significant difference for a specific country
 would imply that the country appears to have different censorship mechanisms
