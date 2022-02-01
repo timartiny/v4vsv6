@@ -234,4 +234,38 @@ resolvers.
 
 \subsection{Characterization of anomalous domains}
 \label{sec:infrastructure:domains}
+We now seek to understand the category of domains that get through the infrastructural 
+gap between DNS queries over IPv4 and IPv6. We provide a general categorization of these
+domains and further compare this category distribution with that of domains that
+received any blocking. We do this in order to identify specific mechanisms that might 
+differ for censorship of certain categories over IPv4 and IPv6.
 
+
+\para{Identifying differences in domain behaviors within a country}
+We use an approach similar to the one defined in \Cref{sec:resources:domains} for identifying
+domains that get through the gap in between IPv4 and IPv6. For each domain, we measure the ratio
+of blocking that occurs over IPv4 and IPv6. We then apply the $z$-test with a corrected $p$-value
+(as described in \Cref{sec:resources:domains}) to these ratios. This gives us all domains
+which had significant differences in censorship over IPv4 and IPv6.
+
+\para{Do these IPv4/IPv6-inconsistent domains hint at policy gaps?}
+For each country, we derive domain categories for the following two lists; 
+(1) $\text{D}_{\text{any}}$ which contains the domains which experienced any blocking 
+events inside a country and (2) $\text{D}_{\text{inconsistent}}$ which contains the {\tt
+IPv4/IPv6}-inconsistent domains identified by our $z$-test. We again used KL-divergence 
+between to compare these two category distributions. 
+A small $\nabla_{\text{query}}^{\text{domains}}$ would signify that the two category 
+distributions are not largely different suggesting the policy gap over IPv4/IPv6 
+is not content specific; A large $\nabla_{\text{query}}^{\text{domains}}$
+would signify that the category distributions are indeed very different 
+suggesting a content-based policy gap.
+\\
+Based on this analysis, we see that Bangladesh, US and Iran have the smallest 
+$\nabla_{\text{query}}^{\text{domains}}$ scores (0-1.3) suggesting that 
+there was little to no difference in the distribution of the two categories. 
+This suggests that for these countries, there is no content-based policy gaps.
+On the other hand, Pakistan, China and Myanmar had the highest $\nabla_{\text{query}}^{\text{domains}}$
+scores (2.7-4.3). These scores suggest that some categories of domains get through
+the IPv4/IPv6 censorship gap much more than others. "Gambling" is the category most likely
+to get through this gap for China and Pakistan and "Government/Military" is the most likely
+to get through this gap in Iran. 

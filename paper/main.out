@@ -1,0 +1,22 @@
+\BOOKMARK [1][-]{section.1}{1 Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{2 Background}{}% 2
+\BOOKMARK [2][-]{subsection.3}{2.1 DNS Censorship Measurement}{section.2}% 3
+\BOOKMARK [2][-]{subsection.5}{2.2 IPv6 \046 DNS}{section.2}% 4
+\BOOKMARK [1][-]{section.6}{3 Dataset and Methodology}{}% 5
+\BOOKMARK [2][-]{subsection.7}{3.1 Selecting resolvers}{section.6}% 6
+\BOOKMARK [2][-]{subsection.8}{3.2 Selecting target domains}{section.6}% 7
+\BOOKMARK [2][-]{subsection.9}{3.3 Identifying DNS censorship events}{section.6}% 8
+\BOOKMARK [2][-]{subsection.10}{3.4 Ethics}{section.6}% 9
+\BOOKMARK [1][-]{section.11}{4 Prevalence of DNS Censorship}{}% 10
+\BOOKMARK [1][-]{section.14}{5 Censorship of IPv4 and IPv6 Resource Records}{}% 11
+\BOOKMARK [2][-]{subsection.15}{5.1 A vs. AAAA resource censorship}{section.14}% 12
+\BOOKMARK [2][-]{subsection.17}{5.2 Characteristics of A/AAAA-inconsistent resolvers}{section.14}% 13
+\BOOKMARK [2][-]{subsection.19}{5.3 Characteristics of anomalous domains}{section.14}% 14
+\BOOKMARK [1][-]{section.20}{6 Censorship of IPv4 and IPv6 DNS Traffic}{}% 15
+\BOOKMARK [2][-]{subsection.21}{6.1 Within-country differences in the censorship of IPv4 and IPv6 DNS queries}{section.20}% 16
+\BOOKMARK [2][-]{subsection.23}{6.2 Characteristics of IPv4/IPv6-inconsistent resolvers}{section.20}% 17
+\BOOKMARK [2][-]{subsection.25}{6.3 Characterization of anomalous domains}{section.20}% 18
+\BOOKMARK [1][-]{section.26}{7 Country-Specific DNS Censorship Trends and Mechanisms}{}% 19
+\BOOKMARK [1][-]{section.31}{8 Related Work}{}% 20
+\BOOKMARK [1][-]{section.32}{9 Discussion and Conclusions}{}% 21
+\BOOKMARK [1][-]{appendix.34}{A Full list of countries / resolvers}{}% 22
