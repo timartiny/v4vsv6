@@ -17,6 +17,49 @@
 % \end{figure}
 % }
 
+\newcommand{\SmallCountriesCorporate}{
+    \begin{table}[t]
+        \centering
+        \small
+        \scalebox{0.6}{
+            \begin{tabular}{ccccccc}
+                \toprule\textbf{Country} & \textbf{Resolver Pairs} & \textbf{IPv4 A} & \textbf{IPv4 AAAA} & \textbf{IPv6 A} & \textbf{IPv6 AAAA} & \textbf{Avg.}\\\midrule
+                United States (US) & 757 & 1.62 & 1.16 & 0.54 & 0.96 & 1.07\\
+                Germany (DE) & 717 & 0.98 & 0.91 & 0.75 & 0.80 & 0.86\\
+                France (FR) & 470 & 0.60 & 0.45 & 0.40 & 0.46 & 0.48\\
+                Great Britan (GB) & 186 & 1.07 & 0.94 & 0.78 & 0.97 & 0.94\\
+                South Korea (KR) & 177 & 2.49 & 1.37 & 1.38 & 1.57 & 1.70\\
+                Canada (CA) & 165 & 0.84 & 0.39 & 0.26 & 0.33 & 0.45\\
+                Russia (RU) & 117 & 4.67 & 4.36 & 4.01 & 4.00 & 4.26\\
+                India (IN) & 101 & 1.19 & 1.76 & 0.81 & 0.99 & 1.19\\
+                Japan (JP) & 79 & 1.71 & 1.82 & 0.90 & 1.57 & 1.50\\
+                South Africa (ZA) & 74 & 2.09 & 1.62 & 1.10 & 1.31 & 1.53\\
+                Netherlands (NL) & 71 & 1.08 & 0.94 & 0.84 & 0.85 & 0.92\\
+                Chile (CL) & 53 & 2.10 & 0.73 & 1.12 & 0.77 & 1.18\\
+                Lithuania (LT) & 51 & 0.95 & 0.80 & 0.51 & 0.78 & 0.76\\
+                Iran (IR) & 48 & 25.50 & 24.66 & 22.34 & 21.69 & 23.55\\
+                Thailand (TH) & 43 & 9.28 & 1.18 & 0.99 & 0.95 & 3.10\\
+                Singapore (SG) & 41 & 1.56 & 0.85 & 0.65 & 0.78 & 0.96\\
+                Viet Nam (VN) & 40 & 2.16 & 1.01 & 0.85 & 0.86 & 1.22\\
+                Hong Kong (HK) & 37 & 6.20 & 5.44 & 4.55 & 5.38 & 5.39\\
+                Austrailia (AU) & 35 & 2.53 & 1.16 & 1.77 & 1.14 & 1.65\\
+                Brazil (BR) & 34 & 1.50 & 1.10 & 1.01 & 1.17 & 1.19\\
+                Finland (FI) & 31 & 0.74 & 0.64 & 0.47 & 0.56 & 0.60\\
+                Malaysia (MY) & 30 & 6.07 & 2.25 & 0.97 & 1.10 & 2.60\\
+                Spain (ES) & 28 & 1.26 & 0.97 & 2.24 & 2.97 & 1.86\\
+                Turkey (TR) & 25 & 1.72 & 1.29 & 1.20 & 2.17 & 1.60\\
+                \bottomrule
+            \end{tabular}} 
+            \caption{
+                We highlight the countries with at least 25 resolver pairs in
+                corporate ASes to showcase their censorship rates across
+                interface and resource type. We see this is where the
+                predominant censorship in the United States is present. 
+            }
+            \label{tab:small-countries-corporate}
+    \end{table}
+}
+
 \newcommand{\CountriesCorporate}{
     \begin{table*}[ht]
         \centering

@@ -19,8 +19,6 @@ summarize the base rate of censorship.
 
 \input{tab-prevalence-rates-shaded.tex}
 
-\CountriesCorporate
-
 \para{How common is DNS censorship?} 
 Our data shows the mean base rate of DNS censorship among the 106 countries
 included in our study, across all query and network types, for our list of
@@ -65,6 +63,23 @@ censoring country in our data. China shows an unusual {\em preference towards
 blocking {\tt AAAA} records regardless of whether they are sent over IPv4 or
 IPv6}. We explore China and several other countries with
 interesting patterns as specific case studies in \Cref{sec:cases}.
+
+\para{Corporate Censorship.}
+Predominantly the focus of DNS censorship is at the nation state level as
+discussed so far. However, corporate censorship \ie businesses restricting
+employee access to certain domains is also highly prevalent across the internet.
+
+Given our wide breadth of resolvers we were able to break down our resolver
+pairs discovered (as discussed in \Cref{sec:methodology:resolvers}) further into
+the the Autonomous System (AS) each resolver pair is in allowing us to get a
+more fine grained look at which resolvers are censoring access to sensitive
+domains.
+
+\SmallCountriesCorporate
+
+\Cref{tab:small-countries-corporate} shows the censorship rates across resource
+and infrastructure type in countries that had at least 25 resolver pairs in
+corporate ASes.
 
 %% Moving all this to the case studies in cases.tex
 %    \paragraph{Thailand} One prominent example is Thailand, where 8.2\% of
