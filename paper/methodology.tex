@@ -136,7 +136,7 @@ with data from 7,428 stable resolver pairs.
 
 \para{Distinguishing censorship from domain instability.}
 For the remaining resolvers, we extract the IPv4 and IPv6 resource records
-returned for each domain. Next, we use {\tt openssl} to establish TLS
+returned for each domain. Next, we use \texttt{zgrab2} to establish TLS
 connections to the IP addresses contained in the resource records. In each of
 these connections, we set the TLS SNI (using the {\tt -servername} option) to
 be the domain whose records were requested. We then verify the validity of the
