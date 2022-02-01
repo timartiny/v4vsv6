@@ -70,7 +70,7 @@ instances of domains in China that are similarly exclusively blocked by
 \paragraph{Iran}
 While Iran supports both IPv6 and IPv4, it is more effective at blocking IPv4
 resolvers (both \texttt{A} and \texttt{AAAA} records). We find this is due to
-many of the IPv6 resolvers in Iran are actually \textbf{6to4 bridges}: these
+the fact that many of the IPv6 resolvers in Iran are actually \textbf{6to4 bridges}: these
 are IPv6 addresses that are not native IPv6, but instead an encoding of an IPv4
 address. For example, sending an IPv6 packet to \texttt{2002:0102:0304::} will
 send the packet encapsulated in an IPv4 packet to 1.2.3.4 (at the 6to4 gateway),
@@ -78,7 +78,7 @@ whose 32-bit address is encoded in the IPv6 address (\texttt{0102:0304}).
 However, this can result in the packet passing encapsulated past the censor, who
 will observe an IPv4 packet with a protocol field denoting IPv6 encapsulation,
 instead of the usual UDP-carrying DNS. A naive censor may ignore such packets,
-allowing the domain lookup through unchecked uncensored. We observe 272 IPv6
+allowing the domain lookup through unchecked and uncensored. We observe 272 IPv6
 resolvers are actually 6to4 bridges in Iran, all of which block at lower
 (but non-zero) rates, compared to their corresponding IPv4 resolver.
 %The reason
