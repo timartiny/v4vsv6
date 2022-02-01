@@ -19,7 +19,7 @@ these differences are frequently observed?
 
 %\subsection{Within-country differences in the censorship of
 %\texttt{A} and \texttt{AAAA} resource records} \label{sec:resources:country}
-\subsection{\texttt{A} vs. \texttt{AAAA} resource censorship} \label{sec:resources:country}
+\subsection{{\tt A} vs. {\tt AAAA} resource censorship} \label{sec:resources:country}
 %
 We use the responses received from our {\tt A} and {\tt AAAA} queries sent to
 the same set of resolvers and for the same set of domains (\cf
@@ -137,27 +137,30 @@ Given our above results which suggest that there are a number of countries in
 which {\tt A} and {\tt AAAA} queries are censored differently, we now seek to
 understand the characteristics of the resolvers that cause these differences.
 %
-We first focus on identifying the fraction of resolvers in each country that
+We first focus on identifying the individual resolvers in each country that
 have statistically different behaviors for {\tt A} and {\tt AAAA} queries.
 Then, we compare the AS distributions of these resolvers with the set of all
-resolvers in a country. This comparison allows us to hypothesize about the
-presence of a centralized DNS censorship mechanism is responsible for the
-observed inconsistencies or if they should be attributed to local network
-operators responsible for implementing DNS censorship. Finally, we identify the
+resolvers in a country. This comparison tells us if the {\tt A}/{\tt AAAA}
+inconsistencies are specific to a subset of ISPs, or if the inconsistencies
+exist across the whole country (suggesting centralized censorship).
+Finally, we identify the
 types of networks hosting inconsistent resolvers to get a measure of whether
 users in residential networks may exploit these DNS inconsistencies for
 circumvention.
 
-\para{Identifying differences in individual resolvers.} 
+\para{Identifying differences in individual resolvers.}
 %
 We begin our analysis by identifying the individual resolver pairs (\ie we
 consider the IPv4- and IPv6-interfaces of a resolver as a unit), within each
-of the seven countries listed above, that have a statistically significant
+of the seven countries listed above that have a statistically significant
 difference in their censorship of {\tt A} and {\tt AAAA} queries.
 %
 To measure differences in DNS query handling of individual resolvers, we
-compare the ratios of censored responses observed from our {\tt A} and {\tt
-AAAA} queries {from each resolver}.  
+compare the ratio of censored responses each resolver observes for {\tt A} and
+{\tt AAAA} queries.
+
+%observed from our {\tt A} and {\tt
+%AAAA} queries {from each resolver}.
 %
 We use a two-proportion $z$-test to verify the statistical significance of any
 observed difference in the ratios between the two groups for each resolver.
@@ -173,9 +176,9 @@ exhibiting {\tt A} and {\tt AAAA} resolution inconsistencies?}
 %
 Immediately standing out from the other countries are Thailand, Bangladesh, and
 Pakistan. These countries have {\tt A} and {\tt AAAA} inconsistencies in
-between 62-82\% of their open resolvers. In comparison, other countries with
+62-82\% of their resolvers. In comparison, other countries with
 statistically significant differences have inconsistencies arising from
-anywhere between 3-30\% of their resolvers. 
+anywhere between 3-30\% of their resolvers.
 %
 
 \para{How spread out are the {\tt A/AAAA}-inconsistent resolvers?}
@@ -186,31 +189,38 @@ the distribution of the inconsistent resolvers in the country
 diversity of ASes observed in both cases. 
 %
 In order to compare the two measures, we use the Kullback-Leibler divergence
-($\nabla_{\text{query}}$) metric \cite{KLdivergence}. In simple terms, the
-KL-divergence metric between two distributions ($X$, $Y$) measures the number
-of additional bits required to encode $Y$ given the optimal encoding for $X$.
+($\nabla_{\text{query}}$) distance \cite{KLdivergence}. In simple terms, the
+KL-divergence between two distributions ($X$, $Y$) measures the number
+of additional bits required to encode $Y$ given the optimal encoding for $X$. In
+other words, it is the relative entropy of one distribution given another. 
+%If the distributions are similar, the number will be close to 0.
 %
 This computation is helpful for hypothesizing the censorship infrastructure
 that causes the inconsistencies. Finding a small $\nabla_{\text{query}}$ value
 in a country signifies that the inconsistent resolvers had a similar
 distribution to all the resolvers in that country. This would suggest the
 presence of a centralized mechanism that (roughly) equally impacts all ASes in
-the country. 
+the country that is responsible for the inconsistencies.
 Conversely, a higher $\nabla_{\text{query}}$ value indicates that there is
 a strong change in the distribution of resolvers -- \ie a disproportionate
 number of inconsistencies arise from a smaller set of ASes. This would be
 indicative of local configuration inconsistency (at the network or resolver
 level), rather than a centralized configuration inconsistency.
 %
+We note that this does not provide a measure of how centralized censorship is
+within a country overall, but rather, it describes how uniform the {\tt A} vs.
+{\tt AAAA} inconsistencies are.
+
+%
 Based on this analysis, we once again see that Thailand, Bangladesh, and
 Pakistan stand out with small $\nabla_{\text{query}}$ values (0.14 - 0.48).
-This suggests the presence of a centralized censorship mechanism whose
-inconsistency in handling of {\tt A} and {\tt AAAA} queries nearly equally
-impacts all ASes. 
+This suggests a country-wide censorship mechanism is responsible
+for the inconsistent censorship of {\tt A} and {\tt AAAA} that impacts all
+ASes nearly equally.
 %
 Korea, China, and the United States on the other hand demonstrate high
 $\nabla_{\text{query}}$ scores suggesting the presence of network- or
-resolver-level misconfigurations. This is confirmed by inspecting the ASes
+resolver-level misconfigurations are responsible. This is confirmed by inspecting the ASes
 hosting the resolvers with inconsistencies. For example, in the United States,
 resolvers in just 5 ASes (of 249 ASes with resolvers) account for 56\% of all
 {\tt A} and {\tt AAAA} inconsistencies.
