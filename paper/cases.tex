@@ -13,8 +13,9 @@ Meanwhile, its IPv6 counterpart did not block any domains (either \texttt{A} or
 \texttt{AAAA} records). Furthermore, number of requests censored by connection type
 closely matches the proportion of the resolvers of that connection type. For example,
 ~74\% of all resolvers in Thailand are of type Cable/DSL and they are responsible for
-~72\% of all blocked queries. This coupled with findings in \Cref{Characteristics of {\tt A/AAAA} 
- (Thailand having a low $\nabla_{net}$) presents an even stronger case for a centralized 
+~72\% of all blocked queries. This coupled with findings in 
+% \Cref{Characteristics of {\tt A/AAAA} -inconsistent resolvers} 
+ (Thailand having a low $\nabla_{net}$ presents an even stronger case for a centralized 
  mechanism for censorship.
 
 
@@ -36,8 +37,9 @@ record is blocked by over 95\% of resolvers in China, but the corresponding
 The other 20 domains have similar patterns, leading to China's slight preference
 in blocking \texttt{AAAA} records over \texttt{A} records. We do not find any
 instances of domains in China that are similarly exclusively blocked by
-\texttt{A} record but not \texttt{AAAA}. As established in \Cref{Characteristics of {\tt A/AAAA},
-China has a high $\nabla_{net}$) which suggests that there are individual resolver
+\texttt{A} record but not \texttt{AAAA}. As established in 
+% \Cref{Characteristics of {\tt A/AAAA}-inconsistent resolvers},
+China has a high ($\nabla_{net}$) which suggests that there are individual resolver
 level inconsistencies. 90\% of all resolvers in China fall within one standard deviation
 of the mean number of censored queries by all resolvers. Resolvers that censor
 more than one standard deviation of the mean of requests consist disproportionately
