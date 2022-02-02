@@ -10,7 +10,13 @@ blocking on either \texttt{A} or \texttt{AAAA} records. For instance, one of the
 larger resolvers by blocked domains had an IPv4 endpoint that blocked
 240 \texttt{A} records, but only 15 \texttt{AAAA} records from our domain list.
 Meanwhile, its IPv6 counterpart did not block any domains (either \texttt{A} or
-\texttt{AAAA} records).
+\texttt{AAAA} records). Furthermore, number of requests censored by connection type
+closely matches the proportion of the resolvers of that connection type. For example,
+~74\% of all resolvers in Thailand are of type Cable/DSL and they are responsible for
+~72\% of all blocked queries. This coupled with findings in \Cref{Characteristics of {\tt A/AAAA} 
+ (Thailand having a low $\nabla_{net}$) presents an even stronger case for a centralized 
+ mechanism for censorship.
+
 
 % jq -r 'select(.resolver_country=="TH" and .id=="4934-A").blocked_domains | keys | .[]' ../../data/resolver-blocks-jan-aaaa.json | grep -e '-AAAA$' | wc -l
 % Removed 3 domains manually: www.stratcom.mil, www.hud.gov, portal.hud.gov
@@ -30,7 +36,14 @@ record is blocked by over 95\% of resolvers in China, but the corresponding
 The other 20 domains have similar patterns, leading to China's slight preference
 in blocking \texttt{AAAA} records over \texttt{A} records. We do not find any
 instances of domains in China that are similarly exclusively blocked by
-\texttt{A} record but not \texttt{AAAA}.
+\texttt{A} record but not \texttt{AAAA}. As established in \Cref{Characteristics of {\tt A/AAAA},
+China has a high $\nabla_{net}$) which suggests that there are individual resolver
+level inconsistencies. 90\% of all resolvers in China fall within one standard deviation
+of the mean number of censored queries by all resolvers. Resolvers that censor
+more than one standard deviation of the mean of requests consist disproportionately
+of resolvers belonging to the cellular connection type. Although cellular type resolvers
+constitute of 17\% of all resolvers in China, they represent 50\% of the resolvers which
+censor more than one standard deviation above the mean number of censored queries.  
 
 %{"domain":"www.gmail.com-AAAA","country_code":"CN","v4_censored_count":186,"v6_censored_count":185}
 %{"domain":"www.gmail.com-A","country_code":"CN","v4_censored_count":4,"v6_censored_count":1}
