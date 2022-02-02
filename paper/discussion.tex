@@ -42,7 +42,7 @@ While we followed the initial steps of Hendricks et al. in our resolver discover
 methodology (outlined in \Cref{sec:methodology:resolvers}), we did not perform
 the follow up scanning to determine that each of the resolver pairs were truly
 dual-stack. This leaves in open resolvers that forward or distribute queries as
-long as long as the control queries are satisfied and the pairs geolocate to the
+long as the control queries are satisfied and the pairs geolocate to the
 same country.
 
 On one hand this can provide an inflated count of open resolver pairs within a
@@ -52,7 +52,7 @@ ecosystem to understand.
 
 One specific category of open resolver that we find to be relatively common
 in our collected data are those that rely on a \textbf{6to4 Bridge}. This
-configuration is identifiable as the resolvers IPv6 address will be drawn from 
+configuration is identifiable as the resolvers IPv6 address will be drawn from
 the \texttt{2002::/16} address
 block and has a discernable address format~\cite{RFC3056}.
 The 6to4 protocol was originally designed as a mechanism to bridge the IPv6
@@ -65,14 +65,15 @@ In this way clients without outgoing connection to an IPv6 capable network
 can send IPv6 packets over to an IPv6 capable host who forwards them onward.
 
 We find multiple countries with limited IPv6 deployment rely on 6to4 resolvers.
-Two specific examples are Iran in which 272 of the 277 resolvers identified used
+Two specific examples are Brazil in which 94 of the 160 resolvers identified used
 6to4 and Thailand with 112 out of 186 resolvers. This
 understanding of the protocols that are traversing the censored links provide
 a limitation on our measurement in the sense that we do not get the comparison of
 IPv4 with IPv6 that we hoped. However, they do provide an interesting perspective
 on the ability of censors to handle protocols specifically deployed to assist in
-bridging the IPv4 - IPv6 gap. For example in Thailand the resolvers relying on
-6to4 censor requests at lower rates across the board.
+bridging the IPv4 - IPv6 gap. For example in both Brazil and Thailand the resolvers
+relying on 6to4 censor requests at lower rates of injection for requests sent over IPv6 on
+6to4 as compared with Native IPv6.
 
 % Do the non-6to4 resolvers in bangladesh and iran cluster by domain with the
 % IPv4 censoring resolvers?
