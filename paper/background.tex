@@ -15,7 +15,7 @@ this definition when measuring censorship.
 
 \para{Corporate and national censorship.}
 Our working definition of censorship applies to any Internet traffic filtering
-or blocking actions, regardless of the entities that perform them. With a few
+or blocking actions, regardless of the entities that perform them or their purpose for doing so. With a few
 exceptions, much of prior work has largely focused on measuring censorship with
 a presumed attribution of measured events to national content access policies.
 However, it is important to note that corporate censorship, where businesses
@@ -56,7 +56,7 @@ infrastructure that is capable of active probing, protocol inspection, and
 incorporates multiple approaches for censorship.
 %
 In fact, there has been a large body of work to identify censorship techniques
-that are leveraged by state actors and globally prevalent
+globally
 \cite{pearce2017global, niaki2020iclab, scott2016satellite,
 sundara2020censored, filasto2012ooni, pearce2017augur, razaghpanah2016exploring}
 and specific to individual countries \cite{USESEC21:GFWatch, aryan2013internet,
@@ -80,42 +80,62 @@ However, the widely deployed DNS system is implemented as a plaintext protocol
 allowing on-path eavesdroppers to inspect the hostnames as clients attempt to
 establish connections and in some cases inject falsified responses to interfere.
 
-\para{On-path and in-path DNS censorship.}
-An on-path censor operates on a copy of the traffic that transits a specific
-network link. Operating on a copy allows the censor to make deeper inspections
-on the content of packets and respond accordingly. This approach has the
-limitation that censors cannot interfere with the packets that have already
-passed their vantage point. In the context of DNS censorship, on-path censors
-make censorship decisions based on the copy of a DNS request and inject a false
-response to the source of the request in the hopes that their response reaches
-the source before the actual response from a resolver. Because the source will
-receive a response from the intended resolver as well as the injected response
-from the censor, on-path censorship can be identified by recording {\em all}
-DNS response packets that are received to a DNS query for a censored domain.
-%
-Another censorship approach is in-path censorship in which a censor makes
-decisions about dropping or modifying packets on-the-fly and at line rate.
-Censoring of DNS queries by in-path censors can be identified either by the
-presence of timeouts (packet drops by censor) or incorrect responses (packet
-modifications by censors).
-%
+
+Censors have long been known to use DNS injection to block requests, observing
+DNS requests and injecting false responses for requests to censored domains.
 The Chinese traffic inspection system, called the Great Firewall (GFW), is
 documented injecting falsified DNS responses as early as
 2002~\cite{global2002great}. This censorship has been shown to be a packet
 injection from an on-path adversary monitoring for hostnames in DNS queries
 that match regular expressions~\cite{USESEC21:GFWatch}.
+%Other countries are also observed to perform DNS injection
+
+%\para{Directionality}
+%An on-path censor can observe DNS requests for blocked domains and inject a false
+%response, providing an incorrect answer that beats the correct answer. While
+%censors typically do this on the edge of their
+%network~\cite{xu2011internet} with the goal of blocking requests for users
+%within the country, these systems often work \emph{bidirectionally}, blocking
+%even requests that originate outside the country.
+%
+%However, even if a censor manages to only censor requests from inside the
+%country to the outside, the nature of DNS resolvers allow it to be externally
+%visible. For instance, we can make a request to an in-country resolver, which
+%will in turn send a DNS request to the authoritative nameserver which may be
+%outside the country. If this request is censored
+
+%\para{On-path and in-path DNS censorship.}
+%An on-path censor operates on a copy of the traffic that transits a specific
+%network link. Operating on a copy allows the censor to make deeper inspections
+%on the content of packets and respond accordingly. This approach has the
+%limitation that censors cannot interfere with the packets that have already
+%passed their vantage point. In the context of DNS censorship, on-path censors
+%make censorship decisions based on the copy of a DNS request and inject a false
+%response to the source of the request in the hopes that their response reaches
+%the source before the actual response from a resolver. Because the source will
+%receive a response from the intended resolver as well as the injected response
+%from the censor, on-path censorship can be identified by recording {\em all}
+%DNS response packets that are received to a DNS query for a censored domain.
+%%
+%Another censorship approach is in-path censorship in which a censor makes
+%decisions about dropping or modifying packets on-the-fly and at line rate.
+%Censoring of DNS queries by in-path censors can be identified either by the
+%presence of timeouts (packet drops by censor) or incorrect responses (packet
+%modifications by censors).
+%
 
 \para{Distributed and centralized DNS censorship.}
 In a centralized DNS censorship mechanism, a single entity manages the
 `blocklists' or filter-rules associated with DNS censorship decisions. This is
 the case in countries such as China where traffic inspection devices are housed
 at or near border gateways \cite{xu2011internet}. In contrast, countries such
-as India and Russia are known to delegate censorship orders to regional ISPs
+as India and Russia are known to delegate censorship orders to regional
+ISPs~\cite{Gosain2017a}
 who may choose to implement them either via DNS (typically by reconfiguring
 their own resolvers) or other censorship approaches
-\cite{ramesh2020decentralized, Yadav2018a}. The latter approach results in
+\cite{ramesh2020decentralized, Yadav2018a, singh2020india}. The latter approach results in
 different implementations of DNS censorship and the possibility for
-inconsistencies across different ISPs. 
+inconsistencies across different ISPs.
 
 % Common strategies for measuring censorship via DNS injection involve routing DNS queries for
 % block-listed hostnames across a censoring link in a controlled environment where
@@ -155,11 +175,13 @@ analyze both IPv4 and IPv6 traffic and (2) parse both \texttt{A} and
 \texttt{AAAA} queries accounting for hostnames that may not implement resource
 records of one type or the other. 
 %
-Our work which provides a snapshot documentation of contemporary
-censorship strategies through the IPv6 transition. In addition to helping
-circumvention tool developers exploit weaknesses made available through this
-transition, this work also improves our understanding of the reactiveness of
-network censorship more broadly.
+Our work provides a snapshot documentation of contemporary
+censorship strategies through the IPv6 transition.
+
+%In addition to helping
+%circumvention tool developers exploit weaknesses made available through this
+%transition, this work also improves our understanding of the reactiveness of
+%network censorship more broadly.
 % 
 % Such a strategy would only impede connections that use plaintext DNS (as outlined in the 
 % original specifications~\cite{RFC1035,RFC3596}) - it would not effect more secure DNS
