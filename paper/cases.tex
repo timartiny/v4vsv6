@@ -1,18 +1,18 @@
 \section{Country-Specific DNS Censorship Trends and Mechanisms}
 \label{sec:cases}
 
-\paragraph{6to4 protocol}
-Our country specific dives reference 6to4 bridges which we first explain here.
-The 6to4 protocol provides a bridge to allow disparate IPv6 networks to
-communicate over the well connected IPv4 Internet using packet encapsulation.
-For example, sending a DNS request over IPv6 to \texttt{2002:0102:0304::} will
-send an \texttt{[IPv6|UDP|DNS]} packet over IPv6 to the 6to4 gateway at that
-address which will then encapsulate the packet in IPv4 to 1.2.3.4 (whose 32-bit
-address is encoded in the IPv6 address \texttt{0102:0304}) in order to transit a
-portion of the network with no connectivity. For this portion of the journey the
-packet is \texttt{[IPv4|IPv6|UDP|DNS]} until it reaches the destination or
-another network capable of routing IPv6 packets.
-
+% \paragraph{6to4 protocol}
+% Our country specific dives reference 6to4 bridges which we first explain here.
+% The 6to4 protocol provides a bridge to allow disparate IPv6 networks to
+% communicate over the well connected IPv4 Internet using packet encapsulation.
+% For example, sending a DNS request over IPv6 to \texttt{2002:0102:0304::} will
+% send an \texttt{[IPv6|UDP|DNS]} packet over IPv6 to the 6to4 gateway at that
+% address which will then encapsulate the packet in IPv4 to 1.2.3.4 (whose 32-bit
+% address is encoded in the IPv6 address \texttt{0102:0304}) in order to transit a
+% portion of the network with no connectivity. For this portion of the journey the
+% packet is \texttt{[IPv4|IPv6|UDP|DNS]} until it reaches the destination or
+% another network capable of routing IPv6 packets.
+% 
 
 \paragraph{Iran}
 While Iran supports both IPv4 and IPv6, it is more effective at blocking queries
