@@ -1,6 +1,28 @@
 \section{Country-Specific DNS Censorship Trends and Mechanisms}
 \label{sec:cases}
 
+
+
+\paragraph{Iran}
+While Iran supports both IPv6 and IPv4, it is more effective at blocking IPv4
+resolvers (both \texttt{A} and \texttt{AAAA} records). We find this is due to
+the fact that many of the IPv6 resolvers in Iran are actually \textbf{6to4 bridges}: these
+are IPv6 addresses that are not native IPv6, but instead an encoding of an IPv4
+address. For example, sending an IPv6 packet to \texttt{2002:0102:0304::} will
+send the packet encapsulated in an IPv4 packet to 1.2.3.4 (at the 6to4 gateway),
+whose 32-bit address is encoded in the IPv6 address (\texttt{0102:0304}).
+However, this can result in the packet passing encapsulated past the censor, who
+will observe an IPv4 packet with a protocol field denoting IPv6 encapsulation,
+instead of the usual UDP-carrying DNS. A naive censor may ignore such packets,
+allowing the domain lookup through unchecked and uncensored. We observe 272 IPv6
+resolvers are actually 6to4 bridges in Iran, all of which block at lower
+(but non-zero) rates, compared to their corresponding IPv4 resolver.
+Further manual inspection shows that although most of Iran's resolvers belong
+to the non-corporate type. However, the censorship rate remains similar across
+corporate and non-corporate type resolvers (around ~23\%) which hints at a central
+censorship policy in the country. 
+
+
 \paragraph{Thailand} One prominent example is Thailand, where 8.2\% of
 \texttt{A} records were blocked by IPv4 resolvers, compared to around 1\% for
 \texttt{AAAA} records or IPv6 resolvers in the country. The reason for this is
@@ -14,9 +36,14 @@ Meanwhile, its IPv6 counterpart did not block any domains (either \texttt{A} or
 closely matches the proportion of the resolvers of that connection type. For example,
 ~74\% of all resolvers in Thailand are of type Cable/DSL and they are responsible for
 ~72\% of all blocked queries. This coupled with findings in 
-% \Cref{Characteristics of {\tt A/AAAA} -inconsistent resolvers} 
+\Cref{sec:resources:resolvers} 
  (Thailand having a low $\nabla_{net}$ presents an even stronger case for a centralized 
- mechanism for censorship.
+ mechanism for censorship. We also found that out of the 184 total resolver pairs
+ in Thailand, IPv6 resolvers of around 112 pairs are 6to4 bridges which again show a 
+ very low censorship rate of around 0.64\% for \texttt{AAAA} records as opposed to the 
+ censorship rate of 7.84\% of their IPv4 resolver counterparts. The censorship rate
+ for native IPv6 resolvers was also low (1.34\%) but almost double that of its 6to4
+ bridge counterparts.
 
 
 % jq -r 'select(.resolver_country=="TH" and .id=="4934-A").blocked_domains | keys | .[]' ../../data/resolver-blocks-jan-aaaa.json | grep -e '-AAAA$' | wc -l
@@ -38,15 +65,19 @@ The other 20 domains have similar patterns, leading to China's slight preference
 in blocking \texttt{AAAA} records over \texttt{A} records. We do not find any
 instances of domains in China that are similarly exclusively blocked by
 \texttt{A} record but not \texttt{AAAA}. As established in 
-% \Cref{Characteristics of {\tt A/AAAA}-inconsistent resolvers},
+\Cref{sec:resources:resolvers},
 China has a high ($\nabla_{net}$) which suggests that there are individual resolver
 level inconsistencies. 90\% of all resolvers in China fall within one standard deviation
 of the mean number of censored queries by all resolvers. Resolvers that censor
 more than one standard deviation of the mean of requests consist disproportionately
 of resolvers belonging to the cellular connection type. Although cellular type resolvers
 constitute of 17\% of all resolvers in China, they represent 50\% of the resolvers which
-censor more than one standard deviation above the mean number of censored queries.  
-
+censor more than one standard deviation above the mean number of censored queries. 
+When compared to China and Thailand, China has a much larger percentage of native
+IPv6 resolvers but it is still the most consistent in its censorship rate for \texttt{AAAA}
+queries over both 6to4 and native IPv6 resolvers (~30\%) when compared with their IPv4
+counterparts. However, the censorship rate for 6to4 when compared with native IPv6 resolvers
+was still slightly lower (28\% vs 32\%).
 %{"domain":"www.gmail.com-AAAA","country_code":"CN","v4_censored_count":186,"v6_censored_count":185}
 %{"domain":"www.gmail.com-A","country_code":"CN","v4_censored_count":4,"v6_censored_count":1}
 
@@ -80,22 +111,6 @@ censor more than one standard deviation above the mean number of censored querie
 
 
 
-
-
-\paragraph{Iran}
-While Iran supports both IPv6 and IPv4, it is more effective at blocking IPv4
-resolvers (both \texttt{A} and \texttt{AAAA} records). We find this is due to
-the fact that many of the IPv6 resolvers in Iran are actually \textbf{6to4 bridges}: these
-are IPv6 addresses that are not native IPv6, but instead an encoding of an IPv4
-address. For example, sending an IPv6 packet to \texttt{2002:0102:0304::} will
-send the packet encapsulated in an IPv4 packet to 1.2.3.4 (at the 6to4 gateway),
-whose 32-bit address is encoded in the IPv6 address (\texttt{0102:0304}).
-However, this can result in the packet passing encapsulated past the censor, who
-will observe an IPv4 packet with a protocol field denoting IPv6 encapsulation,
-instead of the usual UDP-carrying DNS. A naive censor may ignore such packets,
-allowing the domain lookup through unchecked and uncensored. We observe 272 IPv6
-resolvers are actually 6to4 bridges in Iran, all of which block at lower
-(but non-zero) rates, compared to their corresponding IPv4 resolver.
 %The reason
 %that these hosts still see blocking at all is that they occasionally must
 %recursively resolve the host, which may induce censorship on the outbound
