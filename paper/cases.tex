@@ -4,23 +4,28 @@
 
 
 \paragraph{Iran}
-While Iran supports both IPv6 and IPv4, it is more effective at blocking IPv4
-resolvers (both \texttt{A} and \texttt{AAAA} records). We find this is due to
-the fact that many of the IPv6 resolvers in Iran are actually \textbf{6to4 bridges}: these
-are IPv6 addresses that are not native IPv6, but instead an encoding of an IPv4
-address. For example, sending an IPv6 packet to \texttt{2002:0102:0304::} will
-send the packet encapsulated in an IPv4 packet to 1.2.3.4 (at the 6to4 gateway),
-whose 32-bit address is encoded in the IPv6 address (\texttt{0102:0304}).
-However, this can result in the packet passing encapsulated past the censor, who
-will observe an IPv4 packet with a protocol field denoting IPv6 encapsulation,
-instead of the usual UDP-carrying DNS. A naive censor may ignore such packets,
-allowing the domain lookup through unchecked and uncensored. We observe 272 IPv6
-resolvers are actually 6to4 bridges in Iran, all of which block at lower
-(but non-zero) rates, compared to their corresponding IPv4 resolver.
+While Iran supports both IPv4 and IPv6, it is more effective at blocking IPv4
+resolvers (in both \texttt{A} and \texttt{AAAA} records).
+Notably 272 of the 277 IPv6 resolvers in Iran rely on 6to4 bridges, all of which
+block IPv6 queries at slightly lower rates than IPv4 queries sent to their pair address.
+However, IPv6 queries are censored by resolvers using 6to4 at a slightly higher
+rate than resolvers using native IPv6 -- though the
+sample size for native IPv6 is small (5). One potential explanation is that
+public 6to4 appliances in Iran may be infrastructural, and hosted by the state-run ISPs.
+The 6to4 protocol provides a bridge to allow disparate IPv6 networks
+to communicate over the well connected IPv4 Internet using packet encapsulation.
+For example, sending a DNS request over IPv6 to \texttt{2002:0102:0304::} will
+send an \texttt{[IPv6|UDP|DNS]} packet over IPv6 to the 6to4 gateway at that address
+which will then encapsulate the packet in IPv4 to 1.2.3.4 (
+    whose 32-bit address is encoded in the IPv6 address \texttt{0102:0304}) in order to transit a portion of the
+network with no connectivity. For this portion of the journey the packet is
+\texttt{[IPv4|IPv6|UDP|DNS]} until it reaches the destination or another
+network capable of routing IPv6 packets.
+
 Further manual inspection shows that although most of Iran's resolvers belong
-to the non-corporate type. However, the censorship rate remains similar across
-corporate and non-corporate type resolvers (around ~23\%) which hints at a central
-censorship policy in the country. 
+to the non-corporate type, the censorship rate remains similar across
+corporate and non-corporate type resolvers (around ~23\%) which points toward a
+centralized censorship policy within the country.
 
 
 \paragraph{Thailand} One prominent example is Thailand, where 8.2\% of
