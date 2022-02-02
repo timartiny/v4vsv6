@@ -94,86 +94,77 @@ exploit the censorship gaps identified in this work. On the other hand, this
 choice means that it is possible that our dataset may have multiple pairs of
 resolvers in a country that belong to the same resolving infrastructure. 
 
+\parait{The presence of many 6to4 bridges.}
 One specific category of open resolver that we find to be relatively common in
-our collected data are those that rely on a \textbf{6to4 Bridge}. This
-configuration is identifiable as the resolvers IPv6 address will be drawn from
-the \texttt{2002::/16} address block and has a discernable address
-format~\cite{RFC3056}. The 6to4 protocol was originally designed as a mechanism
-to bridge the IPv6 deployment gap as public 6to4 bridges would provide
-interoperability to legacy systems such that IPv4 services could communicate
-with IPv6 networks and vice-versa. The protocol works by assigning a
-\texttt{/48} subnet with the encoded local address to an interface
-then allowing that interface to receive traffic encapsulated in an IPv4 header
-at the local address. In this way clients without outgoing connection to an IPv6
-capable network can send IPv6 packets over to an IPv6 capable host who forwards
-them onward.
-
-We find many countries where IPv6 resolver availability is supplemented with
-6to4 and note that the filtering stage of our resolver methodology ensures that
-resolver IP pairs geolocate within the same country. This means that any IPv6
-queries sent to 6to4 resolvers do traverse national networks as UDP over IPv6
-for at least some potion of their path to the final resolver.
-
-Two specific examples of a substantial 6to4 supplement are Brazil in which 94 of
-the 160 resolvers identified used 6to4 and Thailand with 112 out of 186
+our collected data are those that rely on a {6to4 Bridge}. We find many
+countries where IPv6 resolver availability is supplemented with 6to4 and note
+that the filtering stage of our resolver methodology ensures that resolver IP
+pairs geolocate within the same country. This means that any IPv6 queries sent
+to 6to4 resolvers do traverse national networks as UDP over IPv6 for at least
+some potion of their path to the final resolver. Further, if our queries do not
+get served by the resolver's cache, it is expected that the recursive queries
+will still pass through the censor. Therefore, still providing standard
+censorship infrastructure some opportunities to censor.
+%
+Two specific examples of a substantial 6to4 supplement are Brazil in which 94
+of the 160 resolvers identified used 6to4 and Thailand with 112 out of 186
 resolvers. This understanding of the protocols that are traversing the censored
 links provide a limitation on our measurement in the sense that we do not get
-the pure comparison of IPv4 with IPv6 that we hoped. However, they do provide an
-interesting perspective on the ability of censors to handle protocols
-specifically deployed to assist in bridging the IPv4 - IPv6 gap. For example in
-both Brazil and Thailand the resolvers relying on 6to4 censor requests at lower
-rates of injection for requests sent over IPv6 on 6to4 as compared with Native
-IPv6.
+a perfect comparison of IPv4 with IPv6 that, however this trades-off with our
+ability to gain an interesting interesting perspective on the ability of
+censors to handle protocols specifically deployed to assist in bridging the
+IPv4 - IPv6 gap. For example in both Brazil and Thailand the resolvers relying
+on 6to4 censor requests at lower rates of injection for requests sent over IPv6
+on 6to4 as compared with Native IPv6. This suggests an opportunity of
+circumvention tool developers targeting citizens in these regions.
 
 % Do the non-6to4 resolvers in bangladesh and iran cluster by domain with the
 % IPv4 censoring resolvers?
 
-\subsection{Future Work}
+\subsection{Future work and circumvention opportunities}
 \label{sec:discussion:future_work}
-
-Given the identified discrepancy in censorship effectiveness between native IPv6
-addresses and 6to4 bridges a promising direction for future work is an
-investigation of IP tunneling protocol usage for censorship circumvention. Our
-data and particularly Table ~\ref{tab6to4} in the Appendix show that 6to4 is
-censored at rates different from national averages in countries known to censor.
+Our work identifies many IPv6-related DNS censorship inconsistencies around the
+world. Each of these provides interesting directions for future work and
+opportunities for circumvention tool developers.
+%
+One particularly interesting direction concerns the discrepancy in the
+effectiveness of native IPv6 and 6to4-bridged IPv6 censorship. We find that
+there are several countries where 6to4 bridges experience significantly lower
+amounts of censorship --- including China and India. This presents the
+possibility of simply using 6to4 tunnels to circumvent DNS censorship. 
+%
 Further, 6to4 is not the only protocol that has seen deployment as part of an
 effort to bridge the gap between IPv4 and IPv6 deployment. The \texttt{6rd}
 protocol extends the subnet range of 6to4. The Teredo protocol uses UDP to
-encapsulate IP traffic. Finally the ISATAP protocol provides an extended 6to4
+encapsulate IP traffic. Finally, the ISATAP protocol provides an extended 6to4
 adding configuration using multicast and DNS. This strategy is not only
 applicable to DNS censorship circumvention as tunneling protocols can be used to
 encapsulate any next layer.
+%
+Our work also highlights the need for integration of IPv6-related measurements
+by longitudinal censorship measurement platforms such as Satellite, OONI, and
+ICLab. 
 
-%% It is not the only protocol designed to bridge the gap
-% 6to4 - relatively static unicast encapsulation in extra IP header
-% 6rd - extends subnets for 6to4
-% teredo - Encapsulate in UDP
-% ISATAP - provides 6to4+ using IPv6 packets encapsulated in IPv4 header and configuration using multicast and DNS.
-
-We also propose directly extending the measurement that we have made to be
-included in global longitudinal measurement studies examining DNS. The
-methodology that we establish supports sustainable evaluation of global DNS
-censorship.
-
-\subsection{Conclusions}
+\subsection{Conclusions} \label{sec:discussion:conclusions}
 
 The current state of global IPv6 DNS censorship does not divide into a binary
-bifurcation block or allow, the landscape is nuanced and developing. However, we
+bifurcation: block or allow, the landscape is nuanced and developing. However, we
 identify clear trends in IPv6 censorship that can help motivate future research
 and circumvention tool development.
-
+%
 In this work we present the first large scale measurement of DNS injection based
 censorship in IPv6 and provide a reproducible methodology for incorporating this
 measurement into longitudinal measurements going forward. We find significant
-evidence of DNS injection in IPv6 in many countries around the world. We find
-that cenosring countries favor native network infrastructure, censoring
-\texttt{A} queries over IPv4 at the highest rates. At the country level we use
-similarities and discrepancies in the censorship behavior across resolvers and
-domains to identify censorship strategies. This allows us to demonstrate various
-countries where censorship is likely centrally coordinated, as compared with
-countries that demonstrate multiple clusters indicating looser coordination
-between the entities enacting the DNS censorship regimes.
-
+evidence of DNS injection in IPv6 in many countries around the world. Despite
+this, we find that censoring countries still favor native network
+infrastructure, censoring \texttt{A} queries over IPv4 at the highest rates. At
+the country level we use similarities and discrepancies in the censorship
+behavior across resolvers and domains to identify censorship strategies and
+infrastructure deployments. This allows us to demonstrate various countries
+where censorship is likely centrally coordinated, as compared with countries
+that demonstrate multiple clusters indicating looser coordination between the
+entities enacting the DNS censorship regimes.
+%
 The IP layer and the gap that exists between full IPv6 deployment and the
 current state of the Internet provide a telling lens for evaluating censorship
 and developing censorship circumvention technologies. IPv6 plays a growing role
