@@ -173,7 +173,16 @@ connection to an IPv6 capable network can send IPv6 packets over to an IPv6
 capable host who forwards them onward. In our study, we come across many
 vantage points which are IPv6 connected via a 6to4 bridge. These are easily
 identifiable since their IPv6 addresses are drawn from the \texttt{2002::/16}
-address block \cite{RFC3056}. 
+address block \cite{RFC3056}.
+%
+In the context of DNS, sending a DNS request over IPv6 to
+\texttt{2002:0102:0304::} will send an \texttt{[IPv6|UDP|DNS]} packet over IPv6
+to the 6to4 gateway at that address which will then encapsulate the packet in
+IPv4 to 1.2.3.4 (whose 32-bit address is encoded in the IPv6 address
+\texttt{0102:0304}) in order to transit a portion of the network with no
+connectivity. For this portion of the journey the packet is
+\texttt{[IPv4|IPv6|UDP|DNS]} until it reaches the destination or another
+network capable of routing IPv6 packets.
 
 
 \para{The impact of IPv6 on DNS censorship.}
