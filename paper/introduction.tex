@@ -10,9 +10,9 @@ globally~\cite{kuhrer2015going,dagon2008corrupted,pearce2017global,scott2016sate
 %\cite{kuhrer2015going,Anonymous2020:TripletCensors,USESEC21:GFWatch,dagon2008corrupted,pearce2017global,scott2016satellite}.
 These studies generally perform active measurements of DNS resolvers for large
 sets of domains, and identify forged censorship responses from legitimate ones.
-
-Unfortunately, prior work has focused exclusively on the IPv4 Internet, in part
-because scanning the IPv6 Internet for open resolvers is
+%
+Unfortunately, this prior work has focused exclusively on the IPv4 Internet, in
+part because scanning the IPv6 Internet for open resolvers is
 difficult~\cite{murdock2017target}, owing to its impossible-to-enumerate 128-bit
 address space.
 %
@@ -20,12 +20,12 @@ In this paper, we perform the first comprehensive global measurement of DNS
 censorship on the IPv6 Internet. We leverage a recent network measurement
 technique that can discover dual-stack IPv6 open resolvers from their IPv4
 counterpart~\cite{hendriks2017potential}, and use these IPv4-IPv6 resolver pairs
-to study DNS censorship globally. By sending DNS queries to both the IPv4 and
-IPv6 interfaces of the \emph{same resolver}, we measure the difference in
-censorship on the IPv4 and IPv6 Internet.
+to study DNS censorship globally. %By sending DNS queries to both the IPv4 and
+%IPv6 interfaces of the \emph{same resolver}, 
+We then use this data to measure the difference in censorship on IPv4 and IPv6.
 
-\medskip
-
+%\medskip
+%
 % \paragraph{Why study IPv6 censorship?}
 IPv6 is becoming more widely deployed, with nearly 35\% of current Internet
 traffic being served over native IPv6 connections~\cite{Google-IPv6}. However,
@@ -33,7 +33,7 @@ IPv6 has fundamentally different performance
 characteristics~\cite{Dhamdhere-IMC2012}, network security
 policies~\cite{Czyz-NDSS2016}, and network topologies~\cite{Czyz-SIGCOMM2014}
 compared to the traditional IPv4 Internet.
-
+%
 While it may seem that censors either do or don't support detecting and
 censoring IPv6 DNS in an all-or-nothing fashion, we find that there is a
 tremendous range of how well a censor blocks in IPv6 compared to IPv4.
@@ -43,7 +43,6 @@ for IPv6 censorship, we find that most block less effectively in IPv6 compared
 to IPv4. For instance, we observe Thailand censors on average 80\% fewer IPv6
 DNS resources compared to IPv4 ones, despite a robust nation-wide censorship
 system~\cite{gebhart2017internet}.
-
 
 Studying censorship in IPv6 can provide opportunities for circumvention tools.
 By identifying ways that censors miss or incorrectly implement blocking, we can
@@ -70,7 +69,7 @@ censorship are managed centrally. Other countries show more varied discrepancies
 in the ways that resolvers censor IPv4 and IPv6, due to decentralized models of
 censorship, such as that in Russia~\cite{ramesh2020decentralized}, or due to
 independent and varied corporate network firewalls.
-
+%
 We also identify behavior indicative of censorship oversight that can be
 advantageous to censorship circumvention. For example Brazil and Thailand censor
 IPv6 queries that rely on 6to4 bridges at lower rates, presumably due to the
@@ -88,7 +87,6 @@ contributions:
     100~IPv6-connected countries. We find that while most censors support IPv6
     in some capacity, there are significant gaps in how well they censor IPv6.
 
-
     \item We provide methodological improvements on measuring DNS censorship
     that avoids relying on cumbersome IP comparisons (that are not
     robust to region-specific DNS nameservers). Our methods are easily
@@ -103,7 +101,6 @@ contributions:
     measurements.
 
 \end{itemize}
-
 
 The remainder of this paper is organized as follows. \Cref{sec:background} provides
 background information in DNS censorship, and the relation of IPv6 to relevant DNS
