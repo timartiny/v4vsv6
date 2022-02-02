@@ -1,9 +1,8 @@
-\section{Censorship of IPv4 and IPv6 DNS Traffic}
+\section{Censorship of IPv4 and IPv6 Resolvers}
 \label{sec:infrastructure}
 
-\para{Overview.} In this section, we focus on {\it identifying and
-characterizing the differences in handling DNS queries sent over IPv4 and IPv6
-networks} in DNS censorship mechanisms. 
+\para{Overview.} In this section, we focus on the difference in censorship
+for DNS queries sent to the \textbf{IPv4 and IPv6 interfaes of resolvers}.
 %
 Specifically, we answer the following questions:
 %
@@ -19,28 +18,28 @@ in which such differences are frequently exhibited?
 \subsection{Within-country differences in the censorship of IPv4 and IPv6 DNS
 queries} \label{sec:infrastructure:country}
 
-We use the responses received from the IPv4 and IPv6 interfaces of each of the
-resolvers in our dataset for the same set of domains. We then apply the
-censorship detection mechanism detailed in \Cref{sec:methodology:censorship} to
-measure the prevalence of DNS censorship of queries sent over IPv4 and IPv6.
-Finally, we perform statistical tests to identify the countries that have
-significant differences in their censorship of IPv4 and IPv6 DNS traffic.
+%We use the responses received from the IPv4 and IPv6 interfaces of each of the
+%resolvers in our dataset for the same set of domains. We then apply the
+%censorship detection mechanism detailed in \Cref{sec:methodology:censorship} to
+%measure the prevalence of DNS censorship of queries sent over IPv4 and IPv6.
+%Finally, we perform statistical tests to identify the countries that have
+%significant differences in their censorship of IPv4 and IPv6 DNS traffic.
 
-\para{Identifying differences within a country.} 
+%\para{Identifying differences within a country.} 
 %
 To measure differences in censorship of DNS queries sent over IPv4 and IPv6 we
-examine distributions similar to \Cref{sec:resources:country} this time
+examine distributions similar to \Cref{sec:resources:country} but this time
 investigate two distributions (corresponding to the IPv4 and IPv6 interfaces of
 resolvers) of the fraction of censored domains from resolvers within the
 corresponding country.
 %
-We again use a two-sample $t$-test to verify statistical significance of any
-observed differences between the two groups for each country and apply a \Sidak
-correction to control for Type I errors from multiple hypothesis testing. 
+We again use a two-sample $t$-test to with \Sidak correction ($p \leq
+1-{.05}^{1/n_{c}}$, where $n_c$ is
+the total number of countries in our dataset (106)) to verify statistical
+significance of any observed differences.
+%between the two groups for each country and apply a \Sidak
+%correction to control for Type I errors from multiple hypothesis testing. 
 %
-This requires $p \leq 1-{.05}^{1/n_{c}}$ for classifying a difference as
-significant, where $n_c$ is the total number of countries in our dataset
-(106). 
 %
 The presence of a statistically significant difference for a specific country
 would imply that the country appears to have different censorship mechanisms
@@ -69,12 +68,23 @@ maintain IPv4 DNS censorship infrastructure than IPv6 infrastructure. These
 gaps present opportunities for the success of circumvention tools with IPv6
 capabilities.  
 %
-Further analysis shows that these differences primarily arise due to the fact
-that DNS type {\tt A} queries are significantly more likely to be blocked over
-IPv4 connections than over an IPv6 connection. However, this is not the case
-for {\tt AAAA} queries, with the exception of Iran.
+Further analysis shows that these differences primarily apply to {\tt A}
+queries, suggesting that these countries fail to censor most {\tt A} queries
+when they are sent over IPv6, but that they are able to censor
+{\tt AAAA} records sent over IPv6 effectively.
 %
-Taken together, these findings are particularly noteworthy for circumvention
+%but not {\tt A} queries sent over IPv6. %This could be due to parsing
+%assumptions that a censor's middlebox makes (e.g. that {\tt A} records should
+%only appear in IPv4 traffic). These findings are particularly noteworty for
+%circumvention efforts in Thailand, Myanmar, and Iran where IPv6 adoptoin rates
+%are high~\cite{Google-IPv6}.
+%Further analysis shows that these differences primarily arise due to the fact
+%that DNS type {\tt A} queries are significantly more likely to be blocked over
+%IPv4 connections than over an IPv6 connection. However, this is not the case
+%for {\tt AAAA} queries, with the exception of Iran.
+%
+%aken together, 
+These findings are particularly noteworthy for circumvention
 efforts in Thailand, Myanmar, and Iran where IPv6 adoption rates are high
 (between 15\% and 45\%) and dual-stack tools may be used for circumvention of
 DNS censorship.
@@ -120,20 +130,24 @@ DNS censorship.
 \subsection{Characteristics of IPv4/IPv6-inconsistent resolvers}
 \label{sec:infrastructure:resolvers}
 %
-Our previous results demonstrate the promise of using IPv6 channels for DNS
-resolution to bypass IPv4 DNS censorship. We now focus on identifying the
-distribution and connection-type of resolvers demonstrating inconsistencies in
-their handling of IPv4 and IPv6 traffic. This serves two purposes:
-%
-First, our analysis on the distribution of IPv4/IPv6-inconsistent resolvers
-provides evidence-driven hypotheses about how information control deployments
-are structured in different countries. 
-%
-Second, studying the connection-types of IPv4/IPv6-inconsistent resolvers sheds
-light on whether the gaps in censorship are visible to users in residential
-networks. This serves as an indicator for the potential gains to be had by
-circumvention tools that begin exploiting the IPv4/IPv6 gap.
 
+Next, we look at the characteristics of resolver pairs that see inconsistent
+censorship on their IPv4 and IPv6 interfaces. 
+
+%Our previous results demonstrate the promise of using IPv6 channels for DNS
+%resolution to bypass IPv4 DNS censorship. We now focus on identifying the
+%distribution and connection-type of resolvers demonstrating inconsistencies in
+%their handling of IPv4 and IPv6 traffic. This serves two purposes:
+%%
+%First, our analysis on the distribution of IPv4/IPv6-inconsistent resolvers
+%provides evidence-driven hypotheses about how information control deployments
+%are structured in different countries. 
+%%
+%Second, studying the connection-types of IPv4/IPv6-inconsistent resolvers sheds
+%light on whether the gaps in censorship are visible to users in residential
+%networks. This serves as an indicator for the potential gains to be had by
+%circumvention tools that begin exploiting the IPv4/IPv6 gap.
+%
 \para{Identifying IPv4/IPv6-inconsistent resolvers.} Our approach is similar to
 the methods used to identify {\tt A/AAAA}-inconsistent resolvers
 (\cf \Cref{sec:resources:resolvers}). 
@@ -166,13 +180,13 @@ from the distribution of all resolvers in that country ($\nabla_{net}$).
 %
 Similar to before, a large change in $\nabla_{net}$ means that the
 IPv4/IPv6-inconsistencies arise from a small fraction of ASes and would suggest
-that the gaps exist due to local network/resolver misconfigurations --- as
+that the gaps exist due to local network/resolver configurations --- as
 would be the case if regional operators implement their own DNS censorship
 mechanisms. Conversely, a small change means that the gaps that exist roughly
 equally impact all the ASes having resolvers and would suggest that the gaps
 exist due to misconfigurations in a centralized DNS censorship mechanism.
 %
-Our results once again suggest the presence of a centralized blocking mechanism
+Our results again suggest the presence of a centralized blocking mechanism
 in Thailand, Bangladesh, and Myanmar ($\nabla_{net} \in [0.13, 0.48]$) which
 causes the IPv4/IPv6-inconsistencies. The United States has the highest
 $\nabla_{net}$ observed which indicates that regional policies are responsible
@@ -237,11 +251,14 @@ resolvers.
 \subsection{Characterization of anomalous domains}
 \label{sec:infrastructure:domains}
 We now seek to understand the category of domains that get through the
-infrastructural gap between DNS queries over IPv4 and IPv6. We provide a general
-categorization of these domains and further compare this category distribution
-with that of domains that received any blocking. We do this in order to identify
-specific mechanisms that might differ for censorship of certain categories over
-IPv4 and IPv6.
+infrastructural gap between DNS queries over IPv4 and IPv6. In other words,
+does the category of domain influence whether or not there is a difference in
+censorship between IPv4 and IPv6 interfaces?
+%We provide a general
+%categorization of these domains and further compare this category distribution
+%with that of domains that received any blocking. We do this in order to identify
+%specific mechanisms that might differ for censorship of certain categories over
+%IPv4 and IPv6.
 
 \para{Identifying differences in domain behaviors within a country}
 We use an approach similar to the one defined in \Cref{sec:resources:domains}
