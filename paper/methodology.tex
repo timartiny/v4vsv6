@@ -60,7 +60,7 @@ Thus, by examining the logs of our IPv6-only name server, we are able
 to identify the set of resolvers that successfully reached our server and
 their corresponding IPv4 addresses. The associated IPv6 address for each
 successful query is extracted from packet captures of the IPv6-only name
-server giving us 33.7K (IPv4, IPv6) address resolver matchings.
+server giving us 33.7K (IPv4, IPv6) address matchings.
 
 \para{Filtering and geolocating resolvers.}
 The approach detailed above yields matchings that suggest the presence of
@@ -81,8 +81,8 @@ using {\tt zdns} \cite{Durumeric13zmap} and filter out those pairs where an
 incorrect response was received.
 % 
 In total, we obtained 7,843 resolver pairs across 106 different countries.
-\Cref{tab:appendix:rates} illustrates how these resolvers were geographically
-distributed.
+\Cref{tab:appendix:rates} illustrates the geographic distribution of the
+resolvers.
 
 
 \subsection{Selecting target domains}
@@ -124,8 +124,7 @@ reported in this paper.
 
 \subsection{Identifying DNS censorship events} \label{sec:methodology:censorship}
 In general, our goal is to err on the side of caution and avoid false-positives
-in our censorship determination.
-We achieve this by accounting for
+in our censorship determination. We achieve this by accounting for
 unreliability of resolvers and domains in our lists.
 
 \para{Removing unstable resolvers.}
@@ -135,18 +134,19 @@ IPv4 and IPv6 addresses associated with the resolver. We follow this up with
 a {\tt A} and {\tt AAAA} resource record request for a set of 3 control domains
 (owned and operated by us).
 %
-We discard data from resolver pairs which failed to resolve any of our control
+We discard data from pairs which failed to resolve any one of our control
 domains correctly since this is a sign of resolver instability. This left us
-with data from 7,441 stable resolver pairs.
+with 7,441 stable resolver pairs.
 %
 
 \para{Distinguishing censorship from domain instability.}
 For the remaining resolvers, we extract the IPv4 and IPv6 resource records
-returned for each domain. Next, we use \texttt{zgrab2} to establish TLS
-connections to the IP addresses contained in the resource records. In each of
-these connections, we set the TLS SNI to be the domain whose records were
-requested. We then locally verify the validity of the retrieved TLS
-certificates.
+returned for each domain --- even those that arrive from multiple responses to
+a single query (a sign of an on-path censor). Next, we use \texttt{zgrab2} to
+establish TLS connections to the IP addresses contained in the resource
+records. In each of these connections, we set the TLS SNI to be the domain
+whose records were requested. We then locally verify the validity of the
+retrieved TLS certificates.
 %
 Since the domains themselves might be unreliable, we repeat this verification
 procedure three times. Only if this step fails all three times do we conclude
@@ -193,7 +193,7 @@ minimizing risk on
 individuals~\cite{pearce2017global,scott2016satellite,sundara2020censored}.
 
 \para{Privacy.}
-Our study collects no personal data about any end~users or individual open
+Our study collects no personal data about any end~users or open
 resolver operators. The analysis completed herein uses resolver addresses,
 public Anonymous System (AS) identifiers, and country codes.  All measurements
 are initiated from within the United States.
@@ -202,7 +202,7 @@ are initiated from within the United States.
 Beyond this,
 measurement domains are not drawn from any human browsing patterns or history
 as the suspected censored domains are a subset of the Satellite measurement
-results as discussed in \Cref{sec:methodology:domains}.
+results (\cf \Cref{sec:methodology:domains}).
 
 \para{Resource usage.} 
 The vantage that was used for data collection is connected to the internet with
