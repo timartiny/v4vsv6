@@ -344,7 +344,7 @@ A small $\nabla_{\text{query}}^{\text{domains}}$ would signify that the domains
 that experience inconsistent treatment are not from a largely different
 category distribution than the set of all domains that experience any type of
 blocking. This would suggest that the inconsistencies do not arise from
-a specific content-specific policy gap that exists in the censorship mechanism
+a content-specific policy gap that exists in the censorship mechanism
 implemented over {\tt A} and {\tt AAAA} queries. On the other hand, a large
 difference would signify that the category distributions are very different and
 that domains with specific types of content appear to have more
@@ -357,14 +357,16 @@ scores (>2).
 %
 After manual inspection of these results, we attribute the low divergence in
 the United States to the fact that censorship observed in the US arise largely
-in a range of corporate networks (\Cref{sec:prevalence}) which are fairly
-consistent in their blocking of domains belonging to McAfee's `Potentially
-unwanted programs', `Entertainment', and `Pornography' categories. 
+from a range of corporate networks (\Cref{sec:prevalence}). These resolvers are fairly
+consistent in their blocking of domains belonging to McAfee's `P2P/File Sharing' 
+,`Malicious Sites' and `Technical/Business Forums' categories. Of the most blocked
+individual domains, we see domains related to cryptocurrency (which were categorized
+under `Technical/Business Forums'), `netlfix.com' and `utorrent.com'. 
 %
-On the other hand, in Thailand the low divergence appears despite the large
+On the other hand, Thailand shows low divergence despite the large
 number of residential networks. This suggests that there is no significant
 policy gap that causes the {\tt A/AAAA}-inconsistencies. Rather, it suggests
-a simply incomplete implementation of any existing mechanisms for {\tt A} query
+an incomplete implementation of an existing mechanisms for {\tt A} query
 censorship. 
 %
 On the other hand, in Pakistan and Myanmar where the divergence scores were
