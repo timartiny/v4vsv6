@@ -31,11 +31,12 @@ IPv6 is becoming more widely deployed, with nearly 35\% of current Internet
 traffic being served over native IPv6 connections~\cite{Google-IPv6}. However,
 IPv6 has fundamentally different performance
 characteristics~\cite{Dhamdhere-IMC2012}, network security
-policies~\cite{Czyz-NDSS2016}, and network topologies~\cite{Czyz-SIGCOMM2014}.
+policies~\cite{Czyz-NDSS2016}, and network topologies~\cite{Czyz-SIGCOMM2014}
+compared to the traditional IPv4 Internet.
 
 While it may seem that censors either do or don't support detecting and
-censoring IPv6 DNS, we find that there is a tremendous range of how well a
-censor blocks in IPv6 compared to IPv4.
+censoring IPv6 DNS in an all-or-nothing fashion, we find that there is a
+tremendous range of how well a censor blocks in IPv6 compared to IPv4.
 %
 In particular, although nearly all of the countries we study have some support
 for IPv6 censorship, we find that most block less effectively in IPv6 compared
@@ -51,30 +52,31 @@ complex and heterogeneous censorship systems censors operate, many of these
 techniques would be costly for censors to prevent, requiring investing
 significant resources to close the IPv4/IPv6 gap in their networks. For this
 reason, we believe IPv6 can provide unique techniques for circumvention
-researchers and tool developers, that will be beneficial in the short term, and
+researchers and tool developers alike, that will be beneficial in the short term and
 potentially robust in the longer term.
 
 \medskip
 % \paragraph{Findings}
-We find a significant global presence of IPv6 DNS censorship -- comparable, but not
+We find a significant global presence of IPv6 DNS censorship --- comparable, but not
 identical to well documented IPv4 censorship efforts. Censors demonstrate a
 clear bias towards IPv4, censoring \texttt{A} queries in IPv4 at the highest rates,
 and a propensity for censoring native record types (\texttt{A} in IPv4, \texttt{AAAA} in IPv6).
 At the country level we break down differences by resolver and
 domain across resource record and interface type. We find that multiple countries
--- Thailand, Myanmar, Bangladesh, Pakistan, and Iran --
-present consistent discrepancies across resolvers or domains indicating
-centrally coordinated censorship, where IPv4 and IPv6 efforts are deployed or
-maintained independently but managed centrally. Other countries show inconsistent discrepancies in the
-ways that resolvers censor IPv4 and IPv6 with resolvers that can be loosely grouped
-by AS connection type (for the AS where the resolver is located) and the set of
-domains that each resolver censors. This evidence supports a decentralized model
-of censorship coordination or deployment in countries like Russia and China.
+--- Thailand, Myanmar, Bangladesh, Pakistan, and Iran ---
+present consistent discrepancies across all resolvers or domains indicating
+centrally coordinated censorship, where the policies that govern IPv4 and IPv6
+censorship are managed centrally.
+Other countries show more varied discrepancies in the
+ways that resolvers censor IPv4 and IPv6, due to decentralized models of
+censorship, such as that in Russia~\cite{ramesh2020decentralized}, or due to
+independent and varied corporate network firewalls.
 
 We also identify behavior indicative of censorship oversight that can be advantageous
 to censorship circumvention. For example Iran censors queries that rely on 6to4
-bridges at significantly lower rates presumably due to the encapsulation of an
-IPv6 DNS request in an IPv4 packet marked as type IPv6 encapsulation.
+bridges at significantly lower rates, presumably due to the encapsulation of an
+IPv6 DNS request in an IPv4 packet, instead of appearing as UDP.
+
 
 Taken all together, this study provides a first look at IPv6 DNS censorship and
 the policy gaps that arise from the IPv6 transition. We provide the following
@@ -105,7 +107,7 @@ contributions:
 \end{itemize}
 
 
-The remainder of this paper is layed out as follows. \Cref{sec:background} provides
+The remainder of this paper is organized as follows. \Cref{sec:background} provides
 background information in DNS censorship, and the relation of IPv6 to relevant DNS
 infrastructure. We outline our compiled methodology and ethical design
 considerations in \Cref{sec:methodology} before presenting our findings on the
