@@ -151,7 +151,7 @@ inconsistencies across different ISPs.
 % In order to identify open resolvers both Satellite and Iris rely on the zmap
 % internet wide scanning tool~\cite{Durumeric13zmap} limiting themselves to the IPv4 address space.
 % 
-\subsection{IPv6 and DNS} \label{sec:background:ipv6}
+\subsection{IPv6} \label{sec:background:ipv6}
 % The proportion of clients that support IPv6 is rapidly growing, especially in
 % developing areas with newly deployed network infrastructure. According to the
 % APNIC internet registry over a quarter of the users on the internet now route
@@ -159,6 +159,24 @@ inconsistencies across different ISPs.
 % indicate that over 50\% of users access services using IPv6 in India, Saudi
 % Arabia, Germany and several other countries~\cite{Google-IPv6}. 
 
+\para{IPv6 6to4 bridges.}
+As more IPv6-only network connected devices emerge, there is an increasing need
+for technologies that facilitate communication betweeb IPv4 and IPv6
+end-points. One such technology is 6to4 bridging. The 6to4 protocol was
+originally designed as a mechanism to bridge the IPv6 deployment gap as public
+6to4 bridges would provide interoperability to legacy systems such that IPv4
+services could communicate with IPv6 networks and vice-versa. The protocol
+works by assigning a \texttt{/48} subnet with the encoded local address to an
+interface then allowing that interface to receive traffic encapsulated in an
+IPv4 header at the local address. In this way clients without outgoing
+connection to an IPv6 capable network can send IPv6 packets over to an IPv6
+capable host who forwards them onward. In our study, we come across many
+vantage points which are IPv6 connected via a 6to4 bridge. These are easily
+identifiable since their IPv6 addresses are drawn from the \texttt{2002::/16}
+address block \cite{RFC3056}. 
+
+
+\para{The impact of IPv6 on DNS censorship.}
 As with other critical protocols, DNS has also adapted to the IPv6 protocol.
 The {\tt AAAA} resource record type was introduced to aid in the resolution of
 domains to their IPv6 addresses. Further, the existing DNS protocol is
@@ -166,8 +184,6 @@ IP-independent and can therefore be deployed on IPv4 and IPv6 networks.
 Therefore, it is now possible and common for IPv4 and IPv6-hosted DNS servers
 to receive both {\tt A} and {\tt AAAA} queries. This is in contrast to
 a IPv4-dominant Internet where {\tt A} queries to IPv4 resolvers were the norm.
-
-\para{Impact of IPv6 on DNS censorship.}
 The changes outlined above also influence the mechanics and success of DNS
 censorship operations. A theoretically comprehensive DNS censorship strategy
 using response injection requires traffic monitoring infrastructure to: (1)
@@ -177,6 +193,7 @@ records of one type or the other.
 %
 Our work provides a snapshot documentation of contemporary
 censorship strategies through the IPv6 transition.
+
 
 %In addition to helping
 %circumvention tool developers exploit weaknesses made available through this

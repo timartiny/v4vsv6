@@ -1,55 +1,98 @@
 \section{Discussion and Conclusions} \label{sec:discussion}
 
-The design and evaluation of this experiment included many complicating factors.
-Our decision making was structured to achieve the conservative result at each
-stage. However, we provide a discussion of the limitations of our experiments in
-order to transparently contextualize our work.
+In this section, we describe the limitations of our work
+(\Cref{sec:discussion:limitations}), provide directions for future research
+(\Cref{sec:discussion:future}), and summarize the takeaways of our work
+(\Cref{sec:discussion:conclusions}).
 
-This context provides an interesting vantage into future directions for pursuing
-censorship circumvention tools that leverage the gap in the transition from IPv4
-to IPv6. The inclusion of resolvers relying on 6to4 bridges demonstrates that
-the challenge facing censors in thoroughly covering the transition from IPv4 to
-IPv6 is non-trivial. In this section we evaluate the limitations of our
-measurements and analyses before proposing related future research directions
-and concluding.
+% The design and evaluation of this experiment included many complicating factors.
+% Our decision making was structured to achieve the conservative result at each
+% stage. However, we provide a discussion of the limitations of our experiments in
+% order to transparently contextualize our work. 
+%
+% This context provides an interesting vantage into future directions for pursuing
+% censorship circumvention tools that leverage the gap in the transition from IPv4
+% to IPv6. The inclusion of resolvers relying on 6to4 bridges demonstrates that
+% the challenge facing censors in thoroughly covering the transition from IPv4 to
+% IPv6 is non-trivial. In this section we evaluate the limitations of our
+% measurements and analyses before proposing related future research directions
+% and concluding.
 
 \subsection{Limitations}
 \label{sec:discussion:limitations}
+Measuring censorship in order to gain an understanding of the underlying
+infrastructure and identify weaknesses for circumvention is a challenging task
+due to the absence of ground truth for validation and the often probabilistic
+nature of censorship and networking failures which are easily confused.
+%
+Although we take care to always err on the side of caution and consider many
+confounding factors including end-point type and AS diversity, our work is
+fundamentally a best-effort attempt at trying to identify the gaps that have
+emerged in DNS censorship deployments because of the increased adoption of
+IPv6. The limitations of our study arise from three sources.
 
-\para{External sources of data}
-We draw much of the initial state for conducting our experiments and analyzing
-the results from previous work. This includes the target domain selection as
-outlined in \Cref{sec:methodology:domains} which relies on the accuracy of the
-Satellite project. Similarly we use supplemental sources of information to
-classify and categorize our data. We specifically rely on the accuracy of the
-MaxMind geolocation and network classification datasets to inform our
-understanding of each open resolver. We also rely on the McAfee domain
-categorization system to provide categorical information about our selected
-target domains. Our results and supported analyses are limited by the
-reliability of these sources of information.
+\para{External sources of data.}
+Our study relies on multiple data sources including Satellite and the Citizen
+Lab for our domain lists, McAfee's domain labeling services for categorizing
+our data, and Maxmind's datasets for geolocating and classifying connection
+types of our resolvers. Although each of these datasets has been validated in
+the past and are commonly used in research, our results and their corresponding
+analyses are limited by their reliability.
+% 
+% We draw much of the initial state for conducting our experiments and analyzing 
+% the results from previous work. This includes the target domain selection as
+% outlined in \Cref{sec:methodology:domains} which relies on the accuracy of the
+% Satellite project. Similarly we use supplemental sources of information to
+% classify and categorize our data. We specifically rely on the accuracy of the
+% MaxMind geolocation and network classification datasets to inform our
+% understanding of each open resolver. We also rely on the McAfee domain
+% categorization system to provide categorical information about our selected
+% target domains. Our results and supported analyses are limited by the
+% reliability of these sources of information.
 
-\para{Statistical Testing}
-We filter many countries out of our statistical analysis due to the low sample
-size of available resolvers within the country. We choose specific bounds at
-which to perform analysis using the $z$-test given that we cannot guarantee that
-the resolver and domain entropy evaluation draws from a normal distribution.
-With respect to available resolvers within a country we set the lower bound at
-25 available resolvers that pass our control tests. We believe that this
-provides our statistical tests with appropriate power to draw significant
-conclusions.
+\para{Statistical limitations.}
+Throughout our study, we aimed to err on the side of caution in order to avoid
+presenting false-positives in our results. Therefore, we relied on rigorous
+statistical approaches in order to identify differences in censorship between
+{\tt A/AAAA} query and {IPv4/IPv6} network types. This included grouping
+related hypotheses together and performing Sidak corrections to ensure that the
+confidence level achieved across the entire group (rather than for each
+individual hypothesis) was 95\%. Although this provides our results with
+credibility, our strict methods almost certainly assure false-negatives. In
+fact, this becomes apparent in our identification of {\tt A/AAAA}-resolvers in
+China. Our statistical methods identified only six resolvers with significant
+differences (\Cref{sec:resources}), however, the manual analysis performed in
+the case study (\Cref{sec:cases}) shows that a much larger number of resolvers
+performed censorship over a small set of just 21 domains. This is a fundamental
+limitation of any test of two proportions such as the $z$-test used in this
+work. 
 
-\para{Resolver Selection}
-While we followed the initial steps of Hendricks et al. in our resolver
-discovery methodology (outlined in \Cref{sec:methodology:resolvers}), we did not
-perform the follow up scanning to determine that each of the resolver pairs were
-truly dual-stack. This leaves in open resolvers that forward or distribute
-queries as long as the control queries are satisfied and the pairs geolocate to
-the same country.
+%   Let's bring this up if they ask about it. From what I understand the stats
+%   people are in two camps. Some think this is ok and others will kill
+%   anything where the dist **might be** non-normal
+% We filter many countries out of our statistical analysis due to the low sample
+% size of available resolvers within the country. We choose specific bounds at
+% which to perform analysis using the $z$-test given that we cannot guarantee that
+% the resolver and domain entropy evaluation draws from a normal distribution.
+% With respect to available resolvers within a country we set the lower bound at
+% 25 available resolvers that pass our control tests. We believe that this
+% provides our statistical tests with appropriate power to draw significant
+% conclusions.
 
-On one hand this can provide an inflated count of open resolver pairs within a
-given country. On the other hand, real clients relying on open resolvers will
-exercise this infrastructure as well---as such, it is an important part of the
-DNS ecosystem to understand.
+\para{Resolver selection.}
+Our work required us to identify resolvers that were IPv4 and IPv6 capable. For
+this, we only partially followed the steps outlined by Hendricks \etal
+(\cf \Cref{sec:methodology:resolvers}). We decided not to take explicit steps
+to guarantee that each resolver pair was in fact a single dual stack resolver.
+Doing so would have resulted in the complete removal of 6to4 bridges and
+infrastructure resolvers. Our reasoning was that such resolvers do play an
+important role in the censorship apparatus since they are the ones most
+commonly used by citizens in a censored region. Therefore, we decided that
+their removal would have harmed (1) the representativeness of our measurements
+and (2) the effectiveness of any circumvention approaches that might seek to
+exploit the censorship gaps identified in this work. On the other hand, this
+choice means that it is possible that our dataset may have multiple pairs of
+resolvers in a country that belong to the same resolving infrastructure. 
 
 One specific category of open resolver that we find to be relatively common in
 our collected data are those that rely on a \textbf{6to4 Bridge}. This
