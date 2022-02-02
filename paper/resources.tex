@@ -9,12 +9,12 @@ Specifically, we seek to answer the following questions:
 \textbf{resource records} (DNS {\tt A} queries) significantly different than the
 censorship of IPv6 resource records (DNS {\tt AAAA} queries)?,
 %
-(\Cref{sec:resources:resolvers}) what are the characteristics of the \textbf{resolvers}
-which exhibit differences in the handling of {\tt A} and {\tt AAAA} queries?,
-and 
+(\Cref{sec:resources:resolvers}) what are the characteristics of the
+\textbf{resolvers} which exhibit differences in the handling of {\tt A} and {\tt
+AAAA} queries?, and 
 %
-(\Cref{sec:resources:domains}) what are the characteristics of \textbf{domains} in which
-these differences are frequently observed?
+(\Cref{sec:resources:domains}) what are the characteristics of \textbf{domains}
+in which these differences are frequently observed?
 %
 
 %\subsection{Within-country differences in the censorship of
@@ -23,11 +23,12 @@ these differences are frequently observed?
 %
 We use the responses received from our {\tt A} and {\tt AAAA} queries sent to
 the same set of resolvers and for the same set of domains (\cf
-\Cref{sec:methodology} for data collection methodology). We then apply the censorship determination methods described in
-\Cref{sec:methodology:censorship} to measure the prevalence of censorship on our {\tt
-A} and {\tt AAAA} DNS queries. Finally, we perform statistical tests to
-identify significant differences in the prevalence of censorship of {\tt A} and
-{\tt AAAA} queries within each country.
+\Cref{sec:methodology} for data collection methodology). We then apply the
+censorship determination methods described in \Cref{sec:methodology:censorship}
+to measure the prevalence of censorship on our {\tt A} and {\tt AAAA} DNS
+queries. Finally, we perform statistical tests to identify significant
+differences in the prevalence of censorship of {\tt A} and {\tt AAAA} queries
+within each country.
 
 \para{Identifying differences within a country.}
 To measure differences in DNS query handling within a specific country, we
@@ -40,9 +41,9 @@ country.
 We use a two-sample $t$-test to verify statistical significance of any observed
 differences between the two groups for each country. In our statistical
 analysis, we aim to achieve a significance level of 5\% ($p \leq$  .05)
-\emph{over all our findings}. Therefore, we apply a Sidak correction
-\cite{abdi2007bonferroni} to control for Type I (false-positive) errors from multiple hypothesis
-testing. 
+\emph{over all our findings}. Therefore, we apply a \Sidak correction
+\cite{abdi2007bonferroni} to control for Type I (false-positive) errors from
+multiple hypothesis testing. 
 %
 This requires $p \leq 1-{.05}^{1/n_{c}}$ for classifying a difference as
 significant, where $n_c$ is the total number of countries in our dataset
@@ -50,10 +51,10 @@ significant, where $n_c$ is the total number of countries in our dataset
 of within-country differences.
 %
 The presence of a statistically significant difference for a specific country
-would imply that \texttt{A} and \texttt{AAAA} resource types appear to undergo different censorship
-mechanisms within that country (if a centralized mechanism for censorship
-exists) or that a significant number of resolvers within that country have
-inconsistencies in their censoring of each query type.
+would imply that \texttt{A} and \texttt{AAAA} resource types appear to undergo
+different censorship mechanisms within that country (if a centralized mechanism
+for censorship exists) or that a significant number of resolvers within that
+country have inconsistencies in their censoring of each query type.
 %
 A summary of our results are presented in \Cref{tab:resources:countries}. 
 
@@ -61,7 +62,7 @@ A summary of our results are presented in \Cref{tab:resources:countries}.
 handling of {\tt A} and {\tt AAAA} queries?} 
 %
 In total, only seven countries showed a statistically significant difference
-in the rate at which {\tt AAAA} and {\tt A} DNS requests were blocked. We note
+in the rate at which {\tt A} and {\tt AAAA} DNS requests were blocked. We note
 that this is a conservative lower-bound due to the statistical test used, which
 minimizes false positive errors at the expense of false negatives.
 %
@@ -122,11 +123,10 @@ anomaly in \Cref{sec:cases}.
   100\times\frac{\text{{\tt AAAA} blocking rate} - \text{{\tt A} blocking rate}}
   {\text{{\tt A} blocking rate}}
   $). 
-  Only countries having
-  a statistically significant difference are reported. A negative value
-  indicates that {\tt A} queries observed higher blocking rates than {\tt AAAA}
-  queries. $ns$ indicates the difference was not statistically significant and
-  thus omitted.}
+  Only countries having a statistically significant difference are reported. A
+  negative value indicates that {\tt A} queries observed higher blocking rates
+  than {\tt AAAA} queries in a given country. $ns$ indicates the difference was
+  not statistically significant and thus omitted.}
   \label{tab:resources:countries}
 \end{table}
 
@@ -163,7 +163,7 @@ compare the ratio of censored responses each resolver observes for {\tt A} and
 %
 We use a two-proportion $z$-test to verify the statistical significance of any
 observed difference in the ratios between the two groups for each resolver.
-Similar to our within-country analysis, we apply a Sidak correction to account
+Similar to our within-country analysis, we apply a \Sidak correction to account
 for our testing of multiple hypotheses and use $p \leq 1-{.05}^{1/n_{r_c}}$ to
 classify a difference as significant, where $n_{r_c}$ is the total number of
 resolvers in our dataset belonging to country $c$.
@@ -180,10 +180,12 @@ statistically significant differences have inconsistencies arising from
 anywhere between 3-30\% of their resolvers.
 %
 
-\para{How spread out are the {\tt A/AAAA}-inconsistent resolvers?}
-We calculate the entropy of the distribution of all resolvers in the
-country ($S_{\text{query}}^{\text{all}}$) and compare it with the entropy of
-the distribution of the inconsistent resolvers in the country
+\para{How spread out are the {\tt A/AAAA}-inconsistent resolvers?} 
+%
+We calculate the entropy of the distribution of censorship by record query type
+of all resolvers in the country ($S_{\text{query}}^{\text{all}}$) and compare it
+with the entropy of the distribution of censorship by record query type of the
+inconsistent resolvers in the country
 ($S_{\text{query}}^{\text{inconsistent}}$). This serves as a measure of the
 diversity of ASes observed in both cases. 
 %
@@ -300,8 +302,8 @@ queries.
 We continue using our statistical approach for identifying differences within
 a country. We measure the ratio of blocking that occurs for a domain's {\tt A}
 and {\tt AAAA} records within the country and then compare these using
-a two-proportion $z$-test with a Sidak corrected $p$-value of $1-.05^{dom}$
-where $dom$ is the total number of tested domains (717). We only label the
+a two-proportion $z$-test with a \Sidak corrected $p$-value of $1-.05^{dom}$
+where $dom$ is the total number of tested domains (714). We only label the
 behavior of a censor with regards to a domain as different over {\tt A} and
 {\tt AAAA} queries if the $z$-test finds the difference to be statistically
 significant. Once again, we do this to err on the side of caution in order to
@@ -361,7 +363,7 @@ from a range of corporate networks (\Cref{sec:prevalence}). These resolvers are 
 consistent in their blocking of domains belonging to McAfee's `P2P/File Sharing' 
 ,`Malicious Sites' and `Technical/Business Forums' categories. Of the most blocked
 individual domains, we see domains related to cryptocurrency (which were categorized
-under `Technical/Business Forums'), `netlfix.com' and `utorrent.com'. 
+under `Technical/Business Forums'), `netflix.com' and `utorrent.com'. 
 %
 On the other hand, Thailand shows low divergence despite the large
 number of residential networks. This suggests that there is no significant
