@@ -64,11 +64,16 @@ interface to receive traffic encapsulated in an IPv4 header at the local address
 In this way clients without outgoing connection to an IPv6 capable network
 can send IPv6 packets over to an IPv6 capable host who forwards them onward.
 
-We find multiple countries with limited IPv6 deployment rely on 6to4 resolvers.
-Two specific examples are Brazil in which 94 of the 160 resolvers identified used
-6to4 and Thailand with 112 out of 186 resolvers. This
+We find many countries where IPv6 resolver availability is supplemented
+with 6to4 and note that the filtering stage of our resolver methodology ensures
+that resolver IP pairs geolocate within the same country. This means that any IPv6
+queries sent to 6to4 resolvers do traverse national networks as UDP over IPv6 for
+at least some potion of their path to the final resolver.
+
+Two specific examples of a substantial 6to4 supplement are Brazil in which 94 of
+the 160 resolvers identified used 6to4 and Thailand with 112 out of 186 resolvers. This
 understanding of the protocols that are traversing the censored links provide
-a limitation on our measurement in the sense that we do not get the comparison of
+a limitation on our measurement in the sense that we do not get the pure comparison of
 IPv4 with IPv6 that we hoped. However, they do provide an interesting perspective
 on the ability of censors to handle protocols specifically deployed to assist in
 bridging the IPv4 - IPv6 gap. For example in both Brazil and Thailand the resolvers
