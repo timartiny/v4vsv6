@@ -21,6 +21,7 @@ type DomainResolverResult struct {
 	RequestedAddressType     string           `json:"requested_address_type"`
 	Results                  []*AddressResult `json:"results,omitempty"`
 	CorrectControlResolution bool             `json:"correct_control_resolution"`
+	CensoredQuery            bool             `json:"censored_query"`
 }
 
 // AppendResults will take a slice of AddressResults and add non-duplicates to
