@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"flag"
+	"fmt"
 	"github.com/miekg/dns"
 	"log"
 	"net"
@@ -117,8 +118,8 @@ func dnsWorker(timeout time.Duration, verbose bool, iplines <-chan string, wg *s
 
 	for line := range iplines {
 		ips := strings.Fields(line)
-		v4 := net.ParseIP(ips[0])
-		v6 := net.ParseIP(ips[1])
+		v4 := net.ParseIP(ips[1])
+		v6 := net.ParseIP(ips[0])
 		//cc := ips[2]
 
 		v4res, err4 := sendDnsProbe(v4, timeout, verbose)
@@ -134,7 +135,7 @@ func dnsWorker(timeout time.Duration, verbose bool, iplines <-chan string, wg *s
 			v6data := v6res.resp[2:]
 
 			if bytes.Compare(v4data, v6data) == 0 {
-				log.Printf("RESULT %s - same %s\n", line, hex.EncodeToString(v4data))
+				fmt.Printf("RESULT %s - same %s\n", line, hex.EncodeToString(v4data))
 			} else {
 				log.Printf("RESULT %s - diff:\n", line)
 				log.Printf("%v: %s\n", v4, hex.EncodeToString(v4data))
