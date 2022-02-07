@@ -205,6 +205,23 @@ func writeDomainResolverResults(
 	}
 }
 
+// isCensorship will read through a slice of AddressResults and return true if
+// all of the Answers returned fail to support TLS, if any one does then no
+// censorship.
+func isCensorship(drr v4vsv6.DomainResolverResult) bool {
+	if len(drr.Results) == 0 || drr.Results[0] == nil {
+		return true
+	}
+
+	for _, ar := range drr.Results {
+		if ar.SupportsTLS {
+			return false
+		}
+	}
+
+	return true
+}
+
 // createThenWriteDomainResolverResults will read in ZDNS scan results and will
 // write out info on the resolver, domain to be resolved, for which record, and
 // the results to the provided file
@@ -263,6 +280,11 @@ func createThenWriteDomainResolverResults(
 				}
 				drr.CorrectControlResolution = true
 			}
+		}
+		if isCensorship(*drr) {
+			drr.CensoredQuery = true
+		} else {
+			drr.CensoredQuery = false
 		}
 		drrChan <- drr
 	}

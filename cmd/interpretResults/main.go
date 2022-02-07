@@ -63,26 +63,10 @@ func readDomainResolverResults(
 	}
 }
 
-// isCensorship will read through a slice of AdressResults and say there is no
-// censorship if all the IPs are filled in and SupportsTLS is true. Otherwise
-// false. If there are different results between entries in slice it will point
-// them out.
+// isCensorship is a now unneeded function, it just reads a value in the
+// DomainResolverResult
 func isCensorship(drr v4vsv6.DomainResolverResult) bool {
-	if len(drr.Results) == 0 || drr.Results[0] == nil {
-		return true
-	}
-	ret := !drr.Results[0].SupportsTLS
-
-	for _, ar := range drr.Results[1:] {
-		// condition is == because ret is flipped from SupportsTLS
-		if ar.SupportsTLS == ret {
-			// should print this once we have more reliable data...
-			// infoLogger.Printf("drr has mixed SupportsTLS results: %+v\n", drr)
-			return true
-		}
-	}
-
-	return ret
+	return drr.CensoredQuery
 }
 
 // isControlDomain will check if a provided drr is for a control domain.
