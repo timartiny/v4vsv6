@@ -92,10 +92,17 @@ func getResolverCountryCodeMap(rccm map[string]string, path string, wg *sync.Wai
 			// differ
 			continue
 		}
-		splitLine := strings.Split(line, "  ")
-		countryCode := strings.TrimSpace(splitLine[2])
-		ipv6Addr := strings.TrimSpace(splitLine[0])
-		ipv4Addr := strings.TrimSpace(splitLine[1])
+		splitLine := strings.Split(line, " ")
+		var countryCode, ipv6Addr, ipv4Addr string
+		ipv6Addr = strings.TrimSpace(splitLine[0])
+		if splitLine[1] == " " {
+			// this means there are double spaces between everything
+			ipv4Addr = strings.TrimSpace(splitLine[2])
+			countryCode = strings.TrimSpace(splitLine[4])
+		} else {
+			ipv4Addr = strings.TrimSpace(splitLine[1])
+			countryCode = strings.TrimSpace(splitLine[2])
+		}
 		rccm[ipv6Addr] = countryCode
 		rccm[ipv4Addr] = countryCode
 	}
@@ -281,7 +288,7 @@ func createThenWriteDomainResolverResults(
 				drr.CorrectControlResolution = true
 			}
 		}
-		if isCensorship(*drr) {
+		if isCensorship(*drr) || isControlDomain(drr.Domain) {
 			drr.CensoredQuery = true
 		} else {
 			drr.CensoredQuery = false

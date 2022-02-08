@@ -59,7 +59,13 @@ def cartesian_product(
                         if "!!" in resolvers_string:
                             continue
                         try:
-                            v6_address, v4_address, _ = resolvers_string.split("  ")
+                            split_resolvers = resolvers_string.split(" ")
+                            v6_address = split_resolvers[0].strip()
+                            if split_resolvers[1] == " ":
+                                # there are double spaces between items
+                                v4_address = split_resolvers[2].strip()
+                            else:
+                                v4_address = split_resolvers[1].strip()
                         except ValueError:
                             print("Couldn't split line: {}".format(resolvers_string))
                         v6_write_file.write("{},[{}]\n".format(domain, v6_address))
