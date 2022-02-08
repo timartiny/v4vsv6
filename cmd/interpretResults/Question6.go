@@ -47,13 +47,18 @@ func getResolverPairs(
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		splitLine := strings.Split(line, "  ")
-		v4IP := net.ParseIP(splitLine[1])
-		v6IP := net.ParseIP(splitLine[0])
+		splitLine := strings.Split(line, " ")
+		var v4IP, v6IP net.IP
+		v6IP = net.ParseIP(strings.TrimSpace(splitLine[0]))
+		if splitLine[1] == " " {
+			// this means there are double spaces between everything
+			v4IP = net.ParseIP(strings.TrimSpace(splitLine[2]))
+		} else {
+			v4IP = net.ParseIP(strings.TrimSpace(splitLine[1]))
+		}
 		v4ToV6[v4IP.String()] = v6IP.String()
 		v6ToV4[v6IP.String()] = v4IP.String()
 	}
-
 }
 
 // resolverStats will go throug the results file and for each resolver will
