@@ -5,9 +5,11 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -25,16 +27,21 @@ var (
 )
 
 type ParseScansFlags struct {
-	V4ARaw                  string `arg:"--v4-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v4 addresses" json:"v4_a_raw"`
-	V4AAAARaw               string `arg:"--v4-aaaa-raw,required" help:"(Required) Path to the file containing the ZDNS results for AAAA records from resolvers with v4 addresses" json:"v4_aaaa_raw"`
-	V6ARaw                  string `arg:"--v6-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v6 addresses" json:"v6_a_raw"`
-	V6AAAARaw               string `arg:"--v6-aaaa-raw,required" help:"(Required) Path to the file containing the ZDNS results for AAAA records from resolvers with v6 addresses" json:"v6_aaaa_raw"`
-	ResolverCountryCodeFile string `arg:"--resolver-country-code,required" help:"(Required) Path to the file with triplets of v6 address, v4 address, country code, to mark country code of resolvers." json:"resolver_country_code"`
-	OutputFile              string `arg:"--output-file,required" help:"(Required) Path to write out the JSON resolver-domain-ip-tls structs" json:"output_file"`
-	ATLSFile                string `arg:"--a-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses" json:"a_tls_file"`
-	AAAATLSFile             string `arg:"--aaaa-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses" json:"aaaa_tls_file"`
-	RepeatATLSFile          string `arg:"--repeat-a-tls-file" help:"Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses, repeat file to work around rate limits" json:"repeat_a_tls_file"`
-	RepeatAAAATLSFile       string `arg:"--repeat-aaaa-tls-file" help:"Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses, repeat file to work around rate limits" json:"repeat_aaaa_tls_file"`
+	Day        int    `arg:"--day,required" help:"(Required) The day of the experiment, will be used to determine which files to read and which fields to update" json:"day"`
+	DataFolder string `arg:"--data-folder,required" help:"(Required) The folder to read data from and write to" json:"data_folder"`
+	Repeats    bool   `arg:"--repeats" help:"Whether to look for repeat TLS connections or not" json:"repeats"`
+	DateString string `arg:"--date-string,required" help:"(Required) The date string present in data files" json:"date_string"`
+	Verbose    bool   `arg:"--verbose,-v" help:"Whether to add extra printing for debugging" json:"verbose"`
+	// V4ARaw                  string `arg:"--v4-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v4 addresses" json:"v4_a_raw"`
+	// V4AAAARaw               string `arg:"--v4-aaaa-raw,required" help:"(Required) Path to the file containing the ZDNS results for AAAA records from resolvers with v4 addresses" json:"v4_aaaa_raw"`
+	// V6ARaw                  string `arg:"--v6-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v6 addresses" json:"v6_a_raw"`
+	// V6AAAARaw               string `arg:"--v6-aaaa-raw,required" help:"(Required) Path to the file containing the ZDNS results for AAAA records from resolvers with v6 addresses" json:"v6_aaaa_raw"`
+	// ResolverCountryCodeFile string `arg:"--resolver-country-code,required" help:"(Required) Path to the file with triplets of v6 address, v4 address, country code, to mark country code of resolvers." json:"resolver_country_code"`
+	// OutputFile              string `arg:"--output-file,required" help:"(Required) Path to write out the JSON resolver-domain-ip-tls structs" json:"output_file"`
+	// ATLSFile                string `arg:"--a-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses" json:"a_tls_file"`
+	// AAAATLSFile             string `arg:"--aaaa-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses" json:"aaaa_tls_file"`
+	// RepeatATLSFile          string `arg:"--repeat-a-tls-file" help:"Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses, repeat file to work around rate limits" json:"repeat_a_tls_file"`
+	// RepeatAAAATLSFile       string `arg:"--repeat-aaaa-tls-file" help:"Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses, repeat file to work around rate limits" json:"repeat_aaaa_tls_file"`
 }
 
 // type DomainResolverResultMap map[string]*v4vsv6.DomainResolverResult
@@ -106,7 +113,6 @@ func getResolverCountryCodeMap(rccm map[string]string, path string, wg *sync.Wai
 		rccm[ipv6Addr] = countryCode
 		rccm[ipv4Addr] = countryCode
 	}
-
 }
 
 // getAddressResultFromZDNS will take a ZDNSResult, collect all the answers
@@ -189,7 +195,9 @@ func getAddressResultFromZDNS(
 func writeDomainResolverResults(
 	drrChan <-chan *v4vsv6.DomainResolverResult,
 	path string,
+	wg *sync.WaitGroup,
 ) {
+	defer wg.Done()
 	outFile, err := os.Create(path)
 	if err != nil {
 		errorLogger.Fatalf("Error creating output file: %s, %v\n", path, err)
@@ -215,12 +223,23 @@ func writeDomainResolverResults(
 // isCensorship will read through a slice of AddressResults and return true if
 // all of the Answers returned fail to support TLS, if any one does then no
 // censorship.
-func isCensorship(drr v4vsv6.DomainResolverResult) bool {
-	if len(drr.Results) == 0 || drr.Results[0] == nil {
+func isCensorship(drr v4vsv6.DomainResolverResult, day int) bool {
+	var results []*v4vsv6.AddressResult
+	switch day {
+	case 1:
+		results = drr.Day1Results
+	case 2:
+		results = drr.Day1Results
+	case 3:
+		results = drr.Day3Results
+	default:
+		errorLogger.Fatalf("Invalid Day provided: %d, must be 1-3\n", day)
+	}
+	if len(results) == 0 || results[0] == nil {
 		return true
 	}
 
-	for _, ar := range drr.Results {
+	for _, ar := range results {
 		if ar.SupportsTLS {
 			return false
 		}
@@ -237,6 +256,7 @@ func createThenWriteDomainResolverResults(
 	rccm map[string]string,
 	zdnsPath, resultType string,
 	drrChan chan<- *v4vsv6.DomainResolverResult,
+	day int,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -278,9 +298,18 @@ func createThenWriteDomainResolverResults(
 		}
 		drr.ResolverCountry = rccm[resolverStr]
 		drr.RequestedAddressType = resultType
-		drr.Results = results
+		switch day {
+		case 1:
+			drr.Day1Results = results
+		case 2:
+			drr.Day2Results = results
+		case 3:
+			drr.Day3Results = results
+		default:
+			errorLogger.Fatalf("Incorrect day passed: %d, must be 1-3\n", day)
+		}
 		if isControlDomain(drr.Domain) {
-			for _, result := range drr.Results {
+			for _, result := range results {
 				if !result.ValidControlIP {
 					drr.CorrectControlResolution = false
 					break
@@ -288,7 +317,7 @@ func createThenWriteDomainResolverResults(
 				drr.CorrectControlResolution = true
 			}
 		}
-		if isCensorship(*drr) || isControlDomain(drr.Domain) {
+		if isCensorship(*drr, day) || isControlDomain(drr.Domain) {
 			drr.CensoredQuery = true
 		} else {
 			drr.CensoredQuery = false
@@ -369,7 +398,9 @@ func verifyTLS(tlsScanResponse zgrab2.ScanResponse, domainName string) bool {
 func updateAddressResults(
 	ditarm DomainIPToAddressResultMap,
 	arChan <-chan *v4vsv6.AddressResult,
+	wg *sync.WaitGroup,
 ) {
+	defer wg.Done()
 	for ar := range arChan {
 		// tmpIP won't be invalid, already checked in createAddressResults
 		tmpIP := net.ParseIP(ar.IP)
@@ -428,6 +459,7 @@ func verifyControlDomain(ar v4vsv6.AddressResult) bool {
 func createAddressResults(
 	path string,
 	arChan chan<- *v4vsv6.AddressResult,
+	verbose bool,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -445,11 +477,17 @@ func createAddressResults(
 	// mapping, and only parse a line if we haven't seen the domain-ip before or
 	// if the domain-ip didn't support TLS last time.
 	nonDuplicationMap := make(map[string]bool)
+	// only used with verbose, so minor slow down
+	nextVerboseTime := time.Now().Add(30 * time.Second)
 
 	for scanner.Scan() {
 		var zgrabResult zgrab2.Grab
 		l := scanner.Text()
 		numLines++
+		if verbose && time.Now().After(nextVerboseTime) {
+			infoLogger.Printf("Read in %d lines of %s\n", numLines, path)
+			nextVerboseTime = time.Now().Add(30 * time.Second)
+		}
 		err = json.Unmarshal([]byte(l), &zgrabResult)
 		if err != nil {
 			errorLogger.Printf("error unmarshaling line: %s, err: %v\n", l, err)
@@ -518,116 +556,219 @@ func main() {
 	args := setupArgs()
 
 	domainIPToAddressResultsMap := make(DomainIPToAddressResultMap)
-	// will have 2 goroutines writing, so leave room for each
-	addressResultsChan := make(chan *v4vsv6.AddressResult, 2)
-	// will have 4 goroutines writing, so leave room for each
-	domainResolverResultChan := make(chan *v4vsv6.DomainResolverResult, 4)
+	addressResultsChan := make(chan *v4vsv6.AddressResult, 100)
+	domainResolverResultChan := make(chan *v4vsv6.DomainResolverResult, 100)
 	var createAddressResultsWG sync.WaitGroup
 	var resolverCountryCodeMapWG sync.WaitGroup
+	var updateARWG sync.WaitGroup
+	var drrWriteWG sync.WaitGroup
 	var createAndWriteDomainResolverResultWG sync.WaitGroup
-	go updateAddressResults(domainIPToAddressResultsMap, addressResultsChan)
+
+	updateARWG.Add(1)
+	go updateAddressResults(
+		domainIPToAddressResultsMap,
+		addressResultsChan,
+		&updateARWG,
+	)
+
+	aTLSFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf("A_tls_lookups_%s_day%d.json", args.DateString, args.Day),
+	)
 	infoLogger.Printf(
 		"Loading in TLS data from v4 addresses from %s\n",
-		args.ATLSFile,
+		aTLSFile,
 	)
 
 	createAddressResultsWG.Add(1)
-	go createAddressResults(args.ATLSFile, addressResultsChan, &createAddressResultsWG)
+	go createAddressResults(
+		aTLSFile,
+		addressResultsChan,
+		args.Verbose,
+		&createAddressResultsWG,
+	)
 
+	aaaaTLSFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf("AAAA_tls_lookups_%s_day%d.json", args.DateString, args.Day),
+	)
 	infoLogger.Printf(
 		"Loading in TLS data from v6 addresses from %s\n",
-		args.AAAATLSFile,
+		aaaaTLSFile,
 	)
 	createAddressResultsWG.Add(1)
-	go createAddressResults(args.AAAATLSFile, addressResultsChan, &createAddressResultsWG)
+	go createAddressResults(
+		aaaaTLSFile,
+		addressResultsChan,
+		args.Verbose,
+		&createAddressResultsWG,
+	)
 
+	resolverCountryCodeFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf("%s-single-resolvers-country-correct-sorted", args.DateString),
+	)
 	infoLogger.Printf(
 		"Creating resolver -> country code map from %s\n",
-		args.ResolverCountryCodeFile,
+		resolverCountryCodeFile,
 	)
 	resolverCountryCodeMap := make(map[string]string)
 	resolverCountryCodeMapWG.Add(1)
 	go getResolverCountryCodeMap(
 		resolverCountryCodeMap,
-		args.ResolverCountryCodeFile,
+		resolverCountryCodeFile,
 		&resolverCountryCodeMapWG,
 	)
 
 	infoLogger.Println("Waiting for AddressResults to be created")
 	createAddressResultsWG.Wait()
-	if len(args.RepeatATLSFile) > 0 {
+	if args.Repeats {
+		repeatATLSFile := filepath.Join(
+			args.DataFolder,
+			fmt.Sprintf(
+				"A_retry_tls_lookups_%s_day%d.json",
+				args.DateString,
+				args.Day,
+			),
+		)
 		infoLogger.Printf(
 			"Loading in repeat TLS data from v4 addresses from %s\n",
-			args.RepeatATLSFile,
+			repeatATLSFile,
 		)
 
 		createAddressResultsWG.Add(1)
-		go createAddressResults(args.RepeatATLSFile, addressResultsChan, &createAddressResultsWG)
-	}
-
-	if len(args.RepeatAAAATLSFile) > 0 {
+		go createAddressResults(
+			repeatATLSFile,
+			addressResultsChan,
+			args.Verbose,
+			&createAddressResultsWG,
+		)
+		repeatAAAATLSFile := filepath.Join(
+			args.DataFolder,
+			fmt.Sprintf(
+				"AAAA_retry_tls_lookups_%s_day%d.json",
+				args.DateString,
+				args.Day,
+			),
+		)
 		infoLogger.Printf(
 			"Loading in repeat TLS data from v6 addresses from %s\n",
-			args.RepeatAAAATLSFile,
+			repeatAAAATLSFile,
 		)
 		createAddressResultsWG.Add(1)
-		go createAddressResults(args.RepeatAAAATLSFile, addressResultsChan, &createAddressResultsWG)
+		go createAddressResults(
+			repeatAAAATLSFile,
+			addressResultsChan,
+			args.Verbose,
+			&createAddressResultsWG,
+		)
 	}
-	// wait for any optional runs of createAddressResults
-	infoLogger.Println("Waiting for any repeat TLS scan results")
-	createAddressResultsWG.Wait()
+
+	if args.Repeats {
+		// wait for any optional runs of createAddressResults
+		infoLogger.Println("Waiting for any repeat TLS scan results")
+		createAddressResultsWG.Wait()
+	}
 	close(addressResultsChan)
+	infoLogger.Println("Waiting for last second updates to Address Results")
+	updateARWG.Wait()
 	infoLogger.Printf(
 		"domainIPToAddressResultMap has %d entries\n",
 		len(domainIPToAddressResultsMap),
 	)
+	infoLogger.Println("Waiting resolver country codes to be filled in")
 	resolverCountryCodeMapWG.Wait()
 
-	infoLogger.Printf("Writing DomainResolverResults to %s\n", args.OutputFile)
-	go writeDomainResolverResults(domainResolverResultChan, args.OutputFile)
+	outputFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf("%s-domain-resolver-results.json", args.DateString),
+	)
+	infoLogger.Printf("Writing DomainResolverResults to %s\n", outputFile)
+	drrWriteWG.Add(1)
+	go writeDomainResolverResults(domainResolverResultChan, outputFile, &drrWriteWG)
 
+	v4ARawFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf(
+			"v4_cartesian_A_lookups_%s_day%d.json",
+			args.DateString,
+			args.Day,
+		),
+	)
+	infoLogger.Printf("Reading v4 A DNS lookups from %s\n", v4ARawFile)
 	createAndWriteDomainResolverResultWG.Add(1)
 	go createThenWriteDomainResolverResults(
 		domainIPToAddressResultsMap,
 		resolverCountryCodeMap,
-		args.V4ARaw,
+		v4ARawFile,
 		"A",
 		domainResolverResultChan,
+		args.Day,
 		&createAndWriteDomainResolverResultWG,
 	)
 
-	createAndWriteDomainResolverResultWG.Add(1)
-	go createThenWriteDomainResolverResults(
-		domainIPToAddressResultsMap,
-		resolverCountryCodeMap,
-		args.V4AAAARaw,
-		"AAAA",
-		domainResolverResultChan,
-		&createAndWriteDomainResolverResultWG,
+	v4AAAARawFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf(
+			"v4_cartesian_AAAA_lookups_%s_day%d.json",
+			args.DateString,
+			args.Day,
+		),
 	)
+	infoLogger.Printf("Reading v4 AAAA DNS lookups from %s\n", v4AAAARawFile)
+	// createAndWriteDomainResolverResultWG.Add(1)
+	// go createThenWriteDomainResolverResults(
+	// 	domainIPToAddressResultsMap,
+	// 	resolverCountryCodeMap,
+	// 	v4AAAARawFile,
+	// 	"AAAA",
+	// 	domainResolverResultChan,
+	// 	&createAndWriteDomainResolverResultWG,
+	// )
 
-	createAndWriteDomainResolverResultWG.Add(1)
-	go createThenWriteDomainResolverResults(
-		domainIPToAddressResultsMap,
-		resolverCountryCodeMap,
-		args.V6ARaw,
-		"A",
-		domainResolverResultChan,
-		&createAndWriteDomainResolverResultWG,
+	v6ARawFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf(
+			"v6_cartesian_A_lookups_%s_day%d.json",
+			args.DateString,
+			args.Day,
+		),
 	)
+	infoLogger.Printf("Reading v6 A DNS lookups from %s\n", v6ARawFile)
+	// createAndWriteDomainResolverResultWG.Add(1)
+	// go createThenWriteDomainResolverResults(
+	// 	domainIPToAddressResultsMap,
+	// 	resolverCountryCodeMap,
+	// 	v6ARawFile,
+	// 	"A",
+	// 	domainResolverResultChan,
+	// 	&createAndWriteDomainResolverResultWG,
+	// )
 
-	createAndWriteDomainResolverResultWG.Add(1)
-	go createThenWriteDomainResolverResults(
-		domainIPToAddressResultsMap,
-		resolverCountryCodeMap,
-		args.V6AAAARaw,
-		"AAAA",
-		domainResolverResultChan,
-		&createAndWriteDomainResolverResultWG,
+	v6AAAARawFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf(
+			"v6_cartesian_AAAA_lookups_%s_day%d.json",
+			args.DateString,
+			args.Day,
+		),
 	)
+	infoLogger.Printf("Reading v6 AAAA DNS lookups from %s\n", v6AAAARawFile)
 
-	infoLogger.Println(
-		"Waiting for DomainResolverResults to be created and written",
-	)
+	// createAndWriteDomainResolverResultWG.Add(1)
+	// go createThenWriteDomainResolverResults(
+	// 	domainIPToAddressResultsMap,
+	// 	resolverCountryCodeMap,
+	// 	v6AAAARawFile,
+	// 	"AAAA",
+	// 	domainResolverResultChan,
+	// 	&createAndWriteDomainResolverResultWG,
+	// )
+
+	// infoLogger.Println(
+	// 	"Waiting for DomainResolverResults to be created and written",
+	// )
 	createAndWriteDomainResolverResultWG.Wait()
+	close(domainResolverResultChan)
+	drrWriteWG.Wait()
 }
