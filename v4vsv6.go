@@ -19,15 +19,25 @@ type DomainResolverResult struct {
 	ResolverIP               string           `json:"resolver_ip"`
 	ResolverCountry          string           `json:"resolver_country"`
 	RequestedAddressType     string           `json:"requested_address_type"`
-	Results                  []*AddressResult `json:"results,omitempty"`
+	Day1Results              []*AddressResult `json:"day_1_results,omitempty"`
+	Day2Results              []*AddressResult `json:"day_2_results,omitempty"`
+	Day3Results              []*AddressResult `json:"day_3_results,omitempty"`
 	CorrectControlResolution bool             `json:"correct_control_resolution"`
 	CensoredQuery            bool             `json:"censored_query"`
 }
 
 // AppendResults will take a slice of AddressResults and add non-duplicates to
 // the Results and return the slice, not updating the current Results
-func (drr *DomainResolverResult) AppendResults(newARs []*AddressResult) []*AddressResult {
-	ret := drr.Results
+func (drr *DomainResolverResult) AppendResults(newARs []*AddressResult, day int) []*AddressResult {
+	var ret []*AddressResult
+	switch day {
+	case 1:
+		ret = drr.Day1Results
+	case 2:
+		ret = drr.Day2Results
+	default:
+		ret = drr.Day3Results
+	}
 
 	existingIPs := make(map[string]bool)
 
