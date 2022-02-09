@@ -17,7 +17,7 @@ func TestAppendAResults(t *testing.T) {
 		ar.Domain = "fake-domain"
 		ars = append(ars, ar)
 	}
-	drr.Results = ars
+	drr.Day1Results = ars
 
 	newArs := make([]*AddressResult, 0)
 	for i := 0; i < 1; i++ {
@@ -27,7 +27,7 @@ func TestAppendAResults(t *testing.T) {
 		newArs = append(newArs, ar)
 	}
 
-	newAs := drr.AppendResults(newArs)
+	newAs := drr.AppendResults(newArs, 1)
 	if len(newAs) != 5 {
 		t.Logf("newAs should have length 5, instead has length: %d\n", len(newAs))
 		t.Logf("entries of newAs are:\n")
@@ -36,7 +36,7 @@ func TestAppendAResults(t *testing.T) {
 		}
 		t.Fatalf("")
 	}
-	drr.Results = newAs
+	drr.Day1Results = newAs
 
 	oldArs := make([]*AddressResult, 0)
 	for i := 0; i < 4; i++ {
@@ -46,8 +46,8 @@ func TestAppendAResults(t *testing.T) {
 		oldArs = append(oldArs, ar)
 	}
 
-	oldAs := drr.AppendResults(oldArs)
-	if len(oldAs) != len(drr.Results) {
+	oldAs := drr.AppendResults(oldArs, 1)
+	if len(oldAs) != len(drr.Day1Results) {
 		t.Fatalf("Appending old AddressResults shouldn't add anythign new\n")
 	}
 
