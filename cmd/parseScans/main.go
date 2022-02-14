@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -32,16 +33,6 @@ type ParseScansFlags struct {
 	Repeats    bool   `arg:"--repeats" help:"Whether to look for repeat TLS connections or not" json:"repeats"`
 	DateString string `arg:"--date-string,required" help:"(Required) The date string present in data files" json:"date_string"`
 	Verbose    bool   `arg:"--verbose,-v" help:"Whether to add extra printing for debugging" json:"verbose"`
-	// V4ARaw                  string `arg:"--v4-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v4 addresses" json:"v4_a_raw"`
-	// V4AAAARaw               string `arg:"--v4-aaaa-raw,required" help:"(Required) Path to the file containing the ZDNS results for AAAA records from resolvers with v4 addresses" json:"v4_aaaa_raw"`
-	// V6ARaw                  string `arg:"--v6-a-raw,required" help:"(Required) Path to the file containing the ZDNS results for A records from resolvers with v6 addresses" json:"v6_a_raw"`
-	// V6AAAARaw               string `arg:"--v6-aaaa-raw,required" help:"(Required) Path to the file containing the ZDNS results for AAAA records from resolvers with v6 addresses" json:"v6_aaaa_raw"`
-	// ResolverCountryCodeFile string `arg:"--resolver-country-code,required" help:"(Required) Path to the file with triplets of v6 address, v4 address, country code, to mark country code of resolvers." json:"resolver_country_code"`
-	// OutputFile              string `arg:"--output-file,required" help:"(Required) Path to write out the JSON resolver-domain-ip-tls structs" json:"output_file"`
-	// ATLSFile                string `arg:"--a-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses" json:"a_tls_file"`
-	// AAAATLSFile             string `arg:"--aaaa-tls-file,required" help:"(Required) Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses" json:"aaaa_tls_file"`
-	// RepeatATLSFile          string `arg:"--repeat-a-tls-file" help:"Path to the file containing the Zgrab2 scan output for TLS certificates using v4 addresses, repeat file to work around rate limits" json:"repeat_a_tls_file"`
-	// RepeatAAAATLSFile       string `arg:"--repeat-aaaa-tls-file" help:"Path to the file containing the Zgrab2 scan output for TLS certificates using v6 addresses, repeat file to work around rate limits" json:"repeat_aaaa_tls_file"`
 }
 
 // type DomainResolverResultMap map[string]*v4vsv6.DomainResolverResult
@@ -220,10 +211,10 @@ func writeDomainResolverResults(
 	}
 }
 
-// isCensorship will read through a slice of AddressResults and return true if
+// isDayCensorship will read through a slice of AddressResults and return true if
 // all of the Answers returned fail to support TLS, if any one does then no
 // censorship.
-func isCensorship(drr v4vsv6.DomainResolverResult, day int) bool {
+func isDayCensorship(drr v4vsv6.DomainResolverResult, day int) bool {
 	var results []*v4vsv6.AddressResult
 	switch day {
 	case 1:
@@ -256,7 +247,8 @@ func createThenWriteDomainResolverResults(
 	rccm map[string]string,
 	zdnsPath, resultType string,
 	drrChan chan<- *v4vsv6.DomainResolverResult,
-	day int,
+	args ParseScansFlags,
+	drrIndex map[string]uint,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -268,8 +260,13 @@ func createThenWriteDomainResolverResults(
 
 	scanner := bufio.NewScanner(zdnsFile)
 
+	numLines := 0
 	for scanner.Scan() {
 		line := scanner.Text()
+		numLines++
+		if numLines%1000 == 0 {
+			infoLogger.Printf("Read %d lines from %s\n", numLines, zdnsPath)
+		}
 		var zdnsLine ZDNSResult
 		json.Unmarshal([]byte(line), &zdnsLine)
 
@@ -288,17 +285,38 @@ func createThenWriteDomainResolverResults(
 			)[1]
 		}
 		drr := new(v4vsv6.DomainResolverResult)
-		drr.Domain = domainName
-		drr.ResolverIP = resolverStr
-		if _, ok := rccm[resolverStr]; !ok {
-			errorLogger.Printf(
-				"resolver %s is not in resolver country code map!\n",
-				resolverStr,
+		if args.Day == 1 {
+			drr.Domain = domainName
+			drr.ResolverIP = resolverStr
+			if _, ok := rccm[resolverStr]; !ok {
+				errorLogger.Printf(
+					"resolver %s is not in resolver country code map!\n",
+					resolverStr,
+				)
+			}
+			drr.ResolverCountry = rccm[resolverStr]
+			drr.RequestedAddressType = resultType
+		} else {
+			key := fmt.Sprintf("%s-%s-%s", domainName, resolverStr, resultType)
+			existingDRRFile := filepath.Join(
+				args.DataFolder,
+				fmt.Sprintf("%s-domain-resolver-results.json", args.DateString),
 			)
+			file, _ := os.Open(existingDRRFile)
+			defer file.Close()
+
+			reader := bufio.NewReader(file)
+			reader.Discard(int(drrIndex[key]))
+			nextDRRBytes, err := reader.ReadBytes('\n')
+			if err != nil {
+				errorLogger.Fatalf("Unable to read until a new line: %+v\n", err)
+			}
+			err = json.Unmarshal(nextDRRBytes, drr)
+			if err != nil {
+				errorLogger.Fatalf("Error unmarshaling bytes: %+v\n", err)
+			}
 		}
-		drr.ResolverCountry = rccm[resolverStr]
-		drr.RequestedAddressType = resultType
-		switch day {
+		switch args.Day {
 		case 1:
 			drr.Day1Results = results
 		case 2:
@@ -306,7 +324,7 @@ func createThenWriteDomainResolverResults(
 		case 3:
 			drr.Day3Results = results
 		default:
-			errorLogger.Fatalf("Incorrect day passed: %d, must be 1-3\n", day)
+			errorLogger.Fatalf("Incorrect day passed: %d, must be 1-3\n", args.Day)
 		}
 		if isControlDomain(drr.Domain) {
 			for _, result := range results {
@@ -317,11 +335,32 @@ func createThenWriteDomainResolverResults(
 				drr.CorrectControlResolution = true
 			}
 		}
-		if isCensorship(*drr, day) || isControlDomain(drr.Domain) {
-			drr.CensoredQuery = true
-		} else {
-			drr.CensoredQuery = false
+
+		switch args.Day {
+		case 1:
+			if isDayCensorship(*drr, args.Day) || isControlDomain(drr.Domain) {
+				drr.CensoredQuery = true
+			} else {
+				drr.CensoredQuery = false
+			}
+		case 2:
+			if len(drr.Day2Results) > 0 {
+				if isDayCensorship(*drr, args.Day) || isControlDomain(drr.Domain) {
+					drr.CensoredQuery = true
+				} else {
+					drr.CensoredQuery = false
+				}
+			}
+		case 3:
+			if len(drr.Day3Results) > 0 {
+				if isDayCensorship(*drr, args.Day) || isControlDomain(drr.Domain) {
+					drr.CensoredQuery = true
+				} else {
+					drr.CensoredQuery = false
+				}
+			}
 		}
+
 		drrChan <- drr
 	}
 }
@@ -533,6 +572,40 @@ func createAddressResults(
 	infoLogger.Printf("Read %d lines from %s\n", numLines, path)
 }
 
+func indexDRR(
+	drrIndex map[string]uint,
+	baseFolder, dateString string,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+	infoLogger.Println("Reading existing domain resolver results")
+	existingDRRFileName := filepath.Join(
+		baseFolder,
+		fmt.Sprintf("%s-domain-resolver-results.json", dateString),
+	)
+	existingDRRFile, err := os.Open(existingDRRFileName)
+	if err != nil {
+		errorLogger.Fatalf("error opening %s: %v\n", existingDRRFileName, err)
+	}
+	defer existingDRRFile.Close()
+	var totalBytes uint
+	reader := bufio.NewReader(existingDRRFile)
+	for {
+		data, err := reader.ReadBytes('\n')
+		if err != nil && err != io.EOF {
+			errorLogger.Fatalf("Got an error reading bytes: %+v\n", err)
+		}
+		var drr v4vsv6.DomainResolverResult
+		json.Unmarshal(data, &drr)
+		key := fmt.Sprintf("%s-%s-%s", drr.Domain, drr.ResolverIP, drr.RequestedAddressType)
+		drrIndex[key] = totalBytes
+		totalBytes += uint(len(data))
+		if err != nil {
+			break
+		}
+	}
+}
+
 func main() {
 	infoLogger = log.New(
 		os.Stderr,
@@ -563,6 +636,18 @@ func main() {
 	var updateARWG sync.WaitGroup
 	var drrWriteWG sync.WaitGroup
 	var createAndWriteDomainResolverResultWG sync.WaitGroup
+	var indexDRRWG sync.WaitGroup
+	domainResolverResultIndex := make(map[string]uint)
+
+	if args.Day > 1 {
+		indexDRRWG.Add(1)
+		go indexDRR(
+			domainResolverResultIndex,
+			args.DataFolder,
+			args.DateString,
+			&indexDRRWG,
+		)
+	}
 
 	updateARWG.Add(1)
 	go updateAddressResults(
@@ -679,9 +764,14 @@ func main() {
 	infoLogger.Println("Waiting resolver country codes to be filled in")
 	resolverCountryCodeMapWG.Wait()
 
+	if args.Day > 1 {
+		infoLogger.Println("Waiting for existing domain-resolver-results to be indexed")
+	}
+	indexDRRWG.Wait()
+
 	outputFile := filepath.Join(
 		args.DataFolder,
-		fmt.Sprintf("%s-domain-resolver-results.json", args.DateString),
+		fmt.Sprintf("%s-domain-resolver-results_day%d.json", args.DateString, args.Day),
 	)
 	infoLogger.Printf("Writing DomainResolverResults to %s\n", outputFile)
 	drrWriteWG.Add(1)
@@ -695,6 +785,7 @@ func main() {
 			args.Day,
 		),
 	)
+	// before now we need to have indexed domain-ip-type result lines for reference.
 	infoLogger.Printf("Reading v4 A DNS lookups from %s\n", v4ARawFile)
 	createAndWriteDomainResolverResultWG.Add(1)
 	go createThenWriteDomainResolverResults(
@@ -703,7 +794,8 @@ func main() {
 		v4ARawFile,
 		"A",
 		domainResolverResultChan,
-		args.Day,
+		args,
+		domainResolverResultIndex,
 		&createAndWriteDomainResolverResultWG,
 	)
 
@@ -716,15 +808,17 @@ func main() {
 		),
 	)
 	infoLogger.Printf("Reading v4 AAAA DNS lookups from %s\n", v4AAAARawFile)
-	// createAndWriteDomainResolverResultWG.Add(1)
-	// go createThenWriteDomainResolverResults(
-	// 	domainIPToAddressResultsMap,
-	// 	resolverCountryCodeMap,
-	// 	v4AAAARawFile,
-	// 	"AAAA",
-	// 	domainResolverResultChan,
-	// 	&createAndWriteDomainResolverResultWG,
-	// )
+	createAndWriteDomainResolverResultWG.Add(1)
+	go createThenWriteDomainResolverResults(
+		domainIPToAddressResultsMap,
+		resolverCountryCodeMap,
+		v4AAAARawFile,
+		"AAAA",
+		domainResolverResultChan,
+		args,
+		domainResolverResultIndex,
+		&createAndWriteDomainResolverResultWG,
+	)
 
 	v6ARawFile := filepath.Join(
 		args.DataFolder,
@@ -735,15 +829,17 @@ func main() {
 		),
 	)
 	infoLogger.Printf("Reading v6 A DNS lookups from %s\n", v6ARawFile)
-	// createAndWriteDomainResolverResultWG.Add(1)
-	// go createThenWriteDomainResolverResults(
-	// 	domainIPToAddressResultsMap,
-	// 	resolverCountryCodeMap,
-	// 	v6ARawFile,
-	// 	"A",
-	// 	domainResolverResultChan,
-	// 	&createAndWriteDomainResolverResultWG,
-	// )
+	createAndWriteDomainResolverResultWG.Add(1)
+	go createThenWriteDomainResolverResults(
+		domainIPToAddressResultsMap,
+		resolverCountryCodeMap,
+		v6ARawFile,
+		"A",
+		domainResolverResultChan,
+		args,
+		domainResolverResultIndex,
+		&createAndWriteDomainResolverResultWG,
+	)
 
 	v6AAAARawFile := filepath.Join(
 		args.DataFolder,
@@ -755,20 +851,31 @@ func main() {
 	)
 	infoLogger.Printf("Reading v6 AAAA DNS lookups from %s\n", v6AAAARawFile)
 
-	// createAndWriteDomainResolverResultWG.Add(1)
-	// go createThenWriteDomainResolverResults(
-	// 	domainIPToAddressResultsMap,
-	// 	resolverCountryCodeMap,
-	// 	v6AAAARawFile,
-	// 	"AAAA",
-	// 	domainResolverResultChan,
-	// 	&createAndWriteDomainResolverResultWG,
-	// )
+	createAndWriteDomainResolverResultWG.Add(1)
+	go createThenWriteDomainResolverResults(
+		domainIPToAddressResultsMap,
+		resolverCountryCodeMap,
+		v6AAAARawFile,
+		"AAAA",
+		domainResolverResultChan,
+		args,
+		domainResolverResultIndex,
+		&createAndWriteDomainResolverResultWG,
+	)
 
-	// infoLogger.Println(
-	// 	"Waiting for DomainResolverResults to be created and written",
-	// )
+	infoLogger.Println(
+		"Waiting for DomainResolverResults to be created and written",
+	)
 	createAndWriteDomainResolverResultWG.Wait()
 	close(domainResolverResultChan)
 	drrWriteWG.Wait()
+	masterOutputFile := filepath.Join(
+		args.DataFolder,
+		fmt.Sprintf("%s-domain-resolver-results.json", args.DateString),
+	)
+	infoLogger.Printf("Moving %s to %s", outputFile, masterOutputFile)
+	err := os.Rename(outputFile, masterOutputFile)
+	if err != nil {
+		errorLogger.Fatalf("Error moving file: %+v\n", err)
+	}
 }
