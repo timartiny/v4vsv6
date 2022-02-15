@@ -219,7 +219,7 @@ func isDayCensorship(drr v4vsv6.DomainResolverResult, day int) bool {
 	case 1:
 		results = drr.Day1Results
 	case 2:
-		results = drr.Day1Results
+		results = drr.Day2Results
 	case 3:
 		results = drr.Day3Results
 	default:
