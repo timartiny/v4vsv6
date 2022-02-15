@@ -7,6 +7,9 @@
 			"path": "cmd/parseScans"
 		},
 		{
+			"path": "cmd/mergeResults"
+		},
+		{
 			"path": "."
 		}
 	],
