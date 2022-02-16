@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,6 +25,8 @@ type MergeResultsFlags struct {
 	Verbose    bool   `arg:"--verbose,-v" help:"Whether to add extra printing for debugging" json:"verbose"`
 }
 
+type DRRIndex map[string]*v4vsv6.DomainResolverResult
+
 func setupArgs() MergeResultsFlags {
 	var ret MergeResultsFlags
 	arg.MustParse(&ret)
@@ -34,10 +35,9 @@ func setupArgs() MergeResultsFlags {
 }
 
 //indexDRRDay will read the given day's domain-resolver-results JSON file and
-//get the number of bytes into the file each domain-resolver ip-requested record
-//result is for future lookups
+//read into memory the day2 or day3 drrs
 func indexDRRDay(
-	drrIndex map[string]uint,
+	drrIndex DRRIndex,
 	args MergeResultsFlags,
 	day int,
 	wg *sync.WaitGroup,
@@ -53,47 +53,24 @@ func indexDRRDay(
 		errorLogger.Printf("Error opening file: %s, %v\n", drrFileName, err)
 	}
 	defer drrFile.Close()
-	drrReader := bufio.NewReader(drrFile)
-	var totalBytes uint
+	scanner := bufio.NewScanner(drrFile)
 
-	for {
-		drrBytes, readErr := drrReader.ReadBytes('\n')
-		if readErr != nil && readErr != io.EOF {
-			errorLogger.Fatalf(
-				"Got an unexpected error reading bytes reading from %s: %v\n",
-				drrFileName,
-				readErr,
-			)
-		}
-		// possible that the last line has \n, so this last read is empty
-		if len(drrBytes) == 0 {
-			break
-		}
-		var drr v4vsv6.DomainResolverResult
-		err = json.Unmarshal(drrBytes, &drr)
+	for scanner.Scan() {
+		line := scanner.Text()
+		drr := new(v4vsv6.DomainResolverResult)
+		err = json.Unmarshal([]byte(line), drr)
 		if err != nil {
 			errorLogger.Printf(
 				"Error unmarshaling drr bytes from %s: %v\n", drrFileName, err,
 			)
-			errorLogger.Printf(
-				"Total bytes read: %d, current length of bytes: %d\n",
-				totalBytes,
-				len(drrBytes),
-			)
 			errorLogger.Fatalf(
-				"Bytes that failed to unmarshal (as string): %s\n",
-				string(drrBytes),
+				"Bytes that failed to unmarshal (as string): %s\n", line,
 			)
 		}
 		key := fmt.Sprintf(
 			"%s-%s-%s", drr.Domain, drr.ResolverIP, drr.RequestedAddressType,
 		)
-		drrIndex[key] = totalBytes
-		totalBytes += uint(len(drrBytes))
-
-		if readErr == io.EOF {
-			break
-		}
+		drrIndex[key] = drr
 	}
 	infoLogger.Printf("Done indexing day %d\n", day)
 }
@@ -102,7 +79,7 @@ func indexDRRDay(
 // corresponding day2 and day3 results (if applicable) then write the combined
 // results to the master file
 func consolidateResults(
-	drrDay2Index, drrDay3Index map[string]uint,
+	drrDay2Index, drrDay3Index DRRIndex,
 	args MergeResultsFlags,
 ) {
 	day1FileName := filepath.Join(
@@ -114,24 +91,6 @@ func consolidateResults(
 		errorLogger.Printf("Error opening file: %s, %v\n", day1FileName, err)
 	}
 	defer day1File.Close()
-	day2FileName := filepath.Join(
-		args.DataFolder,
-		fmt.Sprintf("%s-domain-resolver-results_day2.json", args.DateString),
-	)
-	day2File, err := os.Open(day2FileName)
-	if err != nil {
-		errorLogger.Printf("Error opening file: %s, %v\n", day2FileName, err)
-	}
-	defer day2File.Close()
-	day3FileName := filepath.Join(
-		args.DataFolder,
-		fmt.Sprintf("%s-domain-resolver-results_day3.json", args.DateString),
-	)
-	day3File, err := os.Open(day3FileName)
-	if err != nil {
-		errorLogger.Printf("Error opening file: %s, %v\n", day3FileName, err)
-	}
-	defer day3File.Close()
 
 	masterDRRFileName := filepath.Join(
 		args.DataFolder,
@@ -148,8 +107,6 @@ func consolidateResults(
 	defer masterDRRFile.Close()
 
 	day1Scanner := bufio.NewScanner(day1File)
-	day2Reader := bufio.NewReader(day2File)
-	day3Reader := bufio.NewReader(day3File)
 
 	infoLogger.Printf("Reading through %s\n", day1FileName)
 	infoLogger.Printf("And writing to %s\n", masterDRRFileName)
@@ -159,10 +116,14 @@ func consolidateResults(
 		line := day1Scanner.Text()
 		numLines++
 		if args.Verbose && time.Now().After(nextVerboseTime) {
-			infoLogger.Printf("Read in %d lines of %s\n", numLines, day1FileName)
+			infoLogger.Printf(
+				"Read in %d (and counting) lines of %s\n",
+				numLines,
+				day1FileName,
+			)
 			nextVerboseTime = time.Now().Add(30 * time.Second)
 		}
-		var day1DRR, day2DRR, day3DRR v4vsv6.DomainResolverResult
+		var day1DRR v4vsv6.DomainResolverResult
 		err := json.Unmarshal([]byte(line), &day1DRR)
 		if err != nil {
 			errorLogger.Printf(
@@ -176,24 +137,8 @@ func consolidateResults(
 			day1DRR.ResolverIP,
 			day1DRR.RequestedAddressType,
 		)
-		if day2ByteCount, day2OK := drrDay2Index[key]; day2OK {
-			// day2 data is present as well, so we add it to the day1 drr
-			day2Reader.Discard(int(day2ByteCount))
-			day2Bytes, err := day2Reader.ReadBytes('\n')
-			if err != nil {
-				errorLogger.Fatalf(
-					"Error reading bytes after Discard: %v\n", err,
-				)
-			}
-			err = json.Unmarshal(day2Bytes, &day2DRR)
-			if err != nil {
-				errorLogger.Printf(
-					"Error unmarshaling following bytes (as string): %s\n",
-					string(day2Bytes),
-				)
-				errorLogger.Fatalf("Unmarshal Error: %v\n", err)
-			}
-
+		if day2DRR, day2OK := drrDay2Index[key]; day2OK {
+			// day2 data is present, so we add it to the day1 drr
 			if day1DRR.Domain != day2DRR.Domain ||
 				day1DRR.ResolverIP != day2DRR.ResolverIP ||
 				day1DRR.RequestedAddressType != day2DRR.RequestedAddressType {
@@ -206,8 +151,6 @@ func consolidateResults(
 
 			// actually merge data finally
 			day1DRR.Day2Results = day2DRR.Day2Results
-			// since day2 exists day 1 must have censored, so update the
-			// requests censorship to be day 3s
 
 			// this can be uncommented after feb-07 run
 
@@ -219,10 +162,10 @@ func consolidateResults(
 			// 	// this can be changed to Fatalf on runs after feb-07
 			// 	errorLogger.Printf("day2drr: %+v\n", day2DRR)
 			// }
-			day1DRR.CensoredQuery = day2DRR.CensoredQuery
 
-			day2File.Seek(0, io.SeekStart)
-			day2Reader.Reset(day2File)
+			// since day2 exists day 1 must have censored, so update the
+			// requests censorship to be day 2s
+			day1DRR.CensoredQuery = day2DRR.CensoredQuery
 		} else {
 			// here we didn't get anything in day2 so we confirm we get nothing
 			// in day 3
@@ -233,24 +176,8 @@ func consolidateResults(
 			}
 		}
 
-		if day3ByteCount, day3OK := drrDay3Index[key]; day3OK {
+		if day3DRR, day3OK := drrDay3Index[key]; day3OK {
 			// day3 data is present as well, so we add it to the day1 drr
-			day3Reader.Discard(int(day3ByteCount))
-			day3Bytes, err := day3Reader.ReadBytes('\n')
-			if err != nil {
-				errorLogger.Fatalf(
-					"Error reading bytes after Discard: %v\n", err,
-				)
-			}
-			err = json.Unmarshal(day3Bytes, &day3DRR)
-			if err != nil {
-				errorLogger.Printf(
-					"Error unmarshaling following bytes (as string): %s\n",
-					string(day3Bytes),
-				)
-				errorLogger.Fatalf("Unmarshal Error: %v\n", err)
-			}
-
 			if day1DRR.Domain != day3DRR.Domain ||
 				day1DRR.ResolverIP != day3DRR.ResolverIP ||
 				day1DRR.RequestedAddressType != day3DRR.RequestedAddressType {
@@ -263,8 +190,6 @@ func consolidateResults(
 
 			// actually merge data finally
 			day1DRR.Day3Results = day3DRR.Day3Results
-			// since day3 exists day 1 and day2 must have censored, so update
-			// the requests censorship to be day 3s
 
 			// this can be uncommented on runs after feb-07
 
@@ -274,10 +199,10 @@ func consolidateResults(
 			// 		day1DRR,
 			// 	)
 			// }
-			day1DRR.CensoredQuery = day3DRR.CensoredQuery
 
-			day3File.Seek(0, io.SeekStart)
-			day3Reader.Reset(day3File)
+			// since day3 exists day 1 and day2 must have censored, so update
+			// the requests censorship to be day 3s
+			day1DRR.CensoredQuery = day3DRR.CensoredQuery
 		}
 
 		// now we have all the data together, so write it!
@@ -313,8 +238,8 @@ func main() {
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile,
 	)
-	drrDay2Index := make(map[string]uint)
-	drrDay3Index := make(map[string]uint)
+	drrDay2Index := make(DRRIndex)
+	drrDay3Index := make(DRRIndex)
 	var indexWG sync.WaitGroup
 	args := setupArgs()
 
