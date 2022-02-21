@@ -79,7 +79,7 @@ func getQuestion1SimpleResults(
 		// don't need to check censorship of control domains, so check that
 		// first
 		if !isControlDomain(drr) {
-			if isCensorship(drr) {
+			if drr.CensoredQuery {
 				if drr.RequestedAddressType == "A" {
 					sr.ACensoredDomains[drr.Domain] = struct{}{}
 				} else if drr.RequestedAddressType == "AAAA" {

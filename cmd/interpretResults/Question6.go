@@ -26,17 +26,27 @@ type Question6Output struct {
 type CountryCodeDomainToQuestion6Output map[string]map[string]*Question6Output
 
 type ResolverStats struct {
-	ID              string              `json:"id"`
-	ResolverIP      string              `json:"resolver_ip"`
-	ResolverCountry string              `json:"resolver_country"`
-	ControlCount    int                 `json:"control_count"`
-	BlockedDomains  map[string]struct{} `json:"blocked_domains"`
+	ID                 string              `json:"id"`
+	ResolverIP         string              `json:"resolver_ip"`
+	ResolverCountry    string              `json:"resolver_country"`
+	ControlCount       int                 `json:"control_count"`
+	BlockedDomains     map[string]struct{} `json:"-"`
+	BlockedDomainsList []string            `json:"blocked_domains"`
+}
+
+type PairStats struct {
+	V4IP            string `json:"v4_ip"`
+	V6IP            string `json:"v6_ip"`
+	V4ControlCount  int    `json:"v4_control_count"`
+	V6ControlCount  int    `json:"v6_control_count"`
+	MatchingVersion bool   `json:"matching_version_bind"`
 }
 
 // getResolverPairs will read the file and split the lines to get maps between
 // paired v4 and v6 resolvers, for printing formatted data later
 func getResolverPairs(
 	v4ToV6, v6ToV4 map[string]string,
+	pairsMap map[string]PairStats,
 	path string,
 ) {
 	resolverPairFile, err := os.Open(path)
@@ -58,6 +68,8 @@ func getResolverPairs(
 		}
 		v4ToV6[v4IP.String()] = v6IP.String()
 		v6ToV4[v6IP.String()] = v4IP.String()
+		pair := PairStats{V4IP: v4IP.String(), V6IP: v6IP.String()}
+		pairsMap[v4IP.String()] = pair
 	}
 }
 
@@ -173,7 +185,11 @@ func writeQuestion6Output(
 // of 'full' and 'passesControl' and write a file in each called
 // resolver-blocks.json. This function will also create a map to keep track of
 // how many resolvers censored domains in a country, then write it to a file.
-func writeResolverStats(dataFolder string, localResolvers map[string]ResolverStats) {
+func writeResolverStats(
+	dataFolder string,
+	localResolvers map[string]ResolverStats,
+	pairMap map[string]PairStats,
+) {
 	parentFolderPath := filepath.Join(dataFolder, "Question6")
 	err := os.MkdirAll(parentFolderPath, os.ModePerm)
 	if err != nil {
@@ -195,6 +211,13 @@ func writeResolverStats(dataFolder string, localResolvers map[string]ResolverSta
 		for id := 0; id < len(localResolvers)/2; id++ {
 			strIDA := fmt.Sprintf("%d-A", id+1)
 			strIDB := fmt.Sprintf("%d-B", id+1)
+
+			// quickly update our pairs with control counts
+			pair := pairMap[localResolvers[strIDA].ResolverIP]
+			pair.V4ControlCount = localResolvers[strIDA].ControlCount
+			pair.V6ControlCount = localResolvers[strIDB].ControlCount
+			pairMap[localResolvers[strIDA].ResolverIP] = pair
+
 			if localResolvers[strIDA].ResolverCountry != localResolvers[strIDB].ResolverCountry {
 				// this comes from an issue where a single v4 resolvers get
 				// associated with multiple v6 addresses, it will be fixed in
@@ -215,9 +238,12 @@ func writeResolverStats(dataFolder string, localResolvers map[string]ResolverSta
 				dtq6o := make(map[string]*Question6Output)
 				ccdtq6o[localResolvers[strIDA].ResolverCountry] = dtq6o
 			}
-			dtq6o := ccdtq6o[localResolvers[strIDA].ResolverCountry]
+			idAResolver := localResolvers[strIDA]
+			dtq6o := ccdtq6o[idAResolver.ResolverCountry]
 
-			for domain := range localResolvers[strIDA].BlockedDomains {
+			var tmpList []string
+			for domain := range idAResolver.BlockedDomains {
+				tmpList = append(tmpList, domain)
 				if dtq6o[domain] == nil {
 					t := new(Question6Output)
 					t.Domain = domain
@@ -230,10 +256,15 @@ func writeResolverStats(dataFolder string, localResolvers map[string]ResolverSta
 				dtq6o[domain] = q6o
 				ccdtq6o[localResolvers[strIDA].ResolverCountry] = dtq6o
 			}
+			idAResolver.BlockedDomainsList = tmpList
+			localResolvers[strIDA] = idAResolver
 
-			dtq6o = ccdtq6o[localResolvers[strIDB].ResolverCountry]
+			idBResolver := localResolvers[strIDB]
+			dtq6o = ccdtq6o[idBResolver.ResolverCountry]
 
-			for domain := range localResolvers[strIDB].BlockedDomains {
+			tmpList = []string{}
+			for domain := range idBResolver.BlockedDomains {
+				tmpList = append(tmpList, domain)
 				if dtq6o[domain] == nil {
 					t := new(Question6Output)
 					t.Domain = domain
@@ -246,6 +277,8 @@ func writeResolverStats(dataFolder string, localResolvers map[string]ResolverSta
 				dtq6o[domain] = q6o
 				ccdtq6o[localResolvers[strIDB].ResolverCountry] = dtq6o
 			}
+			idBResolver.BlockedDomainsList = tmpList
+			localResolvers[strIDB] = idBResolver
 
 			bs, err := json.Marshal(localResolvers[strIDA])
 			if err != nil {
@@ -264,8 +297,77 @@ func writeResolverStats(dataFolder string, localResolvers map[string]ResolverSta
 	}
 }
 
+func writePairStats(args InterpretResultsFlags, pairMap map[string]PairStats) {
+	versionFileName := filepath.Join(args.DataFolder,
+		fmt.Sprintf(
+			"%s-single-resolvers-country-matching-version-bind",
+			args.DateString,
+		),
+	)
+	infoLogger.Printf("Reading in version.bind matches from: %s")
+	versionFile, err := os.Open(versionFileName)
+	if err != nil {
+		errorLogger.Fatalf(
+			"Error opening file containing Version.Bind info: %s, %v\n",
+			versionFileName,
+			err,
+		)
+	}
+	defer versionFile.Close()
+	scanner := bufio.NewScanner(versionFile)
+	for scanner.Scan() {
+		line := scanner.Text()
+		v4Address := strings.Split(line, " ")[2]
+		pair := pairMap[v4Address]
+		pair.MatchingVersion = true
+		pairMap[v4Address] = pair
+	}
+	// now write it!
+	parentFolderPath := filepath.Join(args.DataFolder, "Question6")
+	err = os.MkdirAll(parentFolderPath, os.ModePerm)
+	if err != nil {
+		errorLogger.Fatalf("Error creating directory: %v\n", err)
+	}
+	for _, dataType := range []string{"full", "passesControl"} {
+		fullFolderPath := filepath.Join(parentFolderPath, dataType)
+		err = os.MkdirAll(fullFolderPath, os.ModePerm)
+		if err != nil {
+			errorLogger.Fatalf("Error creating directory: %v\n", err)
+		}
+		pairFile, err := os.Create(filepath.Join(fullFolderPath, "pairs.json"))
+		if err != nil {
+			errorLogger.Fatalf("Error creating pairs file: %v\n", err)
+		}
+		defer pairFile.Close()
+		for _, pair := range pairMap {
+			if dataType == "passesControl" {
+				if pair.V4ControlCount != len(controlDomains)*2 {
+					continue
+				}
+				if pair.V6ControlCount != len(controlDomains)*2 {
+					continue
+				}
+			}
+
+			bs, err := json.Marshal(&pair)
+			if err != nil {
+				errorLogger.Printf("Error marshaling pair data: %+v\n", pair)
+				errorLogger.Fatalln(err)
+			}
+			_, err = pairFile.Write(bs)
+			if err != nil {
+				errorLogger.Printf("Error writing bytes to file: %s\n", string(bs))
+				errorLogger.Fatalln(err)
+
+			}
+			pairFile.WriteString("\n")
+		}
+	}
+}
+
 func Question6(args InterpretResultsFlags, v4ToV6, v6ToV4 map[string]string) {
-	getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile)
+	resolverPairsMap := make(map[string]PairStats)
+	getResolverPairs(v4ToV6, v6ToV4, resolverPairsMap, args.ResolverFile)
 
 	resolvers = make(map[string]ResolverStats)
 	localResolvers := make(map[string]ResolverStats) // this is only used for Question 6
@@ -275,5 +377,6 @@ func Question6(args InterpretResultsFlags, v4ToV6, v6ToV4 map[string]string) {
 	)
 	resolverStats(args.ResultsFile, v4ToV6, v6ToV4, localResolvers)
 	infoLogger.Println("Writing resolver blocks to file and grouping data by country code.")
-	writeResolverStats(args.DataFolder, localResolvers)
+	writeResolverStats(args.DataFolder, localResolvers, resolverPairsMap)
+	writePairStats(args, resolverPairsMap)
 }

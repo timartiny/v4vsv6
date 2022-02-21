@@ -19,6 +19,7 @@ var (
 )
 
 type InterpretResultsFlags struct {
+	DateString         string  `arg:"--date-string,required" help:"(Required) String that is appended/prepended to files with the date"`
 	DataFolder         string  `arg:"--data-folder,required" help:"(Required) Path to the folder to store answer to questions" json:"data_folder"`
 	ResultsFile        string  `arg:"--results-file,required" help:"(Required) Path to the file containing the DomainResolverResults" json:"results_file"`
 	Workers            int     `arg:"-w,--workers" help:"Number of workers to work simultaneously" default:"5" json:"wokers"`
@@ -101,10 +102,10 @@ func main() {
 
 	v4ToV6 := make(map[string]string)
 	v6ToV4 := make(map[string]string)
-	getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile)
+	// getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile)
 	// No question specified so answer all of them
 	if len(args.Questions) == 0 {
-		args.Questions = []int{6, 1, 2, 3, 4, 5}
+		args.Questions = []int{1, 2, 3, 4, 5, 6}
 	}
 
 	// Answer questions in order
