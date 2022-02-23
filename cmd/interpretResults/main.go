@@ -64,12 +64,6 @@ func readDomainResolverResults(
 	}
 }
 
-// isCensorship is a now unneeded function, it just reads a value in the
-// DomainResolverResult
-func isCensorship(drr v4vsv6.DomainResolverResult) bool {
-	return drr.CensoredQuery
-}
-
 // isControlDomain will check if a provided drr is for a control domain.
 func isControlDomain(drr v4vsv6.DomainResolverResult) bool {
 	if _, ok := controlDomains[drr.Domain]; ok {

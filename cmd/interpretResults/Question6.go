@@ -145,7 +145,7 @@ func resolverStats(
 		rs := localResolvers[strID]
 		if isControlDomain(drr) && drr.CorrectControlResolution {
 			rs.ControlCount++
-		} else if isCensorship(drr) {
+		} else if drr.CensoredQuery {
 			rs.BlockedDomains[drr.Domain+"-"+drr.RequestedAddressType] = struct{}{}
 		}
 		localResolvers[strID] = rs

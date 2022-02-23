@@ -153,7 +153,7 @@ func determineCountryCensorship(
 		var sr Question3SimpleResult
 		sr.Domain = drr.Domain
 		sr.CountryCode = drr.ResolverCountry
-		sr.Censored = isCensorship(drr)
+		sr.Censored = drr.CensoredQuery
 		sr.ControlCount = resolvers[drr.ResolverIP].ControlCount
 		srChan <- sr
 	}
