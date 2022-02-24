@@ -57,7 +57,7 @@ func getQuestion4SimpleResults(
 		sr.CensoringV4Resolvers = make(map[string]struct{})
 		sr.CensoringV6Resolvers = make(map[string]struct{})
 		if !isControlDomain(drr) {
-			if isCensorship(drr) {
+			if drr.CensoredQuery {
 				tmpIP := net.ParseIP(drr.ResolverIP)
 				if tmpIP == nil {
 					errorLogger.Printf("Invalid IP provided: %v\n", drr.ResolverIP)
@@ -298,8 +298,7 @@ func Question4(
 
 	// only check v4ToV6 because we only need that one
 	if len(v4ToV6) == 0 {
-		// This only happens if Question 1 isn't answered on this run
-		go getResolverPairs(v4ToV6, v6ToV4, args.ResolverFile)
+		errorLogger.Fatalln("Somehow v4Tov6 is empty! Question 6 wasn't run?")
 	}
 
 	infoLogger.Println("Reading data for Question 4")
