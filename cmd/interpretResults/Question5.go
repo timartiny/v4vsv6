@@ -51,7 +51,10 @@ func getQuestion5SimpleResults(
 		sr.Domain = drr.Domain
 		sr.CountryCode = drr.ResolverCountry
 		sr.ControlCount = resolvers[drr.ResolverIP].ControlCount
-		for _, result := range drr.Results {
+		allResults := drr.Day1Results
+		allResults = append(allResults, drr.Day2Results...)
+		allResults = append(allResults, drr.Day3Results...)
+		for _, result := range allResults {
 			if result == nil {
 				continue
 			}
