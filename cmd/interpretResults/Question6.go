@@ -39,7 +39,7 @@ type PairStats struct {
 	V6IP            string `json:"v6_ip"`
 	V4ControlCount  int    `json:"v4_control_count"`
 	V6ControlCount  int    `json:"v6_control_count"`
-	MatchingVersion bool   `json:"matching_version_bind"`
+	MatchingVersion bool   `json:"matching_bind_version"`
 }
 
 // getResolverPairs will read the file and split the lines to get maps between
@@ -304,7 +304,7 @@ func writePairStats(args InterpretResultsFlags, pairMap map[string]PairStats) {
 			args.DateString,
 		),
 	)
-	infoLogger.Printf("Reading in version.bind matches from: %s")
+	infoLogger.Printf("Reading in version.bind matches from: %s", versionFileName)
 	versionFile, err := os.Open(versionFileName)
 	if err != nil {
 		errorLogger.Fatalf(
