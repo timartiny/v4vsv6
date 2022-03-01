@@ -6,13 +6,14 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/miekg/dns"
 	"log"
 	"net"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/miekg/dns"
 )
 
 // If we want to add a response, do it here
@@ -134,12 +135,12 @@ func dnsWorker(timeout time.Duration, verbose bool, iplines <-chan string, wg *s
 			v4data := v4res.resp[2:]
 			v6data := v6res.resp[2:]
 
-			if bytes.Compare(v4data, v6data) == 0 {
+			if bytes.Equal(v4data, v6data) {
 				fmt.Printf("RESULT %s - same %s\n", line, hex.EncodeToString(v4data))
 			} else {
-				log.Printf("RESULT %s - diff:\n", line)
-				log.Printf("%v: %s\n", v4, hex.EncodeToString(v4data))
-				log.Printf("%v: %s\n", v6, hex.EncodeToString(v6data))
+				fmt.Printf("RESULT %s - diff:\n", line)
+				fmt.Printf("%v: %s\n", v4, hex.EncodeToString(v4data))
+				fmt.Printf("%v: %s\n", v6, hex.EncodeToString(v6data))
 			}
 		}
 
