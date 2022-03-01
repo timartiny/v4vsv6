@@ -323,10 +323,13 @@ func writePairStats(args InterpretResultsFlags, pairMap map[string]PairStats) {
 	scanner := bufio.NewScanner(versionFile)
 	for scanner.Scan() {
 		line := scanner.Text()
-		v4Address := strings.Split(line, " ")[2]
-		pair := pairMap[v4Address]
-		pair.MatchingVersion = true
-		pairMap[v4Address] = pair
+		splitLine := strings.Split(line, " ")
+		if splitLine[4] == "same" {
+			v4Address := strings.Split(line, " ")[2]
+			pair := pairMap[v4Address]
+			pair.MatchingVersion = true
+			pairMap[v4Address] = pair
+		}
 	}
 	// now write it!
 	parentFolderPath := filepath.Join(args.DataFolder, "Question6")
