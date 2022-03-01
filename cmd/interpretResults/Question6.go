@@ -37,6 +37,7 @@ type ResolverStats struct {
 type PairStats struct {
 	V4IP            string `json:"v4_ip"`
 	V6IP            string `json:"v6_ip"`
+	CountryCode     string `json:"country_code"`
 	V4ControlCount  int    `json:"v4_control_count"`
 	V6ControlCount  int    `json:"v6_control_count"`
 	MatchingVersion bool   `json:"matching_bind_version"`
@@ -59,16 +60,21 @@ func getResolverPairs(
 		line := scanner.Text()
 		splitLine := strings.Split(line, " ")
 		var v4IP, v6IP net.IP
+		var cc string
 		v6IP = net.ParseIP(strings.TrimSpace(splitLine[0]))
 		if splitLine[1] == " " {
 			// this means there are double spaces between everything
 			v4IP = net.ParseIP(strings.TrimSpace(splitLine[2]))
+			cc = strings.TrimSpace(splitLine[4])
 		} else {
 			v4IP = net.ParseIP(strings.TrimSpace(splitLine[1]))
+			cc = strings.TrimSpace(splitLine[2])
 		}
 		v4ToV6[v4IP.String()] = v6IP.String()
 		v6ToV4[v6IP.String()] = v4IP.String()
-		pair := PairStats{V4IP: v4IP.String(), V6IP: v6IP.String()}
+		pair := PairStats{
+			V4IP: v4IP.String(), V6IP: v6IP.String(), CountryCode: cc,
+		}
 		pairsMap[v4IP.String()] = pair
 	}
 }
