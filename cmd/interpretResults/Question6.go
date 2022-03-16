@@ -324,8 +324,8 @@ func writePairStats(args InterpretResultsFlags, pairMap map[string]PairStats) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		splitLine := strings.Split(line, " ")
-		if splitLine[4] == "same" {
-			v4Address := strings.Split(line, " ")[2]
+		if len(splitLine) >= 6 && splitLine[5] == "same" {
+			v4Address := splitLine[2]
 			pair := pairMap[v4Address]
 			pair.MatchingVersion = true
 			pairMap[v4Address] = pair
