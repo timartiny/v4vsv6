@@ -13,5 +13,14 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"cSpell.words": [
+			"alexa",
+			"tranco",
+			"ZDNS",
+			"zflags",
+			"zgrab",
+			"zmap"
+		]
+	}
 }
