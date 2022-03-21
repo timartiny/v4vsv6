@@ -60,6 +60,25 @@
     \end{table}
 }
 
+
+\newcommand{\IranRecursionTable}{
+\begin{table}[h!]
+    \begin{center}
+        \begin{tabular}{l|c|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+                  & \textbf{V4} & \textbf{V6} & \textbf{6to4}         \\
+            \hline
+            RD    & 10.10.34.35 & d0::11      & 10.10.34.35           \\
+            No RD & 10.10.34.35 & d0::11      & \textbf{no injection} \\
+        \end{tabular}
+    \end{center}
+    \caption{The Iranian censor provides distinctive injections to queries sent
+        over both v4 and v6, but fails to inject responses for queries to
+        resolvers using 6to4 addresses when the query excludes the recursion
+        desired flag.}
+    \label{tab:iran-recursion-table}
+\end{table}
+}
+
 \newcommand{\CountriesCorporate}{
     \begin{table*}[ht]
         \centering
