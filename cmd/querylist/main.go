@@ -66,12 +66,19 @@ type DomainResults struct {
 
 type DomainResultsMap map[string]*DomainResults
 
-type DomainNSMap map[string][]string
+type DomainNSStatus struct {
+	V4NS bool
+	V6NS bool
+}
+
+type DomainNSStatusMap map[string]DomainNSStatus
 
 type QuerylistFlags struct {
 	V4DNS               string `long:"v4_dns" description:"Path to the ZDNS results for v4 lookups" required:"true" json:"v4_dns"`
 	V6DNS               string `long:"v6_dns" description:"Path to the ZDNS results for v6 lookups" required:"true" json:"v6_dns"`
 	NS                  string `long:"ns" description:"Path to the ZDNS results for NS lookups" required:"true" json:"ns"`
+	NSA                 string `long:"ns_a" description:"Path to the ZDNS results for A lookups of NS domains" required:"true" json:"ns_a"`
+	NSAAAA              string `long:"ns_aaaa" description:"Path to the ZDNS results for AAAA lookups of NS domains" required:"true" json:"ns_aaaa"`
 	V4TLS               string `long:"v4_tls" description:"Path to the ZGrab results for v4 TLS banner grabs" required:"true" json:"v4_tls"`
 	V4DupTLS            string `long:"v4_dup_tls" description:"Path to the ZGrab results for v4 TLS banner grabs, duplication for timeouts" json:"v4_dup_tls"`
 	V6TLS               string `long:"v6_tls" description:"Path to the ZGrab results for v6 TLS banner grabs" required:"true" json:"v6_tls"`
@@ -219,15 +226,20 @@ func addDNSResults(drm DomainResultsMap, path string) {
 	}
 }
 
-// domainNSMapper will read the results of the ZDNS scan for Name Servers for
-// the domains and fill in a mapping of domains  to the name servers
-func domainNSMapper(dnm DomainNSMap, path string) {
-	file, err := os.Open(path)
+// domainNSMapper will read through the NSAPath and NSAAAAPath to determine
+// which NS's have valid v4 and v6 addresses then it will use the NSPath file to
+// link domains to NSes and determine which domains have NSes with v4 and v6
+// addresses
+func domainNSMapper(dnm DomainNSStatusMap, NSPath, NSAPath, NSAAAAPath string) {
+	infoLogger.Printf("Looking at A records for NSs from %s\n", NSAPath)
+	file, err := os.Open(NSAPath)
 	if err != nil {
-		errorLogger.Printf("Error opening %s\n", path)
+		errorLogger.Printf("Error opening %s\n", NSAPath)
 		errorLogger.Fatalln(err)
 	}
 	defer file.Close()
+
+	nsStatusMap := make(DomainNSStatusMap)
 
 	scanner := bufio.NewScanner(file)
 
@@ -236,7 +248,109 @@ func domainNSMapper(dnm DomainNSMap, path string) {
 		l := scanner.Text()
 		json.Unmarshal([]byte(l), &zdnsResult)
 
+		ns := zdnsResult.Name
+		if zdnsResult.Status != "NOERROR" {
+			errorLogger.Printf(
+				"Error doing NS A lookup for %s, skipping\n", ns,
+			)
+			continue
+		}
+		interfaceAnswers, ok := zdnsResult.Data.(map[string]interface{})["answers"]
+		if !ok {
+			// infoLogger.Printf("This results has no answers, domain: %s\n", domainName)
+			continue
+		}
+		zdnsAnswers := interfaceAnswers.([]interface{})
+		for _, interfaceAnswer := range zdnsAnswers {
+			tmpJSONString, _ := json.Marshal(interfaceAnswer)
+			var answer ZDNSAnswer
+			json.Unmarshal(tmpJSONString, &answer)
+			if answer.Type == "A" {
+				ip := net.ParseIP(answer.Answer)
+				if ip != nil && ip.To4() != nil {
+					nsStatusMap[ns] = DomainNSStatus{V4NS: true}
+					break
+				}
+			}
+		}
+	}
+	file.Close()
+
+	// finished looking up A records for NSes
+	infoLogger.Printf(
+		"Done looking at A records for NSs moving to AAAA records from %s\n",
+		NSAAAAPath,
+	)
+
+	file, err = os.Open(NSAAAAPath)
+	if err != nil {
+		errorLogger.Printf("Error opening %s\n", NSAAAAPath)
+		errorLogger.Fatalln(err)
+	}
+	defer file.Close()
+	scanner = bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		var zdnsResult ZDNSResult
+		l := scanner.Text()
+		json.Unmarshal([]byte(l), &zdnsResult)
+
+		ns := zdnsResult.Name
+		if zdnsResult.Status != "NOERROR" {
+			errorLogger.Printf(
+				"Error doing NS AAAA lookup for %s, skipping\n", ns,
+			)
+			continue
+		}
+		interfaceAnswers, ok := zdnsResult.Data.(map[string]interface{})["answers"]
+		if !ok {
+			// infoLogger.Printf("This results has no answers, domain: %s\n", domainName)
+			continue
+		}
+		zdnsAnswers := interfaceAnswers.([]interface{})
+		for _, interfaceAnswer := range zdnsAnswers {
+			tmpJSONString, _ := json.Marshal(interfaceAnswer)
+			var answer ZDNSAnswer
+			json.Unmarshal(tmpJSONString, &answer)
+			if answer.Type == "AAAA" {
+				ip := net.ParseIP(answer.Answer)
+				if ip != nil && ip.To4() != nil {
+					if status, ok := nsStatusMap[ns]; ok {
+						status.V6NS = true
+						nsStatusMap[ns] = status
+					} else {
+						nsStatusMap[ns] = DomainNSStatus{V6NS: true}
+					}
+					break
+				}
+			}
+		}
+	}
+	file.Close()
+
+	// finished looking up AAAA records for NSes
+	infoLogger.Printf(
+		"Done looking at AAAA records for NSs moving to mapping domains to "+
+			"whether they have NSs with A and AAAA records from: %s\n",
+		NSPath,
+	)
+	file, err = os.Open(NSPath)
+	if err != nil {
+		errorLogger.Printf("Error opening %s\n", NSPath)
+		errorLogger.Fatalln(err)
+	}
+	defer file.Close()
+	scanner = bufio.NewScanner(file)
+	for scanner.Scan() {
+		var zdnsResult ZDNSResult
+		l := scanner.Text()
+		json.Unmarshal([]byte(l), &zdnsResult)
+
 		domain := zdnsResult.Name
+		if _, dnmOK := dnm[domain]; !dnmOK {
+			// we've not seen this domain before. This should always be the case
+			dnm[domain] = DomainNSStatus{}
+		}
 		if zdnsResult.Status != "NOERROR" {
 			errorLogger.Printf(
 				"Error doing NS lookup for %s, skipping\n", domain,
@@ -249,16 +363,24 @@ func domainNSMapper(dnm DomainNSMap, path string) {
 			continue
 		}
 		zdnsAnswers := interfaceAnswers.([]interface{})
-		var tmpSlice []string
 		for _, interfaceAnswer := range zdnsAnswers {
+			domainStatus := dnm[domain]
 			tmpJSONString, _ := json.Marshal(interfaceAnswer)
 			var answer ZDNSAnswer
 			json.Unmarshal(tmpJSONString, &answer)
 			if answer.Type == "NS" {
-				tmpSlice = append(tmpSlice, answer.Answer)
+				if status, ok := nsStatusMap[answer.Answer]; ok {
+					// got an NS we've seen before
+					if status.V4NS {
+						domainStatus.V4NS = true
+					}
+					if status.V6NS {
+						domainStatus.V6NS = true
+					}
+					dnm[domain] = domainStatus
+				}
 			}
 		}
-		dnm[domain] = tmpSlice
 	}
 }
 
@@ -471,9 +593,9 @@ func main() {
 	infoLogger.Printf("Google's results so far: %+v\n", domainResultsMap["google.com"])
 	infoLogger.Printf("Netflix's results so far: %+v\n", domainResultsMap["netflix.com"])
 
-	domainNSMap := make(DomainNSMap)
+	domainNSMap := make(DomainNSStatusMap)
 	infoLogger.Printf("Reading in NS DNS query results from %s\n", args.NS)
-	domainNSMapper(domainNSMap, args.NS)
+	domainNSMapper(domainNSMap, args.NS, args.NSA, args.NSAAAA)
 
 	tlsResultsMap := make(TLSResultsMap)
 	infoLogger.Printf("Reading in v4 TLS banner grab results from %s\n", args.V4TLS)
