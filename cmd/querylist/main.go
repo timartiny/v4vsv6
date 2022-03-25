@@ -60,6 +60,8 @@ type DomainResults struct {
 	HasV6                 bool     `json:"has_v6"`
 	HasV4TLS              bool     `json:"has_v4_tls"`
 	HasV6TLS              bool     `json:"has_v6_tls"`
+	HasV4NS               bool     `json:"has_v4_ns"`
+	HasV6NS               bool     `json:"has_v6_ns"`
 	CitizenLabGlobalList  bool     `json:"citizen_lab_global_list"`
 	CitizenLabCountryList []string `json:"citizen_lab_country_list"`
 }
@@ -230,7 +232,7 @@ func addDNSResults(drm DomainResultsMap, path string) {
 // which NS's have valid v4 and v6 addresses then it will use the NSPath file to
 // link domains to NSes and determine which domains have NSes with v4 and v6
 // addresses
-func domainNSMapper(dnm DomainNSStatusMap, NSPath, NSAPath, NSAAAAPath string) {
+func domainNSMapper(drm DomainResultsMap, NSPath, NSAPath, NSAAAAPath string) {
 	infoLogger.Printf("Looking at A records for NSs from %s\n", NSAPath)
 	file, err := os.Open(NSAPath)
 	if err != nil {
@@ -347,10 +349,10 @@ func domainNSMapper(dnm DomainNSStatusMap, NSPath, NSAPath, NSAAAAPath string) {
 		json.Unmarshal([]byte(l), &zdnsResult)
 
 		domain := zdnsResult.Name
-		if _, dnmOK := dnm[domain]; !dnmOK {
-			// we've not seen this domain before. This should always be the case
-			dnm[domain] = DomainNSStatus{}
-		}
+		// if _, dnmOK := dnm[domain]; !dnmOK {
+		// 	// we've not seen this domain before. This should always be the case
+		// 	dnm[domain] = DomainNSStatus{}
+		// }
 		if zdnsResult.Status != "NOERROR" {
 			errorLogger.Printf(
 				"Error doing NS lookup for %s, skipping\n", domain,
@@ -364,7 +366,7 @@ func domainNSMapper(dnm DomainNSStatusMap, NSPath, NSAPath, NSAAAAPath string) {
 		}
 		zdnsAnswers := interfaceAnswers.([]interface{})
 		for _, interfaceAnswer := range zdnsAnswers {
-			domainStatus := dnm[domain]
+			domainResults := drm[domain]
 			tmpJSONString, _ := json.Marshal(interfaceAnswer)
 			var answer ZDNSAnswer
 			json.Unmarshal(tmpJSONString, &answer)
@@ -372,12 +374,12 @@ func domainNSMapper(dnm DomainNSStatusMap, NSPath, NSAPath, NSAAAAPath string) {
 				if status, ok := nsStatusMap[answer.Answer]; ok {
 					// got an NS we've seen before
 					if status.V4NS {
-						domainStatus.V4NS = true
+						domainResults.HasV4NS = true
 					}
 					if status.V6NS {
-						domainStatus.V6NS = true
+						domainResults.HasV6NS = true
 					}
-					dnm[domain] = domainStatus
+					drm[domain] = domainResults
 				}
 			}
 		}
@@ -593,9 +595,8 @@ func main() {
 	infoLogger.Printf("Google's results so far: %+v\n", domainResultsMap["google.com"])
 	infoLogger.Printf("Netflix's results so far: %+v\n", domainResultsMap["netflix.com"])
 
-	domainNSMap := make(DomainNSStatusMap)
 	infoLogger.Printf("Reading in NS DNS query results from %s\n", args.NS)
-	domainNSMapper(domainNSMap, args.NS, args.NSA, args.NSAAAA)
+	domainNSMapper(domainResultsMap, args.NS, args.NSA, args.NSAAAA)
 
 	tlsResultsMap := make(TLSResultsMap)
 	infoLogger.Printf("Reading in v4 TLS banner grab results from %s\n", args.V4TLS)
