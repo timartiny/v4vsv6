@@ -291,7 +291,7 @@ func resolveDomain(
 			Authoritative:     false,
 			AuthenticatedData: false,
 			CheckingDisabled:  false,
-			RecursionDesired:  true,
+			RecursionDesired:  false,
 			Opcode:            dns.OpcodeQuery,
 		},
 		Question: make([]dns.Question, 1),
