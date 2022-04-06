@@ -4,6 +4,9 @@
 			"path": "cmd/interpretResults"
 		},
 		{
+			"path": "cmd/no-rd-bit"
+		},
+		{
 			"path": "cmd/parseScans"
 		},
 		{
