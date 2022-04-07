@@ -137,14 +137,18 @@ func readDomains(domainFile string) []string {
 }
 
 func resolveDomain(
-	resolverAddr string,
+	resolverIP net.IP,
 	dialer net.Dialer,
 	domain string,
 	record string,
 	timeout time.Duration,
 ) DNSResult {
+	resolverAddr := resolverIP.String() + ":53"
+	if resolverIP.To4() == nil {
+		resolverAddr = "[" + resolverIP.String() + "]:53"
+	}
 	dnsResult := DNSResult{
-		Resolver: resolverAddr,
+		Resolver: resolverIP.String(),
 		Domain:   domain,
 		Record:   record,
 		RCode:    -1,
@@ -299,10 +303,6 @@ func resolverWorker(
 			"Running no rd scan for resolver: %s\n",
 			resolverIP.String(),
 		)
-		resolverAddr := resolverIP.String() + ":53"
-		if resolverIP.To4() == nil {
-			resolverAddr = "[" + resolverIP.String() + "]:53"
-		}
 		udpAddr := &net.UDPAddr{
 			IP: sourceIP,
 		}
@@ -314,7 +314,7 @@ func resolverWorker(
 		for _, domain := range domains {
 			for _, record := range records {
 				dnsResult := resolveDomain(
-					resolverAddr,
+					resolverIP,
 					dialer,
 					domain,
 					record,
@@ -357,7 +357,7 @@ func saveResults(
 	for dnsResult := range resultChan {
 		var result Result
 		result.Domain = dnsResult.Domain
-		result.Resolver = strings.Split(dnsResult.Resolver, ":")[0]
+		result.Resolver = dnsResult.Resolver
 		result.RCode = dnsResult.RCode
 		result.CCode = dnsResult.CCode
 		result.Record = dnsResult.Record
