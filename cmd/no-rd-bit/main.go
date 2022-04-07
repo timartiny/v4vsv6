@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -14,188 +16,48 @@ import (
 	"github.com/miekg/dns"
 )
 
-// // If we want to add a response, do it here
-// type Result struct {
-// 	ip   net.IP
-// 	err  error
-// 	resp []byte
-// }
-
-// func sendDnsProbe(ip net.IP, domain string, timeout time.Duration, verbose bool, queryType uint16, sourceIP string) (Result, error) {
-// 	m := &dns.Msg{
-// 		MsgHdr: dns.MsgHdr{
-// 			Authoritative:     false,
-// 			AuthenticatedData: false,
-// 			CheckingDisabled:  false,
-// 			RecursionDesired:  true,
-// 			Opcode:            dns.OpcodeQuery,
-// 		},
-// 		Question: make([]dns.Question, 1),
-// 	}
-// 	m.Question[0] = dns.Question{
-// 		Name:   dns.Fqdn(domain),
-// 		Qtype:  queryType,
-// 		Qclass: uint16(dns.ClassINET),
-// 	}
-// 	m.Id = dns.Id()
-
-// 	out, err := m.Pack()
-// 	if err != nil {
-// 		if verbose {
-// 			fmt.Printf("%s - Error creating UDP packet: %v\n", ip.String(), err)
-// 		}
-// 		return Result{}, err
-// 	}
-// 	addr := ip.String() + ":53"
-// 	if ip.To16() != nil {
-// 		addr = "[" + ip.String() + "]:53"
-// 	}
-// 	udpAddr := &net.UDPAddr{
-// 		IP: net.ParseIP(sourceIP),
-// 	}
-// 	dialer := net.Dialer{
-// 		LocalAddr: udpAddr,
-// 	}
-
-// 	conn, err := dialer.Dial("udp", addr)
-// 	if err != nil {
-// 		if verbose {
-// 			fmt.Printf("%s - Error creating UDP socket(?): %v\n", ip.String(), err)
-// 		}
-// 		return Result{}, err
-// 	}
-
-// 	defer conn.Close()
-
-// 	conn.Write(out)
-// 	if verbose {
-// 		fmt.Printf("Sent %s - %s - %s\n", ip.String(), domain, hex.EncodeToString(out))
-// 	}
-
-// 	if timeout == 0 {
-// 		return Result{ip: ip}, nil
-// 	}
-
-// 	conn.SetReadDeadline(time.Now().Add(timeout))
-// 	resp := make([]byte, 1024)
-// 	n, err := conn.Read(resp)
-// 	if err != nil {
-// 		if verbose {
-// 			fmt.Printf("%s - ReadErr: %v\n", ip.String(), err)
-// 		}
-// 		return Result{}, err
-// 	}
-
-// 	var r dns.Msg
-// 	err = r.Unpack(resp)
-// 	if err != nil {
-// 		if verbose {
-// 			fmt.Printf("%s - ParseErr: %v\n", ip.String(), err)
-// 		}
-// 		return Result{
-// 			ip:   ip,
-// 			err:  err,
-// 			resp: resp[:n],
-// 		}, err
-// 	}
-// 	if verbose {
-
-// 		ans := "??"
-// 		if res, ok := dns.RcodeToString[r.Rcode]; ok {
-// 			ans = res
-// 		}
-// 		if len(r.Answer) > 0 {
-// 			// Take first answer
-// 			ans += ": " + r.Answer[0].String()
-// 		}
-// 		fmt.Printf("%s - Response (%d bytes): %s - %s\n", ip.String(), n, hex.EncodeToString(resp[:n]), ans)
-// 		//fmt.Printf("%s\n", r.String())
-// 	}
-
-// 	return Result{
-// 		ip:   ip,
-// 		err:  nil,
-// 		resp: resp[:n]}, nil
-// }
-
-// func dnsWorker(baseDomain string, prefixIP bool, timeout time.Duration, queryType uint16, sourceIP string, verbose, v6Addresses bool, ips <-chan net.IP, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-
-// 	for ip := range ips {
-
-// 		domain := baseDomain
-// 		if prefixIP {
-// 			if v6Addresses {
-// 				domain = strings.ReplaceAll(ip.String(), ":", "-") + "." + baseDomain
-// 			} else {
-// 				domain = strings.Replace(ip.String(), ".", "-", 3) + "." + baseDomain
-// 			}
-// 		}
-// 		sendDnsProbe(ip, domain, timeout, verbose, queryType, sourceIP)
-// 	}
-// }
-
-// func main() {
-
-// 	baseDomain := flag.String("domain", "v6.tlsfingerprint.io", "Domain to use")
-// 	recordType := flag.String("record", "A", "Type of record to request")
-// 	sourceIP := flag.String("source-ip", "192.12.240.40", "Address to send requests from")
-// 	prefixIP := flag.Bool("prefix", true, "If we should encode the resolver IP in our query")
-// 	nWorkers := flag.Uint("workers", 50, "Number worker threads")
-// 	timeout := flag.Duration("timeout", 5*time.Second, "Duration to wait for DNS response")
-// 	verbose := flag.Bool("verbose", true, "Verbose prints sent/received DNS packets/info")
-// 	v6Addresses := flag.Bool("v6-addresses", false, "Whether to expect v6 addresses as input")
-
-// 	flag.Parse()
-
-// 	jobs := make(chan net.IP, *nWorkers*10)
-// 	var wg sync.WaitGroup
-// 	var dnsType uint16
-// 	if *recordType == "A" {
-// 		dnsType = dns.TypeA
-// 	} else if *recordType == "AAAA" {
-// 		dnsType = dns.TypeAAAA
-// 	}
-
-// 	for w := uint(0); w < *nWorkers; w++ {
-// 		wg.Add(1)
-// 		go dnsWorker(*baseDomain, *prefixIP, *timeout, dnsType, *sourceIP, *verbose, *v6Addresses, jobs, &wg)
-// 	}
-
-// 	nJobs := 0
-// 	scanner := bufio.NewScanner(os.Stdin)
-// 	for scanner.Scan() {
-// 		line := scanner.Text()
-// 		jobs <- net.ParseIP(line)
-// 		nJobs += 1
-// 	}
-// 	close(jobs)
-
-// 	if err := scanner.Err(); err != nil {
-// 		log.Println(err)
-// 	}
-
-// 	wg.Wait()
-// }
-
 var (
 	infoLogger  *log.Logger
 	errorLogger *log.Logger
 )
 
 type NoRDBitFlags struct {
-	Resolvers string `arg:"--resolvers,required" help:"(Required) Path to file containing list of Resolvers to query"`
-	Domains   string `arg:"--domains,required" help:"(Required) Path to the file containing domains to issue A and AAAA record requests to"`
-	SourceIP  string `arg:"--source-ip" help:"Address to send queries from" default:"192.12.240.40"`
-	Threads   int    `arg:"--threads" help:"Number of goroutines to use for queries" default:"1000"`
-	Timeout   int    `arg:"--timeout" help:"Number of seconds to wait for DNS and TLS connections" default:"5"`
+	Resolvers  string `arg:"--resolvers,required" help:"(Required) Path to file containing list of Resolvers to query"`
+	Domains    string `arg:"--domains,required" help:"(Required) Path to the file containing domains to issue A and AAAA record requests to"`
+	SourceIP   string `arg:"--source-ip" help:"Address to send queries from" default:"192.12.240.40"`
+	Threads    int    `arg:"--threads" help:"Number of goroutines to use for queries" default:"1000"`
+	Timeout    int    `arg:"--timeout" help:"Number of seconds to wait for DNS and TLS connections" default:"5"`
+	OutputFile string `arg:"--output,required" help:"(Required) Path to the file to save results to"`
 }
+
+type CensorshipCode uint
+
+const (
+	Unknown CensorshipCode = iota
+	ResolverResolveError
+	ResolverDialError
+	ResolverReadError
+	ReturnedAdditionals
+	ReturnedInvalidRecord
+	ReturnedValidRecord
+)
 
 type DNSResult struct {
 	Resolver string
 	Domain   string
+	Record   string
 	RCode    int
+	CCode    CensorshipCode
 	Answers  []net.IP
+}
+
+type Result struct {
+	Resolver    string         `json:"resolver"`
+	Domain      string         `json:"domain"`
+	Record      string         `json:"record"`
+	RCode       int            `json:"r_code"`
+	CCode       CensorshipCode `json:"c_code"`
+	Explanation string         `json:"explanation"`
 }
 
 func setupArgs() NoRDBitFlags {
@@ -278,11 +140,13 @@ func resolveDomain(
 	resolverAddr string,
 	dialer net.Dialer,
 	domain string,
+	record string,
 	timeout time.Duration,
 ) DNSResult {
 	dnsResult := DNSResult{
 		Resolver: resolverAddr,
 		Domain:   domain,
+		Record:   record,
 		RCode:    -1,
 	}
 	m := &dns.Msg{
@@ -296,10 +160,20 @@ func resolveDomain(
 		},
 		Question: make([]dns.Question, 1),
 	}
-	// A record request
+	// record request
+	var qtype uint16
+	switch record {
+	case "A":
+		qtype = dns.TypeA
+	case "AAAA":
+		qtype = dns.TypeAAAA
+	default:
+		errorLogger.Fatalf("Unimplemented record type: %s\n", record)
+	}
+
 	m.Question[0] = dns.Question{
 		Name:   dns.Fqdn(domain),
-		Qtype:  dns.TypeA,
+		Qtype:  qtype,
 		Qclass: uint16(dns.ClassINET),
 	}
 	m.Id = dns.Id()
@@ -316,11 +190,12 @@ func resolveDomain(
 	func() {
 		conn, err := dialer.Dial("udp", resolverAddr)
 		if err != nil {
-			errorLogger.Printf(
-				"Error creating UDP socket(?): %s\n",
-				resolverAddr,
-			)
-			errorLogger.Println(err)
+			// errorLogger.Printf(
+			// 	"Error creating UDP socket(?): %s\n",
+			// 	resolverAddr,
+			// )
+			// errorLogger.Println(err)
+			dnsResult.CCode = ResolverDialError
 			return
 		}
 
@@ -331,10 +206,11 @@ func resolveDomain(
 		resp := make([]byte, 1024)
 		_, err = conn.Read(resp)
 		if err != nil {
-			errorLogger.Printf(
-				"Error reading from %s for %s\n", resolverAddr, domain,
-			)
-			errorLogger.Println(err)
+			// errorLogger.Printf(
+			// 	"Error reading from %s for %s\n", resolverAddr, domain,
+			// )
+			// errorLogger.Println(err)
+			dnsResult.CCode = ResolverReadError
 			return
 		}
 		var r dns.Msg
@@ -346,6 +222,10 @@ func resolveDomain(
 			return
 		}
 		dnsResult.RCode = r.Rcode
+		if dnsResult.RCode != 0 {
+			dnsResult.CCode = ResolverResolveError
+			return
+		}
 		if len(r.Answer) > 0 {
 			for _, answer := range r.Answer {
 				lastTab := strings.LastIndex(answer.String(), "\t")
@@ -355,10 +235,53 @@ func resolveDomain(
 					dnsResult.Answers = append(dnsResult.Answers, ip)
 				}
 			}
+			// Actually returned Records, so use that to determine censorship
+			return
+		}
+		// no Answers were given so see if they returned additionals or
+		// authorities
+		if len(r.Ns) > 0 || len(r.Extra) > 0 {
+			dnsResult.CCode = ReturnedAdditionals
 		}
 	}()
 
 	return dnsResult
+}
+
+func tlsLookup(
+	domain string, ips []net.IP, timeout time.Duration,
+) CensorshipCode {
+	config := tls.Config{ServerName: domain}
+	for _, ip := range ips {
+		ret := func() CensorshipCode {
+			dialConn, err := net.DialTimeout(
+				"tcp", net.JoinHostPort(ip.String(), "443"), timeout,
+			)
+			if err != nil {
+				errorLogger.Printf("Failed in dial conn for %s\n", domain)
+				return ReturnedInvalidRecord
+			}
+			tlsConn := tls.Client(dialConn, &config)
+			defer tlsConn.Close()
+			err = tlsConn.Handshake()
+			if err != nil {
+				errorLogger.Printf("Failed in tls handshake for %s\n", domain)
+				return ReturnedInvalidRecord
+			}
+			// Leaf Cert
+			err = tlsConn.ConnectionState().PeerCertificates[0].VerifyHostname(domain)
+			if err != nil {
+				return ReturnedInvalidRecord
+			} else {
+				return ReturnedValidRecord
+			}
+		}()
+		if ret == ReturnedValidRecord {
+			return ret
+		}
+	}
+
+	return ReturnedInvalidRecord
 }
 
 func resolverWorker(
@@ -366,6 +289,7 @@ func resolverWorker(
 	sourceIP net.IP,
 	timeout time.Duration,
 	resolverChan <-chan net.IP,
+	resultChan chan<- DNSResult,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -385,12 +309,100 @@ func resolverWorker(
 		dialer := net.Dialer{
 			LocalAddr: udpAddr,
 		}
+		records := []string{"A", "AAAA"}
 
 		for _, domain := range domains {
-			resolveDomain(resolverAddr, dialer, domain, timeout)
+			for _, record := range records {
+				dnsResult := resolveDomain(
+					resolverAddr,
+					dialer,
+					domain,
+					record,
+					timeout,
+				)
+				if dnsResult.CCode == Unknown {
+					// still need to determine censorship
+					if len(dnsResult.Answers) <= 0 {
+						// didn't get any answers though, so there's nothing to do
+						errorLogger.Printf(
+							"Got CCode of Unknown with no Answers for %s "+
+								"resolving %s\n",
+							dnsResult.Resolver,
+							dnsResult.Domain,
+						)
+					} else {
+						dnsResult.CCode = tlsLookup(domain, dnsResult.Answers, timeout)
+					}
+				}
+				resultChan <- dnsResult
+			}
 		}
 	}
 }
+
+func saveResults(
+	resultChan <-chan DNSResult,
+	oFilename string,
+	timeout int,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+	oFile, err := os.Create(oFilename)
+	if err != nil {
+		errorLogger.Printf("Error creating file: %s\n", oFilename)
+		errorLogger.Fatalln(err)
+	}
+	defer oFile.Close()
+
+	for dnsResult := range resultChan {
+		var result Result
+		result.Domain = dnsResult.Domain
+		result.Resolver = strings.Split(dnsResult.Resolver, ":")[0]
+		result.RCode = dnsResult.RCode
+		result.CCode = dnsResult.CCode
+		result.Record = dnsResult.Record
+		switch result.CCode {
+		case Unknown:
+			result.Explanation = "Unusual Circumstance where c_code is never modified"
+		case ResolverDialError:
+			result.Explanation = "Failed to make udp socket to resolver"
+		case ResolverResolveError:
+			result.Explanation = "Resolver encountered error resolving domain, see r_code"
+		case ResolverReadError:
+			result.Explanation = fmt.Sprintf(
+				"Resolver didn't respond during timeout window (%d seconds)",
+				timeout,
+			)
+		case ReturnedAdditionals:
+			result.Explanation = "Resolver returned Additionals and/or Authorities"
+		case ReturnedInvalidRecord:
+			result.Explanation = fmt.Sprintf(
+				"Resolver returned %s record, but it failed the TLS check",
+				result.Record,
+			)
+		case ReturnedValidRecord:
+			result.Explanation = fmt.Sprintf(
+				"Resolver returned %s record, and it passed the TLS check",
+				result.Record,
+			)
+		}
+		bBytes, err := json.Marshal(&result)
+		if err != nil {
+			errorLogger.Printf("Error marshaling result: %v\n", result)
+			errorLogger.Fatalln(err)
+		}
+		oFile.Write(bBytes)
+		oFile.WriteString("\n")
+	}
+}
+
+// const (
+// 	Unknown CensorshipCode = iota
+// 	ResolverError
+// 	ReturnedAdditionals
+// 	ReturnedInvalidRecord
+// 	ReturnedValidRecord
+// )
 
 func main() {
 	infoLogger = log.New(
@@ -419,13 +431,22 @@ func main() {
 	infoLogger.Printf("Got %d domains\n", len(domains))
 
 	var workersWG sync.WaitGroup
+	var saveResultsWG sync.WaitGroup
 	resolverChan := make(chan net.IP)
+	resultChan := make(chan DNSResult)
+	saveResultsWG.Add(1)
+	go saveResults(resultChan, args.OutputFile, args.Timeout, &saveResultsWG)
 
 	infoLogger.Printf("Spawning resolver workers")
 	for w := uint(0); w < uint(args.Threads); w++ {
 		workersWG.Add(1)
 		go resolverWorker(
-			domains, sourceIP, connTimeout, resolverChan, &workersWG,
+			domains,
+			sourceIP,
+			connTimeout,
+			resolverChan,
+			resultChan,
+			&workersWG,
 		)
 	}
 
@@ -434,5 +455,13 @@ func main() {
 	}
 
 	close(resolverChan)
+	infoLogger.Println(
+		"Waiting for resolvers (and any follow up TLS conns) to finish",
+	)
 	workersWG.Wait()
+	close(resultChan)
+	infoLogger.Printf(
+		"Waiting for results to be written to %s\n", args.OutputFile,
+	)
+	saveResultsWG.Wait()
 }
