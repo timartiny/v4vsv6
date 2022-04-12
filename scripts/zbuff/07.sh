@@ -2,9 +2,22 @@
 
 . ./variables.sh
 
-echo "Performing DNS look ups on Satellite domains from Google and Cloudflare's DNS servers"
-time -p cat satellite-domains.json | jq '.[]' -r | /home/timartiny/zdns/zdns/zdns A --local-addr <local-v4-address-to-scan-from> --name-servers=8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 --output-file ${OUTPUTFOLDER}/satellite-A-${DATESTR}.json
-time -p cat satellite-domains.json | jq '.[]' -r | /home/timartiny/zdns/zdns/zdns AAAA --local-addr <local-v4-address-to-scan-from> --name-servers=8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 --output-file ${OUTPUTFOLDER}/satellite-AAAA-${DATESTR}.json
+echo "Performing DNS A/AAAA look ups on Satellite domains from Google and Cloudflare's DNS servers"
+time -p cat satellite-domains.json | jq '.[]' -r | /home/timartiny/zdns/zdns/zdns A --local-addr "192.12.240.41" --name-servers=8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 --output-file ${OUTPUTFOLDER}/satellite-A-${DATESTR}.json
+time -p cat satellite-domains.json | jq '.[]' -r | /home/timartiny/zdns/zdns/zdns AAAA --local-addr "192.12.240.41" --name-servers=8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 --output-file ${OUTPUTFOLDER}/satellite-AAAA-${DATESTR}.json
+date
+
+echo "Performing DNS NS look ups on Satellite domains from Google and Cloudflare's DNS Servers"
+time -p cat satellite-domains.json | jq '.[]' -r | /home/timartiny/zdns/zdns/zdns NS --local-addr "192.12.240.41" --name-servers=8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 --output-file ${OUTPUTFOLDER}/satellite-NS-${DATESTR}.json
+date
+
+echo "Performing DNS A/AAAA look ups on Satellite domains from Google and Cloudflare's DNS servers"
+time -p cat satellite-domains.json | jq '.[]' -r | /home/timartiny/zdns/zdns/zdns A --local-addr "192.12.240.41" --name-servers=8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 --output-file ${OUTPUTFOLDER}/satellite-A-${DATESTR}.json
+date
+
+echo "Performing DNS A/AAAA look ups on Satellite domain Name servers"
+time -p jq '.data.answers[]? | select(.type == "NS") | .answer' -r ${OUTPUTFOLDER}/satellite-NS-${DATESTR}.json | /home/timartiny/zdns/zdns/zdns A --local-addr "192.12.240.41" --name-servers=8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 --output-file ${OUTPUTFOLDER}/satellite-NS-A-${DATESTR}.json
+time -p jq '.data.answers[]? | select(.type == "NS") | .answer' -r ${OUTPUTFOLDER}/satellite-NS-${DATESTR}.json | /home/timartiny/zdns/zdns/zdns AAAA --local-addr "192.12.240.41" --name-servers=8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 --output-file ${OUTPUTFOLDER}/satellite-NS-AAAA-${DATESTR}.json
 date
 
 echo "Setting up Zgrab2 scan for Satellite Domains to determine which have TLS certificates"
@@ -13,13 +26,13 @@ cat ${OUTPUTFOLDER}/satellite-AAAA-${DATESTR}.json | jq -r '.name as $name | .da
 date
 
 echo "Starting Zgrab2 scan"
-time -p cat ${OUTPUTFOLDER}/satellite-ip-dom-pair-${DATESTR}-A.dat | /home/timartiny/zgrab2/zgrab2 --source-ip=<local-v4-address-to-scan-from> -o ${OUTPUTFOLDER}/satellite-zgrab-A-${DATESTR}.json tls
-time -p cat ${OUTPUTFOLDER}/satellite-ip-dom-pair-${DATESTR}-AAAA.dat | /home/timartiny/zgrab2/zgrab2 --source-ip=<local-v6-address-to-scan-from> -o ${OUTPUTFOLDER}/satellite-zgrab-AAAA-${DATESTR}.json tls
+time -p cat ${OUTPUTFOLDER}/satellite-ip-dom-pair-${DATESTR}-A.dat | /home/timartiny/zgrab2/zgrab2 --source-ip=192.12.240.41 -o ${OUTPUTFOLDER}/satellite-zgrab-A-${DATESTR}.json tls
+time -p cat ${OUTPUTFOLDER}/satellite-ip-dom-pair-${DATESTR}-AAAA.dat | /home/timartiny/zgrab2/zgrab2 --source-ip="2620:18f:30:4100::2" -o ${OUTPUTFOLDER}/satellite-zgrab-AAAA-${DATESTR}.json tls
 date
 
 echo "Parsing DNS and Zgrab2 scan data"
 echo "Determining which domains meet our technical requirements"
-/home/timartiny/RipeProbe/querylist --v4_dns ${OUTPUTFOLDER}/satellite-A-${DATESTR}.json --v6_dns ${OUTPUTFOLDER}/satellite-AAAA-${DATESTR}.json  --v4_tls ${OUTPUTFOLDER}/satellite-zgrab-A-${DATESTR}.json --v6_tls ${OUTPUTFOLDER}/satellite-zgrab-AAAA-${DATESTR}.json --citizen_lab_directory /home/timartiny/test-lists/lists/ --out_file ${OUTPUTFOLDER}/satellite-full-details-${DATESTR}.json
+/home/timartiny/v4vsv6/cmd/querylist/querylist --v4_dns ${OUTPUTFOLDER}/satellite-A-${DATESTR}.json --v6_dns ${OUTPUTFOLDER}/satellite-AAAA-${DATESTR}.json  --v4_tls ${OUTPUTFOLDER}/satellite-zgrab-A-${DATESTR}.json --v6_tls ${OUTPUTFOLDER}/satellite-zgrab-AAAA-${DATESTR}.json --ns ${OUTPUTFOLDER}/satellite-NS-${DATESTR}.json --ns_a ${OUTPUTFOLDER}/satellite-NS-A-${DATESTR}.json --ns_aaaa ${OUTPUTFOLDER}/satellite-NS-AAAA-${DATESTR}.json --citizen_lab_directory /home/timartiny/test-lists/lists/ --out_file ${OUTPUTFOLDER}/satellite-full-details-${DATESTR}.json
 
 cat ${OUTPUTFOLDER}/satellite-full-details-${DATESTR}.json | jq "select(.has_v4==true and .has_v6==true)" -c > ${OUTPUTFOLDER}/full-details-v4-and-v6-${DATESTR}.json
 cat ${OUTPUTFOLDER}/full-details-v4-and-v6-${DATESTR}.json | jq "select(.has_v4_tls==true and .has_v6_tls==true)" -c > ${OUTPUTFOLDER}/full-details-v4-and-v6-and-tls-${DATESTR}.json
@@ -31,16 +44,16 @@ echo '{"domain":"test2.v4vsv6.com","has_v4":true,"has_v6":true,"has_v4_tls":true
 
 echo "Running v4 resolvers A Scan"
 date
-time -p cat ${OUTPUTFOLDER}/v4_cartesian_file | /home/timartiny/zdns/zdns/zdns A --local-addr <local-v4-address-to-scan-from> --output-file ${OUTPUTFOLDER}/v4_cartesian_A_lookups_${DATESTR}_day1.json
+time -p cat ${OUTPUTFOLDER}/v4_cartesian_file | /home/timartiny/zdns/zdns/zdns A --local-addr "192.12.240.41" --output-file ${OUTPUTFOLDER}/v4_cartesian_A_lookups_${DATESTR}_day1.json
 echo "Running v4 resolvers AAAA Scan"
 date
-time -p cat ${OUTPUTFOLDER}/v4_cartesian_file | /home/timartiny/zdns/zdns/zdns AAAA --local-addr <local-v4-address-to-scan-from> --output-file ${OUTPUTFOLDER}/v4_cartesian_AAAA_lookups_${DATESTR}_day1.json
+time -p cat ${OUTPUTFOLDER}/v4_cartesian_file | /home/timartiny/zdns/zdns/zdns AAAA --local-addr "192.12.240.41" --output-file ${OUTPUTFOLDER}/v4_cartesian_AAAA_lookups_${DATESTR}_day1.json
 echo "Running v6 resolvers A Scan"
 date
-time -p cat ${OUTPUTFOLDER}/v6_cartesian_file | /home/timartiny/zdns/zdns/zdns A --local-addr <local-v6-address-to-scan-from> --output-file ${OUTPUTFOLDER}/v6_cartesian_A_lookups_${DATESTR}_day1.json
+time -p cat ${OUTPUTFOLDER}/v6_cartesian_file | /home/timartiny/zdns/zdns/zdns A --local-addr "2620:18f:30:4100::2" --output-file ${OUTPUTFOLDER}/v6_cartesian_A_lookups_${DATESTR}_day1.json
 echo "Running v6 resolvers AAAA Scan"
 date
-time -p cat ${OUTPUTFOLDER}/v6_cartesian_file | /home/timartiny/zdns/zdns/zdns AAAA --local-addr <local-v6-address-to-scan-from> --output-file ${OUTPUTFOLDER}/v6_cartesian_AAAA_lookups_${DATESTR}_day1.json
+time -p cat ${OUTPUTFOLDER}/v6_cartesian_file | /home/timartiny/zdns/zdns/zdns AAAA --local-addr "2620:18f:30:4100::2" --output-file ${OUTPUTFOLDER}/v6_cartesian_AAAA_lookups_${DATESTR}_day1.json
 date
 
 echo "Setting Day 1 Zgrab2 scan"
@@ -71,10 +84,10 @@ sort -u ${OUTPUTFOLDER}/tmp > ${OUTPUTFOLDER}/AAAA_ip_domain_list_${DATESTR}_day
 
 echo "Running TLS banner grab on A records"
 date
-time -p cat ${OUTPUTFOLDER}/A_ip_domain_list_${DATESTR}_day1.dat | /home/timartiny/zgrab2/zgrab2 --source-ip=<local-v4-address-to-scan-from> --output-file ${OUTPUTFOLDER}/A_tls_lookups_${DATESTR}_day1.json --connections-per-host 3 tls
+time -p cat ${OUTPUTFOLDER}/A_ip_domain_list_${DATESTR}_day1.dat | /home/timartiny/zgrab2/zgrab2 --source-ip=192.12.240.41 --output-file ${OUTPUTFOLDER}/A_tls_lookups_${DATESTR}_day1.json --connections-per-host 3 tls
 echo "Running TLS banner grab on AAAA records"
 date
-time -p cat ${OUTPUTFOLDER}/AAAA_ip_domain_list_${DATESTR}_day1.dat | /home/timartiny/zgrab2/zgrab2 --source-ip=<local-v6-address-to-scan-from> --output-file ${OUTPUTFOLDER}/AAAA_tls_lookups_${DATESTR}_day1.json --connections-per-host 3 tls 
+time -p cat ${OUTPUTFOLDER}/AAAA_ip_domain_list_${DATESTR}_day1.dat | /home/timartiny/zgrab2/zgrab2 --source-ip="2620:18f:30:4100::2" --output-file ${OUTPUTFOLDER}/AAAA_tls_lookups_${DATESTR}_day1.json --connections-per-host 3 tls 
 date
 
 echo "Getting Error Data"

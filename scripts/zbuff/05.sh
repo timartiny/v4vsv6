@@ -35,13 +35,13 @@ date
 
 echo "Starting Control Probes"
 echo "Performing A Record Request for tlsfingerprint.io from v6 resolvers"
-time -p cat ${OUTPUTFOLDER}/${DATESTR}-single-resolvers-country-sorted | awk '{print $1}' | /home/timartiny/v6censorship/probe-dns/probe -source-ip <local-v6-address-to-scan-from> -domain tlsfingerprint.io -record A -workers 1000 -prefix=false > ${OUTPUTFOLDER}/${DATESTR}-v6-resolve-v4.out
+time -p cat ${OUTPUTFOLDER}/${DATESTR}-single-resolvers-country-sorted | awk '{print $1}' | /home/timartiny/v6censorship/probe-dns/probe -source-ip "2620:18f:30:4100::2" -domain tlsfingerprint.io -record A -workers 1000 -prefix=false > ${OUTPUTFOLDER}/${DATESTR}-v6-resolve-v4.out
 echo "Performing A Record Request for tlsfingerprint.io from v4 resolvers"
-time -p cat ${OUTPUTFOLDER}/${DATESTR}-single-resolvers-country-sorted | awk '{print $2}' | /home/timartiny/v6censorship/probe-dns/probe -source-ip <local-v4-address-to-scan-from> -domain tlsfingerprint.io -record A -workers 1000 -prefix=false > ${OUTPUTFOLDER}/${DATESTR}-v4-resolve-v4.out
+time -p cat ${OUTPUTFOLDER}/${DATESTR}-single-resolvers-country-sorted | awk '{print $2}' | /home/timartiny/v6censorship/probe-dns/probe -source-ip 192.12.240.41 -domain tlsfingerprint.io -record A -workers 1000 -prefix=false > ${OUTPUTFOLDER}/${DATESTR}-v4-resolve-v4.out
 echo "Performing AAAA Record Request for v6ns.tlsfingerprint.io from v6 resolvers"
-time -p cat ${OUTPUTFOLDER}/${DATESTR}-single-resolvers-country-sorted | awk '{print $1}' | /home/timartiny/v6censorship/probe-dns/probe -source-ip <local-v6-address-to-scan-from> -domain v6ns.tlsfingerprint.io -record AAAA -workers 1000 -prefix=false > ${OUTPUTFOLDER}/${DATESTR}-v6-resolve-v6.out
+time -p cat ${OUTPUTFOLDER}/${DATESTR}-single-resolvers-country-sorted | awk '{print $1}' | /home/timartiny/v6censorship/probe-dns/probe -source-ip "2620:18f:30:4100::2" -domain v6ns.tlsfingerprint.io -record AAAA -workers 1000 -prefix=false > ${OUTPUTFOLDER}/${DATESTR}-v6-resolve-v6.out
 echo "Performing AAAA Record Request for v6ns.tlsfingerprint.io from v4 resolvers"
-time -p cat ${OUTPUTFOLDER}/${DATESTR}-single-resolvers-country-sorted | awk '{print $2}' | /home/timartiny/v6censorship/probe-dns/probe -source-ip <local-v4-address-to-scan-from> -domain v6ns.tlsfingerprint.io -record AAAA -workers 1000 -prefix=false > ${OUTPUTFOLDER}/${DATESTR}-v4-resolve-v6.out
+time -p cat ${OUTPUTFOLDER}/${DATESTR}-single-resolvers-country-sorted | awk '{print $2}' | /home/timartiny/v6censorship/probe-dns/probe -source-ip 192.12.240.41 -domain v6ns.tlsfingerprint.io -record AAAA -workers 1000 -prefix=false > ${OUTPUTFOLDER}/${DATESTR}-v4-resolve-v6.out
 date
 
 echo "Checking responses, ensuring resolvers passed control"
