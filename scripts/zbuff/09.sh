@@ -3,16 +3,16 @@
 . ./variables.sh
 echo "Running Day 2 v4 resolvers A Scan"
 date
-time -p cat ${OUTPUTFOLDER}/v4_cartesian_file_day2 | /home/timartiny/zdns/zdns/zdns A --local-addr "<local-v4-address-to-scan-from>" --output-file ${OUTPUTFOLDER}/v4_cartesian_A_lookups_${DATESTR}_day2.json
+time -p cat ${OUTPUTFOLDER}/v4_cartesian_file_day2 | /home/timartiny/zdns/zdns/zdns A --local-addr "192.12.240.41" --output-file ${OUTPUTFOLDER}/v4_cartesian_A_lookups_${DATESTR}_day2.json
 echo "Running Day 2 v4 resolvers AAAA Scan"
 date
-time -p cat ${OUTPUTFOLDER}/v4_cartesian_file_day2 | /home/timartiny/zdns/zdns/zdns AAAA --local-addr "<local-v4-address-to-scan-from>" --output-file ${OUTPUTFOLDER}/v4_cartesian_AAAA_lookups_${DATESTR}_day2.json
+time -p cat ${OUTPUTFOLDER}/v4_cartesian_file_day2 | /home/timartiny/zdns/zdns/zdns AAAA --local-addr "192.12.240.41" --output-file ${OUTPUTFOLDER}/v4_cartesian_AAAA_lookups_${DATESTR}_day2.json
 echo "Running Day 2 v6 resolvers A Scan"
 date
-time -p cat ${OUTPUTFOLDER}/v6_cartesian_file_day2 | /home/timartiny/zdns/zdns/zdns A --local-addr "<local-v6-address-to-scan-from>" --output-file ${OUTPUTFOLDER}/v6_cartesian_A_lookups_${DATESTR}_day2.json
+time -p cat ${OUTPUTFOLDER}/v6_cartesian_file_day2 | /home/timartiny/zdns/zdns/zdns A --local-addr "2620:18f:30:4100::2" --output-file ${OUTPUTFOLDER}/v6_cartesian_A_lookups_${DATESTR}_day2.json
 echo "Running Day 2 v6 resolvers AAAA Scan"
 date
-time -p cat ${OUTPUTFOLDER}/v6_cartesian_file_day2 | /home/timartiny/zdns/zdns/zdns AAAA --local-addr "<local-v6-address-to-scan-from>" --output-file ${OUTPUTFOLDER}/v6_cartesian_AAAA_lookups_${DATESTR}_day2.json
+time -p cat ${OUTPUTFOLDER}/v6_cartesian_file_day2 | /home/timartiny/zdns/zdns/zdns AAAA --local-addr "2620:18f:30:4100::2" --output-file ${OUTPUTFOLDER}/v6_cartesian_AAAA_lookups_${DATESTR}_day2.json
 date
 
 echo "Setting up Day 2 Zgrab2 scan"
@@ -43,10 +43,10 @@ sort -u ${OUTPUTFOLDER}/tmp > ${OUTPUTFOLDER}/AAAA_ip_domain_list_${DATESTR}_day
 
 echo "Running Day 2 TLS banner grab on A records"
 date
-time -p cat ${OUTPUTFOLDER}/A_ip_domain_list_${DATESTR}_day2.dat | /home/timartiny/zgrab2/zgrab2 --source-ip=<local-v4-address-to-scan-from> --output-file ${OUTPUTFOLDER}/A_tls_lookups_${DATESTR}_day2.json --connections-per-host 3 tls
+time -p cat ${OUTPUTFOLDER}/A_ip_domain_list_${DATESTR}_day2.dat | /home/timartiny/zgrab2/zgrab2 --source-ip=192.12.240.41 --output-file ${OUTPUTFOLDER}/A_tls_lookups_${DATESTR}_day2.json --connections-per-host 3 tls
 echo "Running Day 2 TLS banner grab on AAAA records"
 date
-time -p cat ${OUTPUTFOLDER}/AAAA_ip_domain_list_${DATESTR}_day2.dat | /home/timartiny/zgrab2/zgrab2 --source-ip="<local-v6-address-to-scan-from>" --output-file ${OUTPUTFOLDER}/AAAA_tls_lookups_${DATESTR}_day2.json --connections-per-host 3 tls 
+time -p cat ${OUTPUTFOLDER}/AAAA_ip_domain_list_${DATESTR}_day2.dat | /home/timartiny/zgrab2/zgrab2 --source-ip="2620:18f:30:4100::2" --output-file ${OUTPUTFOLDER}/AAAA_tls_lookups_${DATESTR}_day2.json --connections-per-host 3 tls 
 date
 
 echo "Getting Day 2 Error Data"

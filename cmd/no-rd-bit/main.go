@@ -324,12 +324,14 @@ func resolverWorker(
 					// still need to determine censorship
 					if len(dnsResult.Answers) <= 0 {
 						// didn't get any answers though, so there's nothing to do
+						/*
 						errorLogger.Printf(
 							"Got CCode of Unknown with no Answers for %s "+
 								"resolving %s\n",
 							dnsResult.Resolver,
 							dnsResult.Domain,
 						)
+						*/
 					} else {
 						dnsResult.CCode = tlsLookup(domain, dnsResult.Answers, timeout)
 					}
