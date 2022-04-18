@@ -340,6 +340,55 @@ func resolverWorker(
 	}
 }
 
+func domainWorker(
+	resolvers []net.IP,
+	sourceIP net.IP,
+	timeout time.Duration,
+	domainChan <-chan string,
+	resultChan chan<- DNSResult,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+
+	for domain := range domainChan {
+		infoLogger.Printf("Running no rd scan for domain: %s\n", domain)
+		udpAddr := &net.UDPAddr{
+			IP: sourceIP,
+		}
+		dialer := net.Dialer{
+			LocalAddr: udpAddr,
+		}
+		records := []string{"A", "AAAA"}
+
+		for _, resolverIP := range resolvers {
+			for _, record := range records {
+				dnsResult := resolveDomain(
+					resolverIP,
+					dialer,
+					domain,
+					record,
+					timeout,
+				)
+				if dnsResult.CCode == Unknown {
+					// still need to determine censorship
+					if len(dnsResult.Answers) <= 0 {
+						// didn't get any answers though, so there's nothing to do
+						// errorLogger.Printf(
+						// 	"Got CCode of Unknown with no Answers for %s "+
+						// 		"resolving %s\n",
+						// 	dnsResult.Resolver,
+						// 	dnsResult.Domain,
+						// )
+					} else {
+						dnsResult.CCode = tlsLookup(domain, dnsResult.Answers, timeout)
+					}
+				}
+				resultChan <- dnsResult
+			}
+		}
+	}
+}
+
 func saveResults(
 	resultChan <-chan DNSResult,
 	oFilename string,
@@ -432,7 +481,8 @@ func main() {
 
 	var workersWG sync.WaitGroup
 	var saveResultsWG sync.WaitGroup
-	resolverChan := make(chan net.IP)
+	// resolverChan := make(chan net.IP)
+	domainChan := make(chan string)
 	resultChan := make(chan DNSResult)
 	saveResultsWG.Add(1)
 	go saveResults(resultChan, args.OutputFile, args.Timeout, &saveResultsWG)
@@ -440,21 +490,33 @@ func main() {
 	infoLogger.Printf("Spawning resolver workers")
 	for w := uint(0); w < uint(args.Threads); w++ {
 		workersWG.Add(1)
-		go resolverWorker(
-			domains,
+		// go resolverWorker(
+		// 	domains,
+		// 	sourceIP,
+		// 	connTimeout,
+		// 	resolverChan,
+		// 	resultChan,
+		// 	&workersWG,
+		// )
+		go domainWorker(
+			resolvers,
 			sourceIP,
 			connTimeout,
-			resolverChan,
+			domainChan,
 			resultChan,
 			&workersWG,
 		)
 	}
 
-	for _, resolver := range resolvers {
-		resolverChan <- resolver
+	// for _, resolver := range resolvers {
+	// 	resolverChan <- resolver
+	// }
+	for _, domain := range domains {
+		domainChan <- domain
 	}
 
-	close(resolverChan)
+	// close(resolverChan)
+	close(domainChan)
 	infoLogger.Println(
 		"Waiting for resolvers (and any follow up TLS conns) to finish",
 	)
