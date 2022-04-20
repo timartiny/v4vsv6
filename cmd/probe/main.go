@@ -16,14 +16,15 @@ import (
 )
 
 type ProbeFlags struct {
-	BaseDomain  string `arg:"--domain" help:"Domain to query for" default:"v6.tlsfingerprint.io"`
-	RecordType  string `arg:"--record" help:"Type of DNS record to request" default:"A"`
-	SourceIP    string `arg:"--source-ip" help:"Local Address to send requests from" default:"192.12.240.40"`
-	Prefix      bool   `arg:"--prefix" help:"If we should encode the resolver IP in our query" default:"false"`
-	Workers     uint   `arg:"--workers" help:"Number of worker threads" default:"1000"`
-	Timeout     int    `arg:"--timeout" help:"Duration to wait for DNS response" default:"5"`
-	Verbose     bool   `arg:"--verbose" help:"Print sent/received DNS packets/info" default:"true"`
-	V6Addresses bool   `arg:"--v6-addresses" help:"Whether to prefix v6 addresses with dashes instead of colons" default:"false"`
+	BaseDomain             string `arg:"--domain" help:"Domain to query for" default:"v6.tlsfingerprint.io"`
+	RecordType             string `arg:"--record" help:"Type of DNS record to request" default:"A"`
+	SourceIP               string `arg:"--source-ip" help:"Local Address to send requests from" default:"192.12.240.40"`
+	Prefix                 bool   `arg:"--prefix" help:"If we should encode the resolver IP in our query" default:"false"`
+	Workers                uint   `arg:"--workers" help:"Number of worker threads" default:"1000"`
+	Timeout                int    `arg:"--timeout" help:"Duration to wait for DNS response" default:"5"`
+	Verbose                bool   `arg:"--verbose" help:"Print sent/received DNS packets/info" default:"true"`
+	V6Addresses            bool   `arg:"--v6-addresses" help:"Whether to prefix v6 addresses with dashes instead of colons" default:"false"`
+	NumberOfIndexedQueries int    `arg:"--num-indexed-queries" help:"Number of queries to index and issue to each resolver, will index each query with a new lowercase letter" default:"0"`
 }
 
 // If we want to add a response, do it here
@@ -130,20 +131,44 @@ func sendDnsProbe(ip net.IP, domain string, timeout time.Duration, verbose bool,
 		resp: resp[:n]}, nil
 }
 
-func dnsWorker(baseDomain string, prefixIP bool, timeout time.Duration, queryType uint16, sourceIP string, verbose, v6Addresses bool, ips <-chan net.IP, wg *sync.WaitGroup) {
+func dnsWorker(
+	baseDomain string,
+	prefixIP bool,
+	timeout time.Duration,
+	queryType uint16,
+	sourceIP string,
+	verbose,
+	v6Addresses bool,
+	indexedQueries int,
+	ips <-chan net.IP,
+	wg *sync.WaitGroup,
+) {
 	defer wg.Done()
 
+	numLoops := indexedQueries
+	if numLoops == 0 {
+		numLoops = 1
+	}
 	for ip := range ips {
 
 		domain := baseDomain
-		if prefixIP {
-			if v6Addresses {
-				domain = strings.ReplaceAll(ip.String(), ":", "-") + "." + baseDomain
-			} else {
-				domain = strings.Replace(ip.String(), ".", "-", 3) + "." + baseDomain
+		for i := 0; i < numLoops; i++ {
+			if prefixIP {
+				if v6Addresses {
+					domain = strings.ReplaceAll(ip.String(), ":", "-")
+				} else {
+					domain = strings.Replace(ip.String(), ".", "-", 3)
+				}
+
+				if indexedQueries > 0 {
+					// index query with alpha characters a-z
+					domain += "_" + string(i+97) // convert our iteration to a-z
+				}
+
+				domain += "." + baseDomain
 			}
+			sendDnsProbe(ip, domain, timeout, verbose, queryType, sourceIP)
 		}
-		sendDnsProbe(ip, domain, timeout, verbose, queryType, sourceIP)
 	}
 }
 
@@ -156,19 +181,12 @@ func setupArgs() ProbeFlags {
 
 func main() {
 	args := setupArgs()
-
-	// baseDomain := flag.String("domain", "v6.tlsfingerprint.io", "Domain to use")
-	// recordType := flag.String("record", "A", "Type of record to request")
-	// sourceIP := flag.String("source-ip", "192.12.240.40", "Address to send requests from")
-	// prefixIP := flag.Bool("prefix", true, "If we should encode the resolver IP in our query")
-	// nWorkers := flag.Uint("workers", 50, "Number worker threads")
-	// timeout := flag.Duration("timeout", 5*time.Second, "Duration to wait for DNS response")
-	// verbose := flag.Bool("verbose", true, "Verbose prints sent/received DNS packets/info")
-	// v6Addresses := flag.Bool("v6-addresses", false, "Whether to expect v6 addresses as input")
-
 	timeout := time.Second * time.Duration(args.Timeout)
-
-	// flag.Parse()
+	if args.NumberOfIndexedQueries > 26 {
+		log.Fatalln(
+			"Currently only at most 26 indexed queries are supported, cause",
+		)
+	}
 
 	jobs := make(chan net.IP, args.Workers*10)
 	var wg sync.WaitGroup
@@ -189,6 +207,7 @@ func main() {
 			args.SourceIP,
 			args.Verbose,
 			args.V6Addresses,
+			args.NumberOfIndexedQueries,
 			jobs,
 			&wg,
 		)
