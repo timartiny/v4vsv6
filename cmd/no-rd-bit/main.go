@@ -263,7 +263,6 @@ func tlsLookup(
 				"tcp", net.JoinHostPort(ip.String(), "443"), timeout,
 			)
 			if err != nil {
-				errorLogger.Printf("Failed in dial conn for %s\n", domain)
 				return ReturnedInvalidRecord
 			}
 			tlsConn := tls.Client(dialConn, &config)
