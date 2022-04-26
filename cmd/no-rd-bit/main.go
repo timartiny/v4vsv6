@@ -492,7 +492,7 @@ func main() {
 	saveResultsWG.Add(1)
 	go saveResults(resultChan, args.OutputFile, args.Timeout, &saveResultsWG)
 
-	infoLogger.Printf("Spawning resolver workers")
+	infoLogger.Printf("Spawning domain workers")
 	for w := uint(0); w < uint(args.Threads); w++ {
 		workersWG.Add(1)
 		// go resolverWorker(
@@ -523,7 +523,7 @@ func main() {
 	// close(resolverChan)
 	close(domainChan)
 	infoLogger.Println(
-		"Waiting for resolvers (and any follow up TLS conns) to finish",
+		"Waiting for workers to finish",
 	)
 	workersWG.Wait()
 	close(resultChan)
