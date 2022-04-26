@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -25,7 +26,7 @@ type NoRDBitFlags struct {
 	Resolvers  string `arg:"--resolvers,required" help:"(Required) Path to file containing list of Resolvers to query"`
 	Domains    string `arg:"--domains,required" help:"(Required) Path to the file containing domains to issue A and AAAA record requests to"`
 	SourceIP   string `arg:"--source-ip" help:"Address to send queries from" default:"192.12.240.40"`
-	Threads    int    `arg:"--threads" help:"Number of goroutines to use for queries" default:"1000"`
+	Threads    int    `arg:"--threads" help:"Number of goroutines to use for queries" default:"50"`
 	Timeout    int    `arg:"--timeout" help:"Number of seconds to wait for DNS and TLS connections" default:"5"`
 	OutputFile string `arg:"--output,required" help:"(Required) Path to the file to save results to"`
 }
@@ -325,12 +326,12 @@ func resolverWorker(
 					if len(dnsResult.Answers) <= 0 {
 						// didn't get any answers though, so there's nothing to do
 						/*
-						errorLogger.Printf(
-							"Got CCode of Unknown with no Answers for %s "+
-								"resolving %s\n",
-							dnsResult.Resolver,
-							dnsResult.Domain,
-						)
+							errorLogger.Printf(
+								"Got CCode of Unknown with no Answers for %s "+
+									"resolving %s\n",
+								dnsResult.Resolver,
+								dnsResult.Domain,
+							)
 						*/
 					} else {
 						dnsResult.CCode = tlsLookup(domain, dnsResult.Answers, timeout)
@@ -362,7 +363,11 @@ func domainWorker(
 		}
 		records := []string{"A", "AAAA"}
 
-		for _, resolverIP := range resolvers {
+		// randomize order of resolvers so all workers don't hit the same
+		// resolvers at the same time
+		resolverOrder := rand.Perm(len(resolvers))
+		for _, resolverIndex := range resolverOrder {
+			resolverIP := resolvers[resolverIndex]
 			for _, record := range records {
 				dnsResult := resolveDomain(
 					resolverIP,
