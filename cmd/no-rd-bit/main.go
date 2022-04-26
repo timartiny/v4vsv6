@@ -269,7 +269,6 @@ func tlsLookup(
 			defer tlsConn.Close()
 			err = tlsConn.Handshake()
 			if err != nil {
-				errorLogger.Printf("Failed in tls handshake for %s\n", domain)
 				return ReturnedInvalidRecord
 			}
 			// Leaf Cert
