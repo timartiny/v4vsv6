@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -23,10 +22,9 @@ var (
 )
 
 type NoRDBitFlags struct {
-	Resolvers  string `arg:"--resolvers,required" help:"(Required) Path to file containing list of Resolvers to query"`
-	Domains    string `arg:"--domains,required" help:"(Required) Path to the file containing domains to issue A and AAAA record requests to"`
+	InputFile  string `arg:"--input,required" help:"(Required) File to read \"domain,ip\" inputs from"`
 	SourceIP   string `arg:"--source-ip" help:"Address to send queries from" default:"192.12.240.40"`
-	Threads    int    `arg:"--threads" help:"Number of goroutines to use for queries" default:"50"`
+	Threads    int    `arg:"--threads" help:"Number of goroutines to use for queries" default:"1000"`
 	Timeout    int    `arg:"--timeout" help:"Number of seconds to wait for DNS and TLS connections" default:"5"`
 	OutputFile string `arg:"--output,required" help:"(Required) Path to the file to save results to"`
 }
@@ -66,75 +64,6 @@ func setupArgs() NoRDBitFlags {
 	arg.MustParse(&ret)
 
 	return ret
-}
-
-func readResolvers(resolversFile string, sourceIP net.IP) []net.IP {
-	f, err := os.Open(resolversFile)
-	if err != nil {
-		errorLogger.Printf("Error opening resolver file: %s\n", resolversFile)
-		errorLogger.Fatalln(err)
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	var sourceAF int
-	if sourceIP.To4() == nil {
-		sourceAF = 6
-	} else {
-		sourceAF = 4
-	}
-
-	var ret []net.IP
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		ip := net.ParseIP(line)
-		if ip != nil {
-			if sourceAF == 4 {
-				if ip.To4() == nil {
-					errorLogger.Printf(
-						"IP: %s has incorrect Address Family, must match AF "+
-							"of source IP: %s, skipping\n",
-						ip.String(),
-						sourceIP.String(),
-					)
-					continue
-				}
-			} else {
-				if ip.To4() != nil {
-					errorLogger.Printf(
-						"IP: %s has incorrect Address Family, must match AF "+
-							"of source IP: %s, skipping\n",
-						ip.String(),
-						sourceIP.String(),
-					)
-					continue
-				}
-			}
-			ret = append(ret, ip)
-		}
-	}
-
-	return ret
-}
-
-func readDomains(domainFile string) []string {
-	f, err := os.Open(domainFile)
-	if err != nil {
-		errorLogger.Printf("Error opening resolver file: %s\n", domainFile)
-		errorLogger.Fatalln(err)
-	}
-	defer f.Close()
-
-	var domains []string
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		domains = append(domains, line)
-	}
-
-	return domains
 }
 
 func resolveDomain(
@@ -287,21 +216,16 @@ func tlsLookup(
 	return ReturnedInvalidRecord
 }
 
-func resolverWorker(
-	domains []string,
+func inputWorker(
 	sourceIP net.IP,
 	timeout time.Duration,
-	resolverChan <-chan net.IP,
+	inputChan <-chan string,
 	resultChan chan<- DNSResult,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
 
-	for resolverIP := range resolverChan {
-		infoLogger.Printf(
-			"Running no rd scan for resolver: %s\n",
-			resolverIP.String(),
-		)
+	for input := range inputChan {
 		udpAddr := &net.UDPAddr{
 			IP: sourceIP,
 		}
@@ -309,87 +233,52 @@ func resolverWorker(
 			LocalAddr: udpAddr,
 		}
 		records := []string{"A", "AAAA"}
-
-		for _, domain := range domains {
-			for _, record := range records {
-				dnsResult := resolveDomain(
-					resolverIP,
-					dialer,
-					domain,
-					record,
-					timeout,
+		splitInput := strings.Split(input, ",")
+		domain := splitInput[0]
+		resolverIP := net.ParseIP(splitInput[1])
+		if sourceIP.To4() == nil {
+			// source IP is v6 so resolvers need to be v6
+			if resolverIP.To4() != nil {
+				errorLogger.Printf(
+					"Got IPv4 Resolver for IPv6 source IP: %s\n", input,
 				)
-				if dnsResult.CCode == Unknown {
-					// still need to determine censorship
-					if len(dnsResult.Answers) <= 0 {
-						// didn't get any answers though, so there's nothing to do
-						/*
-							errorLogger.Printf(
-								"Got CCode of Unknown with no Answers for %s "+
-									"resolving %s\n",
-								dnsResult.Resolver,
-								dnsResult.Domain,
-							)
-						*/
-					} else {
-						dnsResult.CCode = tlsLookup(domain, dnsResult.Answers, timeout)
-					}
-				}
-				resultChan <- dnsResult
+				errorLogger.Println("Skipping this entry")
+				continue
+			}
+		} else {
+			// source IP is v4 so resolvers need to be v6
+			if resolverIP.To4() == nil {
+				errorLogger.Printf(
+					"Got IPv6 Resolver for IPv4 source IP: %s\n", input,
+				)
+				errorLogger.Println("Skipping this entry")
+				continue
 			}
 		}
-	}
-}
 
-func domainWorker(
-	resolvers []net.IP,
-	sourceIP net.IP,
-	timeout time.Duration,
-	domainChan <-chan string,
-	resultChan chan<- DNSResult,
-	wg *sync.WaitGroup,
-) {
-	defer wg.Done()
-
-	for domain := range domainChan {
-		infoLogger.Printf("Running no rd scan for domain: %s\n", domain)
-		udpAddr := &net.UDPAddr{
-			IP: sourceIP,
-		}
-		dialer := net.Dialer{
-			LocalAddr: udpAddr,
-		}
-		records := []string{"A", "AAAA"}
-
-		// randomize order of resolvers so all workers don't hit the same
-		// resolvers at the same time
-		resolverOrder := rand.Perm(len(resolvers))
-		for _, resolverIndex := range resolverOrder {
-			resolverIP := resolvers[resolverIndex]
-			for _, record := range records {
-				dnsResult := resolveDomain(
-					resolverIP,
-					dialer,
-					domain,
-					record,
-					timeout,
-				)
-				if dnsResult.CCode == Unknown {
-					// still need to determine censorship
-					if len(dnsResult.Answers) <= 0 {
-						// didn't get any answers though, so there's nothing to do
-						// errorLogger.Printf(
-						// 	"Got CCode of Unknown with no Answers for %s "+
-						// 		"resolving %s\n",
-						// 	dnsResult.Resolver,
-						// 	dnsResult.Domain,
-						// )
-					} else {
-						dnsResult.CCode = tlsLookup(domain, dnsResult.Answers, timeout)
-					}
+		for _, record := range records {
+			dnsResult := resolveDomain(
+				resolverIP,
+				dialer,
+				domain,
+				record,
+				timeout,
+			)
+			if dnsResult.CCode == Unknown {
+				// still need to determine censorship
+				if len(dnsResult.Answers) <= 0 {
+					// didn't get any answers though, so there's nothing to do
+					// errorLogger.Printf(
+					// 	"Got CCode of Unknown with no Answers for %s "+
+					// 		"resolving %s\n",
+					// 	dnsResult.Resolver,
+					// 	dnsResult.Domain,
+					// )
+				} else {
+					dnsResult.CCode = tlsLookup(domain, dnsResult.Answers, timeout)
 				}
-				resultChan <- dnsResult
 			}
+			resultChan <- dnsResult
 		}
 	}
 }
@@ -450,13 +339,21 @@ func saveResults(
 	}
 }
 
-// const (
-// 	Unknown CensorshipCode = iota
-// 	ResolverError
-// 	ReturnedAdditionals
-// 	ReturnedInvalidRecord
-// 	ReturnedValidRecord
-// )
+func lineCounter(fileName string) int {
+	file, err := os.Open(fileName)
+	if err != nil {
+		errorLogger.Printf("Error opening input file: %s\n", fileName)
+		errorLogger.Fatalln(err)
+	}
+
+	defer file.Close()
+	fileScanner := bufio.NewScanner(file)
+	lineCount := 0
+	for fileScanner.Scan() {
+		lineCount++
+	}
+	return lineCount
+}
 
 func main() {
 	infoLogger = log.New(
@@ -475,19 +372,10 @@ func main() {
 	if sourceIP == nil {
 		errorLogger.Fatalf("Invalid Source IP: %s\n", args.SourceIP)
 	}
-	resolvers := readResolvers(args.Resolvers, sourceIP)
-	if len(resolvers) <= 0 {
-		errorLogger.Fatalln("Got no valid resolvers")
-	}
-	infoLogger.Printf("Got %d resolvers\n", len(resolvers))
-
-	domains := readDomains(args.Domains)
-	infoLogger.Printf("Got %d domains\n", len(domains))
 
 	var workersWG sync.WaitGroup
 	var saveResultsWG sync.WaitGroup
-	// resolverChan := make(chan net.IP)
-	domainChan := make(chan string)
+	inputChan := make(chan string)
 	resultChan := make(chan DNSResult)
 	saveResultsWG.Add(1)
 	go saveResults(resultChan, args.OutputFile, args.Timeout, &saveResultsWG)
@@ -495,33 +383,37 @@ func main() {
 	infoLogger.Printf("Spawning domain workers")
 	for w := uint(0); w < uint(args.Threads); w++ {
 		workersWG.Add(1)
-		// go resolverWorker(
-		// 	domains,
-		// 	sourceIP,
-		// 	connTimeout,
-		// 	resolverChan,
-		// 	resultChan,
-		// 	&workersWG,
-		// )
-		go domainWorker(
-			resolvers,
+		go inputWorker(
 			sourceIP,
 			connTimeout,
-			domainChan,
+			inputChan,
 			resultChan,
 			&workersWG,
 		)
 	}
 
-	// for _, resolver := range resolvers {
-	// 	resolverChan <- resolver
-	// }
-	for _, domain := range domains {
-		domainChan <- domain
+	inputLines := lineCounter(args.InputFile)
+	inputFile, _ := os.Open(args.InputFile)
+	scanner := bufio.NewScanner(inputFile)
+	lineCount := 0
+	lastReportedPercentage := -1
+	for scanner.Scan() {
+		line := scanner.Text()
+		lineCount++
+		currPercentage := int(100 * (float64(lineCount) / float64(inputLines)))
+		if currPercentage > lastReportedPercentage {
+			infoLogger.Printf(
+				"[%3d%%] Read %d lines of %d\n",
+				currPercentage,
+				lineCount,
+				inputLines,
+			)
+			lastReportedPercentage = currPercentage
+		}
+		inputChan <- line
 	}
 
-	// close(resolverChan)
-	close(domainChan)
+	close(inputChan)
 	infoLogger.Println(
 		"Waiting for workers to finish",
 	)
