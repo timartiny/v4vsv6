@@ -236,6 +236,11 @@ func inputWorker(
 		splitInput := strings.Split(input, ",")
 		domain := splitInput[0]
 		resolverIP := net.ParseIP(splitInput[1])
+		if resolverIP == nil && strings.Contains(splitInput[1], "[") {
+			// v6 addresses are printed with brackets i.e, [::1], but can't be
+			// parsed that way
+			resolverIP = net.ParseIP(splitInput[1][1 : len(splitInput[1])-1])
+		}
 		if sourceIP.To4() == nil {
 			// source IP is v6 so resolvers need to be v6
 			if resolverIP.To4() != nil {
