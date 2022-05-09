@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"encoding/hex"
 	"flag"
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
 	"log"
 	"net"
 	"os"
@@ -20,6 +23,82 @@ type Result struct {
 	resp []byte
 }
 
+func getUdpPayload(packet gopacket.Packet) (out []byte) {
+	udpLayer := packet.Layer(layers.LayerTypeUDP)
+	if udpLayer != nil {
+		udp, _ := udpLayer.(*layers.UDP)
+		return udp.Payload
+	}
+	return
+}
+
+func handlePacket(packet gopacket.Packet) {
+
+	/*
+		decoded := []gopacket.LayerType{}
+		if err := parser.DecodeLayers(packet.Data(), &deocded); err != nil {
+
+			fmt.Fprintf(os.Stderr, "Could not decode layers: %v\n", err)
+			return
+		}*/
+	udpLayer := packet.Layer(layers.LayerTypeUDP)
+	if udpLayer == nil {
+		return
+	}
+	udp, _ := udpLayer.(*layers.UDP)
+
+	dnsLayer := packet.Layer(layers.LayerTypeDNS)
+	if dnsLayer == nil {
+		return
+	}
+	dns, _ := dnsLayer.(*layers.DNS)
+	questions := dns.Questions
+	answers := dns.Answers
+	if len(questions) < 1 {
+		return
+	}
+
+	var ipAddr net.IP
+	ipLayer := packet.Layer(layers.LayerTypeIPv4)
+	if ipLayer == nil {
+		ip6Layer := packet.Layer(layers.LayerTypeIPv6)
+		if ip6Layer == nil {
+			return
+		}
+		ip6, _ := ip6Layer.(*layers.IPv6)
+		ipAddr = ip6.SrcIP
+	} else {
+		ip4, _ := ipLayer.(*layers.IPv4)
+		ipAddr = ip4.SrcIP
+	}
+	log.Printf("RESULT %s %s, %s %d answers: %s\n",
+		ipAddr, questions[0].Name, dns.ResponseCode, len(answers), hex.EncodeToString(udp.Payload))
+}
+
+func handlePcap(iface string) {
+
+	if handle, err := pcap.OpenLive(iface, 1600, true, pcap.BlockForever); err != nil {
+		panic(err)
+	} else if err := handle.SetBPFFilter("udp src port 53"); err != nil { // optional
+		panic(err)
+	} else {
+		/*
+			var eth layers.Ethernet
+			var ip4 layers.IPv4
+			var ip6 layers.IPv6
+			var udp layers.UDP
+			var dns layers.DNS
+			parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &eth, &ip4, &ip6, &udp, &dns)
+
+		*/
+		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+		for packet := range packetSource.Packets() {
+			handlePacket(packet)
+		}
+	}
+
+}
+
 func sendDnsProbe(ip net.IP, name string, timeout time.Duration, verbose bool, shouldRead bool) (Result, error) {
 	m := &dns.Msg{
 		MsgHdr: dns.MsgHdr{
@@ -33,8 +112,8 @@ func sendDnsProbe(ip net.IP, name string, timeout time.Duration, verbose bool, s
 	}
 	m.Question[0] = dns.Question{
 		Name:   dns.Fqdn(name),
-		Qtype:  dns.TypeTXT,
-		Qclass: uint16(0x0003), // chaos (CH)
+		Qtype:  dns.TypeA,
+		Qclass: uint16(0x0001), // IN
 	}
 	m.Id = dns.Id()
 
@@ -166,6 +245,7 @@ func main() {
 	wait := flag.Duration("wait", 5*time.Second, "Duration to wait for DNS response")
 	verbose := flag.Bool("verbose", true, "Verbose prints sent/received DNS packets/info")
 	domainf := flag.String("domains", "domains.txt", "File with a list of domains to test")
+	iface := flag.String("iface", "eth0", "Interface to listen on")
 
 	flag.Parse()
 
@@ -184,6 +264,8 @@ func main() {
 		wg.Add(1)
 		go dnsWorker(*wait, *verbose, false, ips, domains, &wg)
 	}
+
+	go handlePcap(*iface)
 
 	nJobs := 0
 	scanner := bufio.NewScanner(os.Stdin)
