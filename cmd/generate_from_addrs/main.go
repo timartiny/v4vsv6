@@ -59,7 +59,7 @@ func main() {
 	defer outFile.Close()
 
 	selectedAddrs := make(map[string]struct{})
-	respondingAddrs, err := parseRespongindAddrs(filterLiveFile)
+	respondingAddrs, err := gen.ParseRespongindAddrs(filterLiveFile)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -162,24 +162,4 @@ func getAddrs(original string, rdr io.Reader, nAddrs int, db *maxminddb.Reader) 
 	}
 
 	return out, nil
-}
-
-func parseRespongindAddrs(fPath string) (map[string]struct{}, error) {
-	respondingAddrs := make(map[string]struct{})
-
-	if fPath == "" {
-		return respondingAddrs, nil
-	}
-
-	inFile, err := os.Open(fPath)
-	if err != nil {
-		return nil, err
-	}
-	defer inFile.Close()
-
-	scanner := bufio.NewScanner(inFile)
-	for scanner.Scan() {
-		respondingAddrs[scanner.Text()] = struct{}{}
-	}
-	return respondingAddrs, nil
 }

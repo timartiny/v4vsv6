@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"io"
 	"log"
@@ -58,7 +57,7 @@ func main() {
 	defer file6.Close()
 
 	selectedAddrs := make(map[string]struct{})
-	respondingAddrs, err := parseRespongindAddrs(filterLiveFile)
+	respondingAddrs, err := gen.ParseRespongindAddrs(filterLiveFile)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -78,14 +77,14 @@ func main() {
 				log.Println("too many retries generating for", cc, countryCount)
 				continue
 			}
-			randAddrs4, err = ccMap.GetNRandomAddr4(rdr, cc, blockSize)
+			randAddrs4, err = ccMap.GetNRandomAddr4(rdr, cc, blockSize, maxGenerationRetries)
 			if err != nil {
 				if err != gen.ErrNoSubnets {
 					log.Println(err)
 					continue
 				}
 			}
-			randAddrs6, err = ccMap.GetNRandomAddr6(rdr, cc, blockSize)
+			randAddrs6, err = ccMap.GetNRandomAddr6(rdr, cc, blockSize, maxGenerationRetries)
 			if err != nil {
 				if err != gen.ErrNoSubnets {
 					log.Println(err)
@@ -124,20 +123,4 @@ func main() {
 			}
 		}
 	}
-}
-
-func parseRespongindAddrs(fPath string) (map[string]struct{}, error) {
-	respondingAddrs := make(map[string]struct{})
-
-	inFile, err := os.Open(fPath)
-	if err != nil {
-		return nil, err
-	}
-	defer inFile.Close()
-
-	scanner := bufio.NewScanner(inFile)
-	for scanner.Scan() {
-		respondingAddrs[scanner.Text()] = struct{}{}
-	}
-	return respondingAddrs, nil
 }
