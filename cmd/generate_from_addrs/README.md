@@ -35,7 +35,7 @@ Usage of generate_from_addrs:
         PRNG seed (default seeded with time in ns) (default -1)
 ```
 
-So For example
+So for example
 
 ```sh
 cat addrs.dat | zblocklist -b /etc/zmap/blacklist.conf | ./generate_from_addr -d /data/GeoLite2/ -filter "./zmap-udp53.csv"
