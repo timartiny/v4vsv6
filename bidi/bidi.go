@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"encoding/hex"
 	"flag"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
 	"log"
 	"net"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
 
 	"github.com/miekg/dns"
 )
@@ -99,7 +100,7 @@ func handlePcap(iface string) {
 
 }
 
-func sendDnsProbe(ip net.IP, name string, timeout time.Duration, verbose bool, shouldRead bool) (Result, error) {
+func sendDnsProbe(ip net.IP, name string, qType uint16, lAddr string, timeout time.Duration, verbose bool, shouldRead bool) (Result, error) {
 	m := &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Authoritative:     false,
@@ -112,7 +113,7 @@ func sendDnsProbe(ip net.IP, name string, timeout time.Duration, verbose bool, s
 	}
 	m.Question[0] = dns.Question{
 		Name:   dns.Fqdn(name),
-		Qtype:  dns.TypeA,
+		Qtype:  qType,
 		Qclass: uint16(0x0001), // IN
 	}
 	m.Id = dns.Id()
@@ -129,7 +130,12 @@ func sendDnsProbe(ip net.IP, name string, timeout time.Duration, verbose bool, s
 		addr = "[" + ip.String() + "]:53"
 	}
 
-	conn, err := net.Dial("udp", addr)
+	//conn, err := net.Dial("udp", addr)
+	var d net.Dialer
+	if lAddr != "" {
+		d.LocalAddr, _ = net.ResolveUDPAddr("ip", lAddr)
+	}
+	conn, err := d.Dial("udp", addr)
 	if err != nil {
 		if verbose {
 			log.Printf("%s - Error creating UDP socket(?): %v\n", ip.String(), err)
@@ -194,7 +200,7 @@ func sendDnsProbe(ip net.IP, name string, timeout time.Duration, verbose bool, s
 	}
 }
 
-func dnsWorker(wait time.Duration, verbose bool, shouldRead bool, ips <-chan string, domains []string, wg *sync.WaitGroup) {
+func dnsWorker(wait time.Duration, verbose bool, shouldRead bool, qType uint16, lAddr string, ips <-chan string, domains []string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for ip := range ips {
@@ -204,7 +210,7 @@ func dnsWorker(wait time.Duration, verbose bool, shouldRead bool, ips <-chan str
 		}
 
 		for _, domain := range domains {
-			_, err := sendDnsProbe(addr, domain, wait, verbose, shouldRead)
+			_, err := sendDnsProbe(addr, domain, qType, lAddr, wait, verbose, shouldRead)
 			if shouldRead {
 				// We expect a result (TODO)
 				if err != nil {
@@ -246,8 +252,12 @@ func main() {
 	verbose := flag.Bool("verbose", true, "Verbose prints sent/received DNS packets/info")
 	domainf := flag.String("domains", "domains.txt", "File with a list of domains to test")
 	iface := flag.String("iface", "eth0", "Interface to listen on")
+	qTypeUint := flag.Uint("qtype", 1, "Type of Query to send (1 = A / 28 = AAAA)")
+	lAddr := flag.String("laddr", "", "Local address to send packets from - unset uses default interface.")
 
 	flag.Parse()
+
+	var qType = uint16(*qTypeUint)
 
 	// Parse domains
 	domains, err := getDomains(*domainf)
@@ -262,7 +272,7 @@ func main() {
 
 	for w := uint(0); w < *nWorkers; w++ {
 		wg.Add(1)
-		go dnsWorker(*wait, *verbose, false, ips, domains, &wg)
+		go dnsWorker(*wait, *verbose, false, qType, *lAddr, ips, domains, &wg)
 	}
 
 	go handlePcap(*iface)
