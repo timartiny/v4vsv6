@@ -1,36 +1,31 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/binary"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"log"
-	mrand "math/rand"
+	"math/rand"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/google/gopacket/routing"
 )
 
 const httpProbeTypeName = "http"
 const httpUserAgent = "curl/7.81.0"
-const httpSharedHeaderFmtStr = ``
-const httpFmtStr = `GET / HTTP/1.1
-Host:  %s
-User-Agent: %s
-Accept: */*
-
-`
+const httpFmtStr = "GET / HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\nAccept: */*\r\n\r\n"
 
 type httpProber struct {
 	device string
+	seed   int64
 }
 
 func (p *httpProber) registerFlags() {
+	flag.Int64Var(&p.seed, "seed", int64(time.Now().Nanosecond()), "[HTTP] seed for random elements of generated packets")
 }
 
 func (p *httpProber) shouldRead() bool {
@@ -38,6 +33,9 @@ func (p *httpProber) shouldRead() bool {
 }
 
 func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
+
+	r := rand.New(rand.NewSource(p.seed))
+
 	// Open device
 	handle, err := pcap.OpenLive(p.device, 1500, false, pcap.BlockForever)
 	if err != nil {
@@ -45,14 +43,42 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 	}
 	defer handle.Close()
 
-	iface, err := net.InterfaceByName(p.device)
+	localIface, err := net.InterfaceByName(p.device)
 	if err != nil {
 		return nil, fmt.Errorf("bad device name: \"%s\"", p.device)
 	}
 
+	var localIP = net.ParseIP(lAddr)
+	if localIP == nil {
+		addrs, err := localIface.Addrs()
+		if len(addrs) == 0 || err != nil {
+			return nil, fmt.Errorf("unable to get local addr")
+		}
+		localIP, _, err = net.ParseCIDR(addrs[0].String())
+		if err != nil {
+			return nil, fmt.Errorf("unable to get local cidr")
+		}
+	}
+
+	if localIP == nil {
+		return nil, fmt.Errorf("unable to parse local IP addr: \"%s\"", lAddr)
+	}
+
+	router, err := routing.New()
+	if err != nil {
+		return nil, err
+	}
+
+	// ignore gateway, but adopt preferred source if no lAddr was specified.
+	remoteIface, _, preferredSrc, err := router.RouteWithSrc(localIface.HardwareAddr, localIP, ip)
+	if lAddr == "" {
+		localIP = preferredSrc
+	}
+
 	eth := layers.Ethernet{
-		SrcMAC:       iface.HardwareAddr,
-		DstMAC:       net.HardwareAddr{0xBD, 0xBD, 0xBD, 0xBD, 0xBD, 0xBD},
+		SrcMAC: localIface.HardwareAddr,
+		DstMAC: remoteIface.HardwareAddr,
+		// DstMAC:       net.HardwareAddr{0xBD, 0xBD, 0xBD, 0xBD, 0xBD, 0xBD},
 		EthernetType: layers.EthernetTypeIPv4,
 	}
 
@@ -68,22 +94,6 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 		base = &lo
 	}
 
-	var localIP = net.ParseIP(lAddr)
-	if localIP == nil {
-		addrs, err := iface.Addrs()
-		if len(addrs) == 0 || err != nil {
-			return nil, fmt.Errorf("unable to get local addr")
-		}
-		localIP, _, err = net.ParseCIDR(addrs[0].String())
-		if err != nil {
-			return nil, fmt.Errorf("unable to get local cidr")
-		}
-	}
-
-	if localIP == nil {
-		return nil, fmt.Errorf("unable to parse local IP addr: \"%s\"", lAddr)
-	}
-
 	// Fill out IP header with source and dest
 	// TODO JMWAMPLE: v6 layer handle
 	ipLayer := layers.IPv4{
@@ -94,13 +104,18 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 		Protocol: layers.IPProtocolTCP,
 	}
 
+	// Pick a random source port between 1000 and 65535
+	randPort := (r.Int31() % 64535) + 1000
+
 	// Fill TCP layer details
 	tcpLayer := layers.TCP{
-		SrcPort: layers.TCPPort(getRandInt(1000, 65535)),
+		SrcPort: layers.TCPPort(randPort),
 		DstPort: layers.TCPPort(80),
-		SYN:     true,
+		PSH:     true,
 		ACK:     true,
-		// Seq: 0,
+		Window:  502,
+		Seq:     r.Uint32(),
+		Ack:     r.Uint32(),
 	}
 
 	rawBytes := []byte(fmt.Sprintf(httpFmtStr, name, httpUserAgent))
@@ -120,56 +135,16 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 	)
 	outgoingPacket := buffer.Bytes()
 
-	fmt.Println(base)
-	fmt.Println(ipLayer)
-	fmt.Println(tcpLayer)
-	fmt.Println(hex.EncodeToString(outgoingPacket))
-
 	// Send our packet
 	err = handle.WritePacketData(outgoingPacket)
 	if err != nil {
 		return nil, err
 	}
 
-	// ipl := layers.IPv4{
-	// 	Version:  4,
-	// 	TTL:      64,
-	// 	SrcIP:    net.IP{1, 3, 3, 7},
-	// 	DstIP:    net.IP{127, 0, 0, 1},
-	// 	Protocol: layers.IPProtocolUDP,
-	// }
-
-	// udp := layers.UDP{
-	// 	SrcPort: 9000,
-	// 	DstPort: 9000,
-	// }
-	// udp.SetNetworkLayerForChecksum(&ipl)
-
-	// // Create a properly formed packet, just with
-	// // empty details. Should fill out MAC addresses,
-	// // IP addresses, etc.
-	// buffer := gopacket.NewSerializeBuffer()
-	// options := gopacket.SerializeOptions{
-	// 	// ComputeChecksums: true,
-	// 	// FixLengths:       true,
-	// }
-	// gopacket.SerializeLayers(buffer, options,
-	// 	base,
-	// 	&ipl,
-	// 	&udp,
-	// 	gopacket.Payload(rawBytes),
-	// )
-	// outgoingPacket := buffer.Bytes()
-	// // Send our packet
-	// err = handle.WritePacketData(outgoingPacket)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// if verbose {
-	// 	log.Printf("Sent %s - %s\n%v\n%v\n", ip.String(), hex.EncodeToString(outgoingPacket), tcpLayer, &ipLayer)
-	// 	// log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(outgoingPacket))
-	// }
+	if verbose {
+		log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(outgoingPacket))
+		// log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(outgoingPacket))
+	}
 
 	return &Result{ip: ip}, nil
 }
@@ -219,52 +194,4 @@ func (p *httpProber) handlePacket(packet gopacket.Packet) {
 	} else {
 		log.Printf("RESULT HTTP")
 	}
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-// Get padding of length [minLen, maxLen).
-// Distributed in pseudogaussian style.
-// Padded using symbol '#'. Known plaintext attacks, anyone?
-func getRandPadding(minLen int, maxLen int, smoothness int) string {
-	paddingLen := 0
-	for j := 0; j < smoothness; j++ {
-		paddingLen += getRandInt(minLen, maxLen)
-	}
-	paddingLen = paddingLen / smoothness
-
-	return strings.Repeat("#", paddingLen)
-}
-
-// Tries to get crypto random int in range [min, max]
-// In case of crypto failure -- return insecure pseudorandom
-func getRandInt(min int, max int) int {
-	// I can't believe Golang is making me do that
-	// Flashback to awful C/C++ libraries
-	diff := max - min
-	if diff < 0 {
-		min = max
-		diff *= -1
-	} else if diff == 0 {
-		return min
-	}
-	var v int64
-	err := binary.Read(rand.Reader, binary.LittleEndian, &v)
-	if v < 0 {
-		v *= -1
-	}
-	if err != nil {
-		v = mrand.Int63()
-	}
-	return min + int(v%int64(diff+1))
-}
-
-// returns random duration between min and max in milliseconds
-func getRandomDuration(min int, max int) time.Duration {
-	return time.Millisecond * time.Duration(getRandInt(min, max))
 }
