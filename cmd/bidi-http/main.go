@@ -100,6 +100,9 @@ func main() {
 
 	if hp, ok := p.(*httpProber); ok {
 		hp.device = *iface
+		if hp.seed == -1 {
+			hp.seed = int64(time.Now().Nanosecond())
+		}
 	}
 
 	// Parse domains

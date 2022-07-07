@@ -15,8 +15,9 @@ import (
 	"github.com/google/gopacket/routing"
 )
 
+// const httpUserAgent = "curl/7.81.0"
+const httpUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
 const httpProbeTypeName = "http"
-const httpUserAgent = "curl/7.81.0"
 const httpFmtStr = "GET / HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\nAccept: */*\r\n\r\n"
 
 type httpProber struct {
@@ -25,7 +26,7 @@ type httpProber struct {
 }
 
 func (p *httpProber) registerFlags() {
-	flag.Int64Var(&p.seed, "seed", int64(time.Now().Nanosecond()), "[HTTP] seed for random elements of generated packets")
+	flag.Int64Var(&p.seed, "seed", -1, "[HTTP] seed for random elements of generated packets default seed with time.Now.Nano")
 }
 
 func (p *httpProber) shouldRead() bool {
@@ -34,10 +35,12 @@ func (p *httpProber) shouldRead() bool {
 
 func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
 
+	var useV4 = ip.To4() != nil
+
 	r := rand.New(rand.NewSource(p.seed))
 
 	// Open device
-	handle, err := pcap.OpenLive(p.device, 1500, false, pcap.BlockForever)
+	handle, err := pcap.OpenLive(p.device, 1600, true, pcap.BlockForever)
 	if err != nil {
 		return nil, err
 	}
@@ -49,59 +52,63 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 	}
 
 	var localIP = net.ParseIP(lAddr)
-	if localIP == nil {
-		addrs, err := localIface.Addrs()
-		if len(addrs) == 0 || err != nil {
-			return nil, fmt.Errorf("unable to get local addr")
-		}
-		localIP, _, err = net.ParseCIDR(addrs[0].String())
-		if err != nil {
-			return nil, fmt.Errorf("unable to get local cidr")
-		}
-	}
-
-	if localIP == nil {
-		return nil, fmt.Errorf("unable to parse local IP addr: \"%s\"", lAddr)
-	}
 
 	router, err := routing.New()
 	if err != nil {
 		return nil, err
 	}
 
-	// ignore gateway, but adopt preferred source if no lAddr was specified.
+	// ignore gateway, but adopt preferred source if unsuitable lAddr was specified.
 	remoteIface, _, preferredSrc, err := router.RouteWithSrc(localIface.HardwareAddr, localIP, ip)
-	if lAddr == "" {
+	if err != nil || remoteIface == nil {
+		return nil, fmt.Errorf("failed to get remote iface: %s", err)
+	}
+
+	if localIP == nil {
+		localIP = preferredSrc
+	} else if useV4 && preferredSrc.To4() == nil {
+		localIP = preferredSrc
+	} else if !useV4 && preferredSrc.To4() != nil {
 		localIP = preferredSrc
 	}
 
+	// Create the Ethernet Layer
+	var ethType layers.EthernetType
+	if useV4 {
+		ethType = layers.EthernetTypeIPv4
+	} else {
+		ethType = layers.EthernetTypeIPv6
+	}
 	eth := layers.Ethernet{
-		SrcMAC: localIface.HardwareAddr,
-		DstMAC: remoteIface.HardwareAddr,
-		// DstMAC:       net.HardwareAddr{0xBD, 0xBD, 0xBD, 0xBD, 0xBD, 0xBD},
-		EthernetType: layers.EthernetTypeIPv4,
-	}
-
-	// Used for loopback interface
-	lo := layers.Ethernet{
-		SrcMAC:       net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		DstMAC:       net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		EthernetType: layers.EthernetTypeIPv4,
-	}
-
-	var base gopacket.SerializableLayer = &eth
-	if p.device == "lo" {
-		base = &lo
+		SrcMAC:       localIface.HardwareAddr,
+		DstMAC:       remoteIface.HardwareAddr,
+		EthernetType: ethType,
 	}
 
 	// Fill out IP header with source and dest
-	// TODO JMWAMPLE: v6 layer handle
-	ipLayer := layers.IPv4{
-		SrcIP:    localIP,
-		DstIP:    ip,
-		Version:  4,
-		TTL:      64,
-		Protocol: layers.IPProtocolTCP,
+	var ipLayer gopacket.SerializableLayer
+	if useV4 {
+		if localIP.To4() == nil {
+			return nil, fmt.Errorf("v6 src for v4 dst")
+		}
+		ipLayer = &layers.IPv4{
+			SrcIP:    localIP,
+			DstIP:    ip,
+			Version:  4,
+			TTL:      64,
+			Protocol: layers.IPProtocolTCP,
+		}
+	} else {
+		if localIP.To4() != nil {
+			return nil, fmt.Errorf("v4 src for v6 dst")
+		}
+		ipLayer = &layers.IPv6{
+			SrcIP:      localIP,
+			DstIP:      ip,
+			Version:    6,
+			HopLimit:   64,
+			NextHeader: layers.IPProtocolTCP,
+		}
 	}
 
 	// Pick a random source port between 1000 and 65535
@@ -118,8 +125,8 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 		Ack:     r.Uint32(),
 	}
 
+	// Fill out request bytes
 	rawBytes := []byte(fmt.Sprintf(httpFmtStr, name, httpUserAgent))
-	// rawBytes := []byte{0xAA, 0xBB, 0xCC}
 
 	// And create the packet with the layers
 	options := gopacket.SerializeOptions{
@@ -128,8 +135,8 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 	}
 	buffer := gopacket.NewSerializeBuffer()
 	gopacket.SerializeLayers(buffer, options,
-		base,
-		&ipLayer,
+		&eth,
+		ipLayer,
 		&tcpLayer,
 		gopacket.Payload(rawBytes),
 	)

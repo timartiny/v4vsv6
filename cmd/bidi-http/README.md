@@ -34,7 +34,6 @@ So for example
 cat may-11/generated_addr* | cut -d " " -f 1 | zblocklist -b /etc/zmap/blacklist.conf | sudo ./bidi -laddr "<local_addr>" -qtype 1  -workers 2000 -wait 5ms -iface enp1s0f0:0 > may-11/bidi_3.out 2>&1
 ```
 
-
 ```sh
  echo "52.44.73.6" | sudo ./bidi-http -type http -iface "wlo1" -domains domains.txt -workers 1 -wait 1s
 ```
