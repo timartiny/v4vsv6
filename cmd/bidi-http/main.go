@@ -77,6 +77,7 @@ func main() {
 		dnsProbeTypeName:  &dnsProber{innerShouldRead: false},
 		httpProbeTypeName: &httpProber{},
 		tlsProbeTypeName:  &tlsProber{},
+		quicProbeTypeName: &quicProber{},
 	}
 
 	nWorkers := flag.Uint("workers", 50, "Number worker threads")
@@ -86,7 +87,7 @@ func main() {
 	iface := flag.String("iface", "eth0", "Interface to listen on")
 	lAddr := flag.String("laddr", "", "Local address to send packets from - unset uses default interface.")
 	proberType := flag.String("type", "dns", "probe type to send")
-	seed := flag.Int64("seed", -1, "[HTTP/TLS1.2] seed for random elements of generated packets. default seeded with time.Now.Nano")
+	seed := flag.Int64("seed", -1, "[HTTP/TLS/QUIC] seed for random elements of generated packets. default seeded with time.Now.Nano")
 
 	for _, p := range probers {
 		p.registerFlags()
@@ -109,6 +110,13 @@ func main() {
 			prober.seed = *seed
 		}
 	case *tlsProber:
+		prober.device = *iface
+		if *seed == -1 {
+			prober.seed = int64(time.Now().Nanosecond())
+		} else {
+			prober.seed = *seed
+		}
+	case *quicProber:
 		prober.device = *iface
 		if *seed == -1 {
 			prober.seed = int64(time.Now().Nanosecond())
