@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -12,6 +13,8 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/google/gopacket/routing"
+	"golang.org/x/crypto/cryptobyte"
+	"golang.org/x/crypto/hkdf"
 )
 
 const quicProbeTypeName = "quic"
@@ -201,4 +204,70 @@ func (p *quicProber) handlePacket(packet gopacket.Packet) {
 	} else {
 		log.Printf("RESULT QUIC")
 	}
+}
+
+// quicEncryptInitialHandshake encrypts the incoming bytestream using the
+// specified initial client handshake parameters and returns the encrypted
+// stream of data as well as the computed auth tag - or an error if one occurred.
+func quicEncryptInitial(clientID, frameData []byte, packetNum uint64) ([]byte, []byte, error) {
+	gcmIVLen := 12
+	// gcmTagLen := 16
+	// aesKeyLen := 16
+
+	// key, id, err := generateKeyMaterial(clientID)
+
+	// generate iv and key from client chosen random bytes. Hardcoded for now
+	// aad, _ := hex.DecodeString("c00000000108000102030405060705635f63696400410300")
+	// key, _ := hex.DecodeString("b14b918124fda5c8d79847602fa3520b")
+	iv, _ := hex.DecodeString("ddbc15dea80925a55686a7df")
+
+	// build IV
+	for i := 0; i < 8; i++ {
+		iv[gcmIVLen-1-i] ^= byte((packetNum >> (i * 8)) & 0xff)
+	}
+
+	// TODO
+
+	return []byte{}, []byte{}, nil
+}
+
+type keyMaterial struct {
+	secret, key, iv, hpk []byte
+}
+
+func generateKeyMaterial(clientID []byte) (*keyMaterial, error) {
+	initialSalt, _ := hex.DecodeString("38762cf7f55934b34d179ae6a4c80cadccbb7f0a")
+
+	km := &keyMaterial{}
+	// // TODO
+	initialSecret := hkdf.Extract(sha256.New, clientID, initialSalt)
+	_ = initialSecret
+	km.secret = expandLabel(initialSecret, "client in", nil, 32)
+	km.key = expandLabel(km.secret, "quic key", nil, 16)
+	km.iv = expandLabel(km.secret, "quic iv", nil, 12)
+	km.hpk = expandLabel(km.secret, "quic hp", nil, 16)
+
+	return km, nil
+}
+
+func expandLabel(secret []byte, label string, context []byte, length int) []byte {
+
+	var hkdfLabel cryptobyte.Builder
+	hkdfLabel.AddUint16(uint16(length))
+	hkdfLabel.AddUint8LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddBytes([]byte("tls13 "))
+		b.AddBytes([]byte(label))
+	})
+
+	hkdfLabel.AddUint8LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddBytes(context)
+	})
+
+	out := make([]byte, length)
+	n, err := hkdf.Expand(sha256.New, secret, hkdfLabel.BytesOrPanic()).Read(out)
+	if err != nil || n != length {
+		panic("tls: HKDF-Expand-Label invocation failed unexpectedly")
+	}
+
+	return out
 }

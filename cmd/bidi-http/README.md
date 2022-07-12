@@ -45,3 +45,20 @@ To dump in more addresses more quickly you can do something like:
 ```sh
 cat may-11/generated_addr* | cut -d " " -f 1 | zblocklist -b /etc/zmap/blacklist.conf | sudo ./bidi -laddr "<local_addr>" -qtype 1  -workers 2000 -wait 5ms -iface enp1s0f0:0 > may-11/bidi_3.out 2>&1
 ```
+
+## TODO
+
+
+Dev tasks
+
+* quic HKDF functions
+* quic tls packet
+
+After testing with KNOWN censored networks and domains:
+
+* tcp "random" indicators for domain (we should get ip in injected response)
+* pcap handler (HTTP, TLS, & Quic)
+
+(once I know TLS injection is worth it.)
+
+* TLS match chrome ciphersuites, curve points, etc.
