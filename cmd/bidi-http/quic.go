@@ -59,13 +59,13 @@ func (p *quicProber) buildPaylaod(name string, r *rand.Rand) ([]byte, error) {
 
 	token := "00"
 
-	// TODO dynamic
-	packetLen := "4" + fmt.Sprintf("%03x", 0xf6+len(name))
+	// dynamic - packet length
+	packetLen := "4" + fmt.Sprintf("%03x", 0xfa+len(name))
 
 	var packetNum uint64 = 0
 	packetNumStr := fmt.Sprintf("%02x", packetNum)
 
-	paylaod, err := p.buildTLSPaylaod(name, r)
+	paylaod, err := p.buildCryptoFramePaylaod(name, r)
 	if err != nil {
 		return nil, err
 	}
@@ -97,14 +97,17 @@ func (p *quicProber) buildPaylaod(name string, r *rand.Rand) ([]byte, error) {
 	fullData := hex.EncodeToString(headerData) + hex.EncodeToString(cipherPayload)
 
 	// TODO enable padding
-	//padLen := (1200*2 - len(fullData)) / 2
-	padLen := 0
+	padLen := (1200*2 - len(fullData)) / 2
+
 	return hex.DecodeString(fullData + hex.EncodeToString(make([]byte, padLen)))
 }
 
-func (p *quicProber) buildTLSPaylaod(name string, r *rand.Rand) ([]byte, error) {
+func (p *quicProber) buildCryptoFramePaylaod(name string, r *rand.Rand) ([]byte, error) {
 
-	// var fulldata = "010000f40303000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000813021303130100ff010000a30000001800160000136578616d706c652e756c666865696d2e6e6574000b000403000102000a00160014001d0017001e0019001801000101010201030104002300000016000000170000000d001e001c040305030603080708080809080a080b080408050806040105010601002b0003020304002d00020101003300260024001d0020358072d6365880d1aeea329adf9121383851ed21a28e3b75e965d0d2cd166254"
+	// var fulldata = "060040ee010000f40303000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000813021303130100ff010000a30000001800160000136578616d706c652e756c666865696d2e6e6574000b000403000102000a00160014001d0017001e0019001801000101010201030104002300000016000000170000000d001e001c040305030603080708080809080a080b080408050806040105010601002b0003020304002d00020101003300260024001d0020358072d6365880d1aeea329adf9121383851ed21a28e3b75e965d0d2cd166254"
+
+	//
+	var ch = "06004" + fmt.Sprintf("%03x", len(name)+0xe5)
 
 	// dynamic - Handshake header and client version
 	var hh = "01" + fmt.Sprintf("%06x", len(name)+0xe1) + "0303"
@@ -141,7 +144,7 @@ func (p *quicProber) buildTLSPaylaod(name string, r *rand.Rand) ([]byte, error) 
 	var hostname = hex.EncodeToString([]byte(name))
 
 	var otherExtensions = "000b000403000102000a00160014001d0017001e0019001801000101010201030104002300000016000000170000000d001e001c040305030603080708080809080a080b080408050806040105010601002b0003020304002d00020101003300260024001d0020358072d6365880d1aeea329adf9121383851ed21a28e3b75e965d0d2cd166254"
-	fulldata := hh + clientRandom + sessionID + csAndCM + extensionsLen + extSNIID + extSNIDataLen + extSNIEntryLen + extSNIEntryType + hostnameLen + hostname + otherExtensions
+	fulldata := ch + hh + clientRandom + sessionID + csAndCM + extensionsLen + extSNIID + extSNIDataLen + extSNIEntryLen + extSNIEntryType + hostnameLen + hostname + otherExtensions
 
 	return hex.DecodeString(fulldata)
 }
