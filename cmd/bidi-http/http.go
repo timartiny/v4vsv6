@@ -22,6 +22,7 @@ const httpFmtStr = "GET / HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\nAccept: */*\
 type httpProber struct {
 	device string
 	seed   int64
+	r      *rand.Rand
 }
 
 func (p *httpProber) registerFlags() {
@@ -34,8 +35,6 @@ func (p *httpProber) shouldRead() bool {
 func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
 
 	var useV4 = ip.To4() != nil
-
-	r := rand.New(rand.NewSource(p.seed))
 
 	// Open device
 	handle, err := pcap.OpenLive(p.device, 1600, true, pcap.BlockForever)
@@ -110,7 +109,7 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 	}
 
 	// Pick a random source port between 1000 and 65535
-	randPort := (r.Int31() % 64535) + 1000
+	randPort := (p.r.Int31() % 64535) + 1000
 
 	// Fill TCP layer details
 	tcpLayer := layers.TCP{
@@ -119,8 +118,8 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 		PSH:     true,
 		ACK:     true,
 		Window:  502,
-		Seq:     r.Uint32(),
-		Ack:     r.Uint32(),
+		Seq:     p.r.Uint32(),
+		Ack:     p.r.Uint32(),
 	}
 
 	// Fill out request bytes

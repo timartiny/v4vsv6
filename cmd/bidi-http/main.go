@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"sync"
@@ -109,6 +110,7 @@ func main() {
 		} else {
 			prober.seed = *seed
 		}
+		prober.r = rand.New(rand.NewSource(prober.seed))
 	case *tlsProber:
 		prober.device = *iface
 		if *seed == -1 {
@@ -116,6 +118,7 @@ func main() {
 		} else {
 			prober.seed = *seed
 		}
+		prober.r = rand.New(rand.NewSource(prober.seed))
 	case *quicProber:
 		prober.device = *iface
 		if *seed == -1 {
@@ -123,6 +126,7 @@ func main() {
 		} else {
 			prober.seed = *seed
 		}
+		prober.r = rand.New(rand.NewSource(prober.seed))
 	}
 
 	// Parse domains
