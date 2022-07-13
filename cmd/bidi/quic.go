@@ -9,12 +9,14 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/google/gopacket/pcapgo"
 	"github.com/google/gopacket/routing"
 	"golang.org/x/crypto/cryptobyte"
 	"golang.org/x/crypto/hkdf"
@@ -27,6 +29,8 @@ type quicProber struct {
 	seed     int64
 	initOnce sync.Once
 	r        *rand.Rand
+
+	tracker *tracker
 }
 
 func (p *quicProber) registerFlags() {
@@ -37,8 +41,7 @@ func (p *quicProber) shouldRead() bool {
 }
 
 func (p *quicProber) buildPaylaod(name string) ([]byte, error) {
-	// var fullData = "cd00000001 08 0001020304050607 05635f636964 00 4103 98 1c36a7ed78716be9711ba498b7ed868443bb2e0c514d4d848eadcc7a00d25ce9f9afa483978088de836be68c0b32a24595d7813ea5414a9199329a6d9f7f760dd8bb249bf3f53d9a77fbb7b395b8d66d7879a51fe59ef9601f79998eb3568e1fdc789f640acab3858a82ef2930fa5ce14b5b9ea0bdb29f4572da85aa3def39b7efafffa074b9267070d50b5d07842e49bba3bc787ff295d6ae3b514305f102afe5a047b3fb4c99eb92a274d244d60492c0e2e6e212cef0f9e3f62efd0955e71c768aa6bb3cd80bbb3755c8b7ebee32712f40f2245119487021b4b84e1565e3ca31967ac8604d4032170dec280aeefa095d08b3b7241ef6646a6c86e5c62ce08be099"
-	// 				   c300000001 08 8394c8f03e515708 00           00 449e 00 000002
+	// var fullData = "cd0000000108000102030405060705635f636964004103981c36a7ed78716be9711ba498b7ed868443bb2e0c514d4d848eadcc7a00d25ce9f9afa483978088de836be68c0b32a24595d7813ea5414a9199329a6d9f7f760dd8bb249bf3f53d9a77fbb7b395b8d66d7879a51fe59ef9601f79998eb3568e1fdc789f640acab3858a82ef2930fa5ce14b5b9ea0bdb29f4572da85aa3def39b7efafffa074b9267070d50b5d07842e49bba3bc787ff295d6ae3b514305f102afe5a047b3fb4c99eb92a274d244d60492c0e2e6e212cef0f9e3f62efd0955e71c768aa6bb3cd80bbb3755c8b7ebee32712f40f2245119487021b4b84e1565e3ca31967ac8604d4032170dec280aeefa095d08b3b7241ef6646a6c86e5c62ce08be099"
 	headerByteAndVersion := "c000000001"
 
 	// dynamic - client ID used for HKDF key schedule generation
@@ -270,18 +273,36 @@ func (p *quicProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 }
 
 func (p *quicProber) handlePcap(iface string) {
+	f, _ := os.Create("quic.pcap")
+	w := pcapgo.NewWriter(f)
+	w.WriteFileHeader(1600, layers.LinkTypeEthernet)
+	defer f.Close()
 
 	if handle, err := pcap.OpenLive(iface, 1600, true, pcap.BlockForever); err != nil {
 		panic(err)
-	} else if err := handle.SetBPFFilter("tcp src port 80"); err != nil { // optional
+	} else if err := handle.SetBPFFilter("udp src port 443"); err != nil { // optional
 		panic(err)
 	} else {
+		defer handle.Close()
+
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 		for packet := range packetSource.Packets() {
-			p.handlePacket(packet)
+			w.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
 		}
 	}
 
+	/*
+		if handle, err := pcap.OpenLive(iface, 1600, true, pcap.BlockForever); err != nil {
+			panic(err)
+		} else if err := handle.SetBPFFilter("udp src port 443"); err != nil { // optional
+			panic(err)
+		} else {
+			packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+			for packet := range packetSource.Packets() {
+				p.handlePacket(packet)
+			}
+		}
+	*/
 }
 
 func (p *quicProber) handlePacket(packet gopacket.Packet) {

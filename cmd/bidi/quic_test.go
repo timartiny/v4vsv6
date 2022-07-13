@@ -30,9 +30,9 @@ func TestGenerateKeyMaterial(t *testing.T) {
 
 	km, err := generateKeyMaterial(input)
 
-	t.Logf("key: %s", hex.EncodeToString(km.key))
-	t.Logf("iv: %s", hex.EncodeToString(km.iv))
-	t.Logf("hpk: %s", hex.EncodeToString(km.hpk))
+	// t.Logf("key: %s", hex.EncodeToString(km.key))
+	// t.Logf("iv: %s", hex.EncodeToString(km.iv))
+	// t.Logf("hpk: %s", hex.EncodeToString(km.hpk))
 
 	require.Nil(t, err)
 	require.Equal(t, expectedKey, hex.EncodeToString(km.key))

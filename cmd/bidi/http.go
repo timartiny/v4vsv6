@@ -6,11 +6,13 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"os"
 	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/google/gopacket/pcapgo"
 	"github.com/google/gopacket/routing"
 )
 
@@ -154,18 +156,36 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 }
 
 func (p *httpProber) handlePcap(iface string) {
+	f, _ := os.Create("http.pcap")
+	w := pcapgo.NewWriter(f)
+	w.WriteFileHeader(1600, layers.LinkTypeEthernet)
+	defer f.Close()
 
 	if handle, err := pcap.OpenLive(iface, 1600, true, pcap.BlockForever); err != nil {
 		panic(err)
 	} else if err := handle.SetBPFFilter("tcp src port 80"); err != nil { // optional
 		panic(err)
 	} else {
+		defer handle.Close()
+
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 		for packet := range packetSource.Packets() {
-			p.handlePacket(packet)
+			w.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
 		}
 	}
 
+	/*
+		if handle, err := pcap.OpenLive(iface, 1600, true, pcap.BlockForever); err != nil {
+			panic(err)
+		} else if err := handle.SetBPFFilter("tcp src port 80"); err != nil { // optional
+			panic(err)
+		} else {
+			packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+			for packet := range packetSource.Packets() {
+				p.handlePacket(packet)
+			}
+		}
+	*/
 }
 
 func (p *httpProber) handlePacket(packet gopacket.Packet) {
