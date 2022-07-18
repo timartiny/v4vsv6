@@ -17,7 +17,6 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/google/gopacket/pcapgo"
-	"github.com/google/gopacket/routing"
 	"golang.org/x/crypto/cryptobyte"
 	"golang.org/x/crypto/hkdf"
 )
@@ -168,25 +167,9 @@ func (p *quicProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 		return nil, fmt.Errorf("bad device name: \"%s\"", p.device)
 	}
 
-	var localIP = net.ParseIP(lAddr)
-
-	router, err := routing.New()
+	remoteIface, localIP, err := getDstMacAndSrcIP(localIface, lAddr, ip)
 	if err != nil {
 		return nil, err
-	}
-
-	// ignore gateway, but adopt preferred source if unsuitable lAddr was specified.
-	remoteIface, _, preferredSrc, err := router.RouteWithSrc(localIface.HardwareAddr, localIP, ip)
-	if err != nil || remoteIface == nil {
-		return nil, fmt.Errorf("failed to get remote iface: %s", err)
-	}
-
-	if localIP == nil {
-		localIP = preferredSrc
-	} else if useV4 && preferredSrc.To4() == nil {
-		localIP = preferredSrc
-	} else if !useV4 && preferredSrc.To4() != nil {
-		localIP = preferredSrc
 	}
 
 	// Create the Ethernet Layer
