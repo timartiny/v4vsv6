@@ -86,9 +86,11 @@ func main() {
 	verbose := flag.Bool("verbose", true, "Verbose prints sent/received DNS packets/info")
 	domainf := flag.String("domains", "domains.txt", "File with a list of domains to test")
 	iface := flag.String("iface", "eth0", "Interface to listen on")
-	lAddr := flag.String("laddr", "", "Local address to send packets from - unset uses default interface.")
+	lAddr := flag.String("laddr", "", "Local address to send packets from - unset uses default interface")
 	proberType := flag.String("type", "dns", "probe type to send")
 	seed := flag.Int64("seed", -1, "[HTTP/TLS/QUIC] seed for random elements of generated packets. default seeded with time.Now.Nano")
+	noSynAck := flag.Bool("nosyn-ack", false, "[HTTP/TLS] disable syn, and ack warm up packets")
+	synDelay := flag.Duration("syn-delay", 2*time.Millisecond, "[HTTP/TLS] when syn ack is enabled delay between syn and data")
 
 	for _, p := range probers {
 		p.registerFlags()
@@ -111,6 +113,8 @@ func main() {
 			prober.seed = *seed
 		}
 		prober.r = rand.New(rand.NewSource(prober.seed))
+		prober.sendSynAndAck = !*noSynAck
+		prober.synDelay = *synDelay
 	case *tlsProber:
 		prober.device = *iface
 		if *seed == -1 {
@@ -119,6 +123,8 @@ func main() {
 			prober.seed = *seed
 		}
 		prober.r = rand.New(rand.NewSource(prober.seed))
+		prober.sendSynAndAck = !*noSynAck
+		prober.synDelay = *synDelay
 	case *quicProber:
 		prober.device = *iface
 		if *seed == -1 {

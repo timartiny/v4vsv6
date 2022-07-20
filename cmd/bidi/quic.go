@@ -270,22 +270,10 @@ func (p *quicProber) handlePcap(iface string) {
 
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 		for packet := range packetSource.Packets() {
+			// p.handlePacket(packet)
 			w.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
 		}
 	}
-
-	/*
-		if handle, err := pcap.OpenLive(iface, 1600, true, pcap.BlockForever); err != nil {
-			panic(err)
-		} else if err := handle.SetBPFFilter("udp src port 443"); err != nil { // optional
-			panic(err)
-		} else {
-			packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-			for packet := range packetSource.Packets() {
-				p.handlePacket(packet)
-			}
-		}
-	*/
 }
 
 func (p *quicProber) handlePacket(packet gopacket.Packet) {

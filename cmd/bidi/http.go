@@ -24,6 +24,12 @@ type httpProber struct {
 	device string
 	seed   int64
 	r      *rand.Rand
+
+	// sendSynAndAck sends a syn and an ack packet as a pseudo prelude to a TCP
+	// session in order to trigger censorship responses from middlebloxes expecting
+	// and tracking some subset of the TCP flow state.
+	sendSynAndAck bool
+	synDelay      time.Duration
 }
 
 func (p *httpProber) registerFlags() {
@@ -36,6 +42,10 @@ func (p *httpProber) shouldRead() bool {
 func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
 
 	var useV4 = ip.To4() != nil
+	options := gopacket.SerializeOptions{
+		FixLengths: true,
+		// ComputeChecksums: true,
+	}
 
 	// Open device
 	handle, err := pcap.OpenLive(p.device, 1600, true, pcap.BlockForever)
@@ -95,26 +105,75 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 
 	// Pick a random source port between 1000 and 65535
 	randPort := (p.r.Int31() % 64535) + 1000
+	seq := p.r.Uint32()
+	ack := p.r.Uint32()
+	if p.sendSynAndAck {
+
+		log.Println("sending synack")
+
+		// Fill TCP layer details
+		tcpSyn := layers.TCP{
+			SrcPort: layers.TCPPort(randPort),
+			DstPort: layers.TCPPort(80),
+			SYN:     true,
+			Window:  502,
+			Seq:     seq,
+			Ack:     0,
+		}
+
+		buffer := gopacket.NewSerializeBuffer()
+		gopacket.SerializeLayers(buffer, options,
+			&eth,
+			ipLayer,
+			&tcpSyn,
+		)
+		outgoingPacket := buffer.Bytes()
+
+		// Send our packet
+		err = handle.WritePacketData(outgoingPacket)
+		if err != nil {
+			return nil, err
+		}
+		time.Sleep(p.synDelay)
+
+		tcpAck := layers.TCP{
+			SrcPort: layers.TCPPort(randPort),
+			DstPort: layers.TCPPort(80),
+			ACK:     true,
+			Window:  502,
+			Seq:     seq + 1,
+			Ack:     ack,
+		}
+		buffer = gopacket.NewSerializeBuffer()
+		gopacket.SerializeLayers(buffer, options,
+			&eth,
+			ipLayer,
+			&tcpAck,
+		)
+		outgoingPacket = buffer.Bytes()
+
+		// Send our packet
+		err = handle.WritePacketData(outgoingPacket)
+		if err != nil {
+			return nil, err
+		}
+
+	}
 
 	// Fill TCP layer details
 	tcpLayer := layers.TCP{
 		SrcPort: layers.TCPPort(randPort),
 		DstPort: layers.TCPPort(80),
-		PSH:     true,
 		ACK:     true,
 		Window:  502,
-		Seq:     p.r.Uint32(),
-		Ack:     p.r.Uint32(),
+		Seq:     seq + 1,
+		Ack:     ack,
 	}
 
 	// Fill out request bytes
 	rawBytes := []byte(fmt.Sprintf(httpFmtStr, name, httpUserAgent))
 
 	// And create the packet with the layers
-	options := gopacket.SerializeOptions{
-		FixLengths: true,
-		// ComputeChecksums: true,
-	}
 	buffer := gopacket.NewSerializeBuffer()
 	gopacket.SerializeLayers(buffer, options,
 		&eth,
@@ -153,22 +212,10 @@ func (p *httpProber) handlePcap(iface string) {
 
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 		for packet := range packetSource.Packets() {
+			// p.handlePacket(packet)
 			w.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
 		}
 	}
-
-	/*
-		if handle, err := pcap.OpenLive(iface, 1600, true, pcap.BlockForever); err != nil {
-			panic(err)
-		} else if err := handle.SetBPFFilter("tcp src port 80"); err != nil { // optional
-			panic(err)
-		} else {
-			packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-			for packet := range packetSource.Packets() {
-				p.handlePacket(packet)
-			}
-		}
-	*/
 }
 
 func (p *httpProber) handlePacket(packet gopacket.Packet) {

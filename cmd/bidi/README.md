@@ -48,6 +48,10 @@ cat may-11/generated_addr* | cut -d " " -f 1 | zblocklist -b /etc/zmap/blacklist
 
 ## TODO
 
+* DstMac is being set to the local iface hw addr.
+  a. layer2 injection
+  b. hardcode gateway mac address
+
 After testing with KNOWN censored networks and domains:
 
 * tcp "random" indicators for domain (we should get ip in injected response)
