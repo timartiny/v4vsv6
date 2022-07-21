@@ -152,104 +152,35 @@ func (p *quicProber) buildCryptoFramePaylaod(name string) ([]byte, error) {
 }
 
 func (p *quicProber) sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
-
-	var useV4 = ip.To4() != nil
-
-	// Open device
-	handle, err := pcap.OpenLive(p.device, 1600, true, pcap.BlockForever)
-	if err != nil {
-		return nil, err
-	}
-	defer handle.Close()
-
-	localIface, err := net.InterfaceByName(p.device)
-	if err != nil {
-		return nil, fmt.Errorf("bad device name: \"%s\"", p.device)
-	}
-
-	remoteIface, localIP, err := getDstMacAndSrcIP(localIface, lAddr, ip)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create the Ethernet Layer
-	var ethType layers.EthernetType
-	if useV4 {
-		ethType = layers.EthernetTypeIPv4
-	} else {
-		ethType = layers.EthernetTypeIPv6
-	}
-	eth := layers.Ethernet{
-		SrcMAC:       localIface.HardwareAddr,
-		DstMAC:       remoteIface.HardwareAddr,
-		EthernetType: ethType,
-	}
-
-	// Fill out IP header with source and dest
-	var ipLayer gopacket.SerializableLayer
-	if useV4 {
-		if localIP.To4() == nil {
-			return nil, fmt.Errorf("v6 src for v4 dst")
-		}
-		ipLayer = &layers.IPv4{
-			SrcIP:    localIP,
-			DstIP:    ip,
-			Version:  4,
-			TTL:      64,
-			Protocol: layers.IPProtocolUDP,
-		}
-	} else {
-		if localIP.To4() != nil {
-			return nil, fmt.Errorf("v4 src for v6 dst")
-		}
-		ipLayer = &layers.IPv6{
-			SrcIP:      localIP,
-			DstIP:      ip,
-			Version:    6,
-			HopLimit:   64,
-			NextHeader: layers.IPProtocolUDP,
-		}
-	}
-
-	// Pick a random source port between 1000 and 65535
-	randPort := (p.r.Int31() % 64535) + 1000
-
-	// Fill UDP layer details
-	tcpLayer := layers.UDP{
-		SrcPort: layers.UDPPort(randPort),
-		DstPort: layers.UDPPort(443),
-	}
-
-	// // Fill out request bytes
+	// Fill out request bytes
 	rawBytes, err := p.buildPaylaod(name)
 	if err != nil {
 		return nil, fmt.Errorf("this shouldn't happen: %s", err)
 	}
-	// rawBytes := []byte{0xaa, 0xbb, 0xcc}
 
-	// And create the packet with the layers
-	options := gopacket.SerializeOptions{
-		FixLengths: true,
-		// ComputeChecksums: true,
+	addr := ip.String() + ":443"
+	if ip.To16() != nil {
+		addr = "[" + ip.String() + "]:443"
 	}
-	buffer := gopacket.NewSerializeBuffer()
-	gopacket.SerializeLayers(buffer, options,
-		&eth,
-		ipLayer,
-		&tcpLayer,
-		gopacket.Payload(rawBytes),
-	)
-	outgoingPacket := buffer.Bytes()
 
-	// Send our packet
-	err = handle.WritePacketData(outgoingPacket)
+	//conn, err := net.Dial("udp", addr)
+	var d net.Dialer
+	if lAddr != "" {
+		d.LocalAddr, _ = net.ResolveUDPAddr("ip", lAddr)
+	}
+	conn, err := d.Dial("udp", addr)
 	if err != nil {
+		if verbose {
+			log.Printf("%s - Error creating UDP socket(?): %v\n", ip.String(), err)
+		}
 		return nil, err
 	}
 
+	defer conn.Close()
+
+	conn.Write(rawBytes)
 	if verbose {
-		log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(outgoingPacket))
-		// log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(outgoingPacket))
+		log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(rawBytes))
 	}
 
 	return &Result{ip: ip}, nil
