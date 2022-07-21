@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"log"
 	"math/rand"
@@ -39,7 +38,24 @@ func (p *httpProber) shouldRead() bool {
 	return false
 }
 
-func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
+func (p *httpProber) buildPayload(name string) ([]byte, error) {
+	// Fill out request bytes
+	return []byte(fmt.Sprintf(httpFmtStr, name, httpUserAgent)), nil
+
+}
+
+func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
+	out, err := p.buildPayload(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build tls payload: %s", err)
+	}
+
+	addr := net.JoinHostPort(ip.String(), "80")
+	return sendTCP(addr, out, lAddr, p.device, p.r, p.sendSynAndAck, verbose)
+}
+
+/*
+func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
 
 	var useV4 = ip.To4() != nil
 	options := gopacket.SerializeOptions{
@@ -196,6 +212,7 @@ func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, timeout tim
 
 	return &Result{ip: ip}, nil
 }
+*/
 
 func (p *httpProber) handlePcap(iface string) {
 	f, _ := os.Create("http.pcap")

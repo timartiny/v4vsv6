@@ -11,7 +11,6 @@ import (
 	"net"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -39,7 +38,18 @@ func (p *quicProber) shouldRead() bool {
 	return false
 }
 
-func (p *quicProber) buildPaylaod(name string) ([]byte, error) {
+func (p *quicProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
+
+	out, err := p.buildPayload(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build quic payload: %s", err)
+	}
+
+	addr := net.JoinHostPort(ip.String(), "443")
+	return sendUDP(addr, out, lAddr, verbose)
+}
+
+func (p *quicProber) buildPayload(name string) ([]byte, error) {
 	// var fullData = "cd0000000108000102030405060705635f636964004103981c36a7ed78716be9711ba498b7ed868443bb2e0c514d4d848eadcc7a00d25ce9f9afa483978088de836be68c0b32a24595d7813ea5414a9199329a6d9f7f760dd8bb249bf3f53d9a77fbb7b395b8d66d7879a51fe59ef9601f79998eb3568e1fdc789f640acab3858a82ef2930fa5ce14b5b9ea0bdb29f4572da85aa3def39b7efafffa074b9267070d50b5d07842e49bba3bc787ff295d6ae3b514305f102afe5a047b3fb4c99eb92a274d244d60492c0e2e6e212cef0f9e3f62efd0955e71c768aa6bb3cd80bbb3755c8b7ebee32712f40f2245119487021b4b84e1565e3ca31967ac8604d4032170dec280aeefa095d08b3b7241ef6646a6c86e5c62ce08be099"
 	headerByteAndVersion := "c000000001"
 
@@ -149,41 +159,6 @@ func (p *quicProber) buildCryptoFramePaylaod(name string) ([]byte, error) {
 	fulldata := ch + hh + clientRandom + sessionID + csAndCM + extensionsLen + extSNIID + extSNIDataLen + extSNIEntryLen + extSNIEntryType + hostnameLen + hostname + otherExtensions
 
 	return hex.DecodeString(fulldata)
-}
-
-func (p *quicProber) sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
-	// Fill out request bytes
-	rawBytes, err := p.buildPaylaod(name)
-	if err != nil {
-		return nil, fmt.Errorf("this shouldn't happen: %s", err)
-	}
-
-	addr := ip.String() + ":443"
-	if ip.To16() != nil {
-		addr = "[" + ip.String() + "]:443"
-	}
-
-	//conn, err := net.Dial("udp", addr)
-	var d net.Dialer
-	if lAddr != "" {
-		d.LocalAddr, _ = net.ResolveUDPAddr("ip", lAddr)
-	}
-	conn, err := d.Dial("udp", addr)
-	if err != nil {
-		if verbose {
-			log.Printf("%s - Error creating UDP socket(?): %v\n", ip.String(), err)
-		}
-		return nil, err
-	}
-
-	defer conn.Close()
-
-	conn.Write(rawBytes)
-	if verbose {
-		log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(rawBytes))
-	}
-
-	return &Result{ip: ip}, nil
 }
 
 func (p *quicProber) handlePcap(iface string) {

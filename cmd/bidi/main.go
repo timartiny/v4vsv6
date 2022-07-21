@@ -22,7 +22,9 @@ type Result struct {
 type prober interface {
 	registerFlags()
 
-	sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error)
+	sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error)
+
+	buildPayload(name string) ([]byte, error)
 
 	handlePcap(iface string)
 
@@ -39,7 +41,7 @@ func worker(p prober, wait time.Duration, verbose bool, lAddr string, ips <-chan
 		}
 
 		for _, domain := range domains {
-			_, err := p.sendProbe(addr, domain, lAddr, wait, verbose)
+			_, err := p.sendProbe(addr, domain, lAddr, verbose)
 			if err != nil {
 				log.Printf("Result %s,%s - error: %v\n", ip, domain, err)
 				continue

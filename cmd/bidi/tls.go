@@ -13,8 +13,6 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/google/gopacket/pcapgo"
-	"golang.org/x/net/ipv4"
-	"golang.org/x/net/ipv6"
 )
 
 const tlsProbeTypeName = "tls"
@@ -31,7 +29,25 @@ type tlsProber struct {
 	synDelay      time.Duration
 }
 
-func (p *tlsProber) buildPaylaod(name string) ([]byte, error) {
+func (p *tlsProber) registerFlags() {
+}
+
+func (p *tlsProber) shouldRead() bool {
+	return false
+}
+
+func (p *tlsProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
+
+	out, err := p.buildPayload(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build tls payload: %s", err)
+	}
+
+	addr := net.JoinHostPort(ip.String(), "443")
+	return sendTCP(addr, out, lAddr, p.device, p.r, p.sendSynAndAck, verbose)
+}
+
+func (p *tlsProber) buildPayload(name string) ([]byte, error) {
 
 	// var fulldata = "16030100f8010000f40303000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff000813021303130100ff010000a30000001800160000136578616d706c652e756c666865696d2e6e6574000b000403000102000a00160014001d0017001e0019001801000101010201030104002300000016000000170000000d001e001c040305030603080708080809080a080b080408050806040105010601002b0003020304002d00020101003300260024001d0020358072d6365880d1aeea329adf9121383851ed21a28e3b75e965d0d2cd166254"
 
@@ -82,291 +98,6 @@ func (p *tlsProber) buildPaylaod(name string) ([]byte, error) {
 	fulldata := rh + packetLen + hh + clientRandom + sessionID + csAndCM + extensionsLen + extSNIID + extSNIDataLen + extSNIEntryLen + extSNIEntryType + hostnameLen + hostname + otherExtensions
 	return hex.DecodeString(fulldata)
 }
-
-func (p *tlsProber) registerFlags() {
-}
-
-func (p *tlsProber) shouldRead() bool {
-	return false
-}
-func (p *tlsProber) sendProbe(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
-	var useV4 = ip.To4() != nil
-	options := gopacket.SerializeOptions{
-		FixLengths: true,
-		// ComputeChecksums: true,
-	}
-
-	localIface, err := net.InterfaceByName(p.device)
-	if err != nil {
-		return nil, fmt.Errorf("bad device name: \"%s\"", p.device)
-	}
-
-	_, localIP, err := getDstMacAndSrcIP(localIface, lAddr, ip)
-	if err != nil {
-		return nil, err
-	}
-
-	// Fill out IP header with source and dest
-	var ipLayer gopacket.SerializableLayer
-	if useV4 {
-		if localIP.To4() == nil {
-			return nil, fmt.Errorf("v6 src for v4 dst")
-		}
-		ipLayer = &layers.IPv4{
-			SrcIP:    localIP,
-			DstIP:    ip,
-			Version:  4,
-			TTL:      64,
-			Protocol: layers.IPProtocolTCP,
-		}
-	} else {
-		if localIP.To4() != nil {
-			return nil, fmt.Errorf("v4 src for v6 dst")
-		}
-		ipLayer = &layers.IPv6{
-			SrcIP:      localIP,
-			DstIP:      ip,
-			Version:    6,
-			HopLimit:   64,
-			NextHeader: layers.IPProtocolTCP,
-		}
-	}
-
-	// Pick a random source port between 1000 and 65535
-	randPort := (p.r.Int31() % 64535) + 1000
-	// Fill TCP layer details
-	tcpLayer := layers.TCP{
-		SrcPort: layers.TCPPort(randPort),
-		DstPort: layers.TCPPort(443),
-		PSH:     true,
-		ACK:     true,
-		Window:  502,
-		Seq:     p.r.Uint32(),
-		Ack:     p.r.Uint32(),
-	}
-
-	ipHeaderBuf := gopacket.NewSerializeBuffer()
-	err = ipLayer.SerializeTo(ipHeaderBuf, options)
-	if err != nil {
-		return nil, err
-	}
-
-	tcpPayloadBuf := gopacket.NewSerializeBuffer()
-	// // Fill out request bytes
-	rawBytes, err := p.buildPaylaod(name)
-	if err != nil {
-		return nil, fmt.Errorf("this shouldn't happen: %s", err)
-	}
-
-	err = gopacket.SerializeLayers(tcpPayloadBuf, options, &tcpLayer, gopacket.Payload(rawBytes))
-	if err != nil {
-		return nil, err
-	}
-	// XXX end of packet creation
-
-	// XXX send packet
-	packetConn, err := net.ListenPacket("ip4:tcp", "")
-	if err != nil {
-		return nil, err
-	}
-
-	if useV4 {
-		ipHeader, err := ipv4.ParseHeader(ipHeaderBuf.Bytes())
-		if err != nil {
-			return nil, err
-		}
-		rawConn, err := ipv4.NewRawConn(packetConn)
-		if err != nil {
-			return nil, err
-		}
-
-		err = rawConn.WriteTo(ipHeader, tcpPayloadBuf.Bytes(), nil)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		var ipHeader *ipv6.ControlMessage
-		err := ipHeader.Parse(ipHeaderBuf.Bytes())
-		if err != nil {
-			return nil, err
-		}
-		pktConn := ipv6.NewPacketConn(packetConn)
-		if pktConn == nil {
-			return nil, fmt.Errorf("unable to create IPv6 packet conn")
-		}
-
-		_, err = pktConn.WriteTo(tcpPayloadBuf.Bytes(), ipHeader, nil)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if verbose {
-		log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(tcpPayloadBuf.Bytes()))
-	}
-
-	return &Result{ip: ip}, nil
-}
-
-// func (p *tlsProber) sendProbeOld(ip net.IP, name string, lAddr string, timeout time.Duration, verbose bool) (*Result, error) {
-
-// 	var useV4 = ip.To4() != nil
-// 	options := gopacket.SerializeOptions{
-// 		FixLengths: true,
-// 		// ComputeChecksums: true,
-// 	}
-
-// 	// Open device
-// 	handle, err := pcap.OpenLive(p.device, 1600, true, pcap.BlockForever)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer handle.Close()
-
-// 	localIface, err := net.InterfaceByName(p.device)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("bad device name: \"%s\"", p.device)
-// 	}
-
-// 	remoteIface, localIP, err := getDstMacAndSrcIP(localIface, lAddr, ip)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Create the Ethernet Layer
-// 	var ethType layers.EthernetType
-// 	if useV4 {
-// 		ethType = layers.EthernetTypeIPv4
-// 	} else {
-// 		ethType = layers.EthernetTypeIPv6
-// 	}
-// 	eth := layers.Ethernet{
-// 		SrcMAC:       localIface.HardwareAddr,
-// 		DstMAC:       remoteIface.HardwareAddr,
-// 		EthernetType: ethType,
-// 	}
-
-// 	// Fill out IP header with source and dest
-// 	var ipLayer gopacket.SerializableLayer
-// 	if useV4 {
-// 		if localIP.To4() == nil {
-// 			return nil, fmt.Errorf("v6 src for v4 dst")
-// 		}
-// 		ipLayer = &layers.IPv4{
-// 			SrcIP:    localIP,
-// 			DstIP:    ip,
-// 			Version:  4,
-// 			TTL:      64,
-// 			Protocol: layers.IPProtocolTCP,
-// 		}
-// 	} else {
-// 		if localIP.To4() != nil {
-// 			return nil, fmt.Errorf("v4 src for v6 dst")
-// 		}
-// 		ipLayer = &layers.IPv6{
-// 			SrcIP:      localIP,
-// 			DstIP:      ip,
-// 			Version:    6,
-// 			HopLimit:   64,
-// 			NextHeader: layers.IPProtocolTCP,
-// 		}
-// 	}
-
-// 	// Pick a random source port between 1000 and 65535
-// 	randPort := (p.r.Int31() % 64535) + 1000
-// 	seq := p.r.Uint32()
-// 	ack := p.r.Uint32()
-// 	if p.sendSynAndAck {
-
-// 		// Fill TCP layer details
-// 		tcpSyn := layers.TCP{
-// 			SrcPort: layers.TCPPort(randPort),
-// 			DstPort: layers.TCPPort(80),
-// 			SYN:     true,
-// 			Window:  502,
-// 			Seq:     seq,
-// 			Ack:     0,
-// 		}
-
-// 		buffer := gopacket.NewSerializeBuffer()
-// 		gopacket.SerializeLayers(buffer, options,
-// 			&eth,
-// 			ipLayer,
-// 			&tcpSyn,
-// 		)
-// 		outgoingPacket := buffer.Bytes()
-
-// 		// Send our packet
-// 		err = handle.WritePacketData(outgoingPacket)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		time.Sleep(p.synDelay)
-
-// 		tcpAck := layers.TCP{
-// 			SrcPort: layers.TCPPort(randPort),
-// 			DstPort: layers.TCPPort(80),
-// 			ACK:     true,
-// 			Window:  502,
-// 			Seq:     seq + 1,
-// 			Ack:     ack,
-// 		}
-// 		buffer = gopacket.NewSerializeBuffer()
-// 		gopacket.SerializeLayers(buffer, options,
-// 			&eth,
-// 			ipLayer,
-// 			&tcpAck,
-// 		)
-// 		outgoingPacket = buffer.Bytes()
-
-// 		// Send our packet
-// 		err = handle.WritePacketData(outgoingPacket)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 	}
-
-// 	// Fill TCP layer details
-// 	tcpLayer := layers.TCP{
-// 		SrcPort: layers.TCPPort(randPort),
-// 		DstPort: layers.TCPPort(443),
-// 		PSH:     true,
-// 		ACK:     true,
-// 		Window:  502,
-// 		Seq:     p.r.Uint32(),
-// 		Ack:     p.r.Uint32(),
-// 	}
-
-// 	// // Fill out request bytes
-// 	rawBytes, err := p.buildPaylaod(name)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("this shouldn't happen: %s", err)
-// 	}
-
-// 	// And create the packet with the layers
-// 	buffer := gopacket.NewSerializeBuffer()
-// 	gopacket.SerializeLayers(buffer, options,
-// 		&eth,
-// 		ipLayer,
-// 		&tcpLayer,
-// 		gopacket.Payload(rawBytes),
-// 	)
-// 	outgoingPacket := buffer.Bytes()
-
-// 	// Send our packet
-// 	err = handle.WritePacketData(outgoingPacket)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	if verbose {
-// 		log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(outgoingPacket))
-// 		// log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(outgoingPacket))
-// 	}
-
-// 	return &Result{ip: ip}, nil
-// }
 
 func (p *tlsProber) handlePcap(iface string) {
 	f, _ := os.Create("tls.pcap")
