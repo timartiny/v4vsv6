@@ -32,15 +32,15 @@ type tlsProber struct {
 func (p *tlsProber) registerFlags() {
 }
 
-func (p *tlsProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
+func (p *tlsProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) error {
 
 	out, err := p.buildPayload(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build tls payload: %s", err)
+		return fmt.Errorf("failed to build tls payload: %s", err)
 	}
 
 	addr := net.JoinHostPort(ip.String(), "443")
-	return sendTCP(addr, out, lAddr, p.device, p.r, p.sendSynAndAck, verbose)
+	return sendTCP(addr, out, lAddr, p.device, p.r, p.synDelay, p.sendSynAndAck, verbose)
 }
 
 func (p *tlsProber) buildPayload(name string) ([]byte, error) {

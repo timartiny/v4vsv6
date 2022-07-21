@@ -34,11 +34,11 @@ type quicProber struct {
 func (p *quicProber) registerFlags() {
 }
 
-func (p *quicProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
+func (p *quicProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) error {
 
 	out, err := p.buildPayload(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build quic payload: %s", err)
+		return fmt.Errorf("failed to build quic payload: %s", err)
 	}
 
 	addr := net.JoinHostPort(ip.String(), "443")
@@ -98,7 +98,7 @@ func (p *quicProber) buildPayload(name string) ([]byte, error) {
 	sample := cipherPayload[3 : 3+16]
 	headerData, err = quicHeaderProtect(km, headerData, sample)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 
 	// re-parse the updated header and create the full packet
@@ -221,12 +221,12 @@ func quicEncryptInitial(km *keyMaterial, frameData, headerData []byte, packetNum
 	// 16 by key indicates AES 128
 	block, err := aes.NewCipher(km.key)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 
 	// TODO

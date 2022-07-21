@@ -11,18 +11,10 @@ import (
 	"time"
 )
 
-// Result provides a result type for printing. If we want to add a response, do
-// it here
-type Result struct {
-	ip   net.IP
-	err  error
-	resp []byte
-}
-
 type prober interface {
 	registerFlags()
 
-	sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error)
+	sendProbe(ip net.IP, name string, lAddr string, verbose bool) error
 
 	buildPayload(name string) ([]byte, error)
 
@@ -39,7 +31,7 @@ func worker(p prober, wait time.Duration, verbose bool, lAddr string, ips <-chan
 		}
 
 		for _, domain := range domains {
-			_, err := p.sendProbe(addr, domain, lAddr, verbose)
+			err := p.sendProbe(addr, domain, lAddr, verbose)
 			if err != nil {
 				log.Printf("Result %s,%s - error: %v\n", ip, domain, err)
 				continue

@@ -14,28 +14,24 @@ func TestRoutingBasic(t *testing.T) {
 	localIface, err := net.InterfaceByName("lo")
 	require.Nil(t, err)
 
-	hw, ip, err := getDstMacAndSrcIP(localIface, "127.0.0.1", net.ParseIP("127.0.0.1"))
+	ip, err := getSrcIP(localIface, "127.0.0.1", net.ParseIP("127.0.0.1"))
 	require.Nil(t, err)
 	require.Equal(t, "127.0.0.1", ip.String())
-	require.Equal(t, "lo", hw.Name)
 
-	hw, ip, err = getDstMacAndSrcIP(localIface, "::1", net.ParseIP("::1"))
+	ip, err = getSrcIP(localIface, "::1", net.ParseIP("::1"))
 	require.Nil(t, err)
 	require.Equal(t, "::1", ip.String())
-	require.Equal(t, "lo", hw.Name)
 }
 
 func TestRoutingMixedPreferred(t *testing.T) {
 	localIface, err := net.InterfaceByName("lo")
 	require.Nil(t, err)
 
-	hw, ip, err := getDstMacAndSrcIP(localIface, "127.0.0.1", net.ParseIP("::1"))
+	ip, err := getSrcIP(localIface, "127.0.0.1", net.ParseIP("::1"))
 	require.Nil(t, err)
 	require.Equal(t, "::1", ip.String())
-	require.Equal(t, "lo", hw.Name)
 
-	hw, ip, err = getDstMacAndSrcIP(localIface, "::1", net.ParseIP("127.0.0.1"))
+	ip, err = getSrcIP(localIface, "::1", net.ParseIP("127.0.0.1"))
 	require.Nil(t, err)
 	require.Equal(t, "127.0.0.1", ip.String())
-	require.Equal(t, "lo", hw.Name)
 }

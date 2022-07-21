@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -15,7 +16,13 @@ import (
 	"golang.org/x/net/ipv6"
 )
 
-func getDstMacAndSrcIP(localIface *net.Interface, lAddr string, dstIP net.IP) (*net.Interface, net.IP, error) {
+// getSrcIP allows us to check that there is a route to the dest with our
+// suggested source address and interface. This also allows the program to
+// automatically recover from an ipv4 source address specified for an IPv6
+// target address by using the preferred source address provided by the call to
+// RouteWithSource. That way we don't have to support v4 and v6 local address
+// cli options. Also allows for empty or bad source from cli.
+func getSrcIP(localIface *net.Interface, lAddr string, dstIP net.IP) (net.IP, error) {
 	var useV4 = dstIP.To4() != nil
 
 	var localIP = net.ParseIP(lAddr)
@@ -27,13 +34,13 @@ func getDstMacAndSrcIP(localIface *net.Interface, lAddr string, dstIP net.IP) (*
 
 	router, err := routing.New()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to init routing: %s", err)
+		return nil, fmt.Errorf("failed to init routing: %s", err)
 	}
 
 	// ignore gateway, but adopt preferred source if unsuitable lAddr was specified.
-	remoteIface, _, preferredSrc, err := router.RouteWithSrc(localIface.HardwareAddr, localIP, dstIP)
-	if err != nil || remoteIface == nil {
-		return nil, nil, fmt.Errorf("failed to get remote iface: %s", err)
+	_, _, preferredSrc, err := router.RouteWithSrc(localIface.HardwareAddr, localIP, dstIP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get remote iface: %s", err)
 	}
 
 	// If the specified local IP is unset or the wrong IP version for the target
@@ -42,10 +49,10 @@ func getDstMacAndSrcIP(localIface *net.Interface, lAddr string, dstIP net.IP) (*
 		localIP = preferredSrc
 	}
 
-	return remoteIface, localIP, nil
+	return localIP, nil
 }
 
-func sendUDP(dst string, payload []byte, lAddr string, verbose bool) (*Result, error) {
+func sendUDP(dst string, payload []byte, lAddr string, verbose bool) error {
 	var d net.Dialer
 	if lAddr != "" {
 		d.LocalAddr, _ = net.ResolveUDPAddr("ip", lAddr)
@@ -53,7 +60,7 @@ func sendUDP(dst string, payload []byte, lAddr string, verbose bool) (*Result, e
 
 	conn, err := d.Dial("udp", dst)
 	if err != nil {
-		return nil, fmt.Errorf("%s - error creating UDP socket(?): %v", dst, err)
+		return fmt.Errorf("%s - error creating UDP socket(?): %v", dst, err)
 	}
 	defer conn.Close()
 
@@ -62,17 +69,14 @@ func sendUDP(dst string, payload []byte, lAddr string, verbose bool) (*Result, e
 		log.Printf("Sent %s - %s\n", dst, hex.EncodeToString(payload))
 	}
 
-	// cannot possibly err if we have already used the addr to dial
-	host, _, _ := net.SplitHostPort(dst)
-	ip := net.ParseIP(host)
-	return &Result{ip: ip}, nil
+	return nil
 }
 
-func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sendSynAck, verbose bool) (*Result, error) {
+func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, synDelay time.Duration, sendSynAck, verbose bool) error {
 
 	host, portStr, err := net.SplitHostPort(dst)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse \"ip:port\": %s - %s", dst, err)
+		return fmt.Errorf("failed to parse \"ip:port\": %s - %s", dst, err)
 	}
 	port, _ := strconv.Atoi(portStr)
 
@@ -86,19 +90,19 @@ func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sen
 
 	localIface, err := net.InterfaceByName(device)
 	if err != nil {
-		return nil, fmt.Errorf("bad device name: \"%s\"", device)
+		return fmt.Errorf("bad device name: \"%s\"", device)
 	}
 
-	_, localIP, err := getDstMacAndSrcIP(localIface, lAddr, ip)
+	localIP, err := getSrcIP(localIface, lAddr, ip)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Fill out IP header with source and dest
 	var ipLayer gopacket.SerializableLayer
 	if useV4 {
 		if localIP.To4() == nil {
-			return nil, fmt.Errorf("v6 src for v4 dst")
+			return fmt.Errorf("v6 src for v4 dst")
 		}
 		ipLayer = &layers.IPv4{
 			SrcIP:    localIP,
@@ -109,7 +113,7 @@ func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sen
 		}
 	} else {
 		if localIP.To4() != nil {
-			return nil, fmt.Errorf("v4 src for v6 dst")
+			return fmt.Errorf("v4 src for v6 dst")
 		}
 		ipLayer = &layers.IPv6{
 			SrcIP:      localIP,
@@ -128,11 +132,11 @@ func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sen
 	// build syn and ack payloads incase we are sending syn and ack
 	synBuf, err := getSyn(uint32(randPort), uint32(port), seq, options)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ackBuf, err := getAck(uint32(randPort), uint32(port), seq+1, ack, options)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Fill TCP  Payload layer details
@@ -149,13 +153,13 @@ func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sen
 	ipHeaderBuf := gopacket.NewSerializeBuffer()
 	err = ipLayer.SerializeTo(ipHeaderBuf, options)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	tcpPayloadBuf := gopacket.NewSerializeBuffer()
 	err = gopacket.SerializeLayers(tcpPayloadBuf, options, &tcpLayer, gopacket.Payload(payload))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// XXX end of packet creation
@@ -164,35 +168,43 @@ func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sen
 	if useV4 {
 		packetConn, err := net.ListenPacket("ip4:tcp", "")
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("failed to listen on ipv4: %s", err)
 		}
 		ipHeader, err := ipv4.ParseHeader(ipHeaderBuf.Bytes())
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("failed to parse ipv4 header: %s", err)
 		}
 		rawConn, err := ipv4.NewRawConn(packetConn)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("failed to create ipv4 rawconn: %s", err)
 		}
 
 		if sendSynAck {
 			err = rawConn.WriteTo(ipHeader, synBuf, nil)
 			if err != nil {
-				return nil, err
+				return fmt.Errorf("failed to write syn: %s", err)
 			}
+			time.Sleep(synDelay)
 
 			err = rawConn.WriteTo(ipHeader, ackBuf, nil)
 			if err != nil {
-				return nil, err
+				return fmt.Errorf("failed to write ack: %s", err)
 			}
 		}
 
 		err = rawConn.WriteTo(ipHeader, tcpPayloadBuf.Bytes(), nil)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("failed to write payload: %s", err)
 		}
 	} else {
-
+		// golang/x/net/ipv6 does not provide a RawConn option because: " Unlike
+		// system calls and primitives for IPv4 facilities, tweaking IPv6
+		// headers on outgoing packets from userspace must use per-packet basis
+		// ancillary data and a very few sticky socket options, and that's the
+		// reason why ipv6.RawConn doesn't exist; see RFC 3542"
+		// - https://github.com/golang/go/issues/18633
+		//
+		// So we set sock opts on the conn and provide addresses.
 		cm := new(ipv6.ControlMessage)
 		cm.Src = localIP
 		cm.Dst = ip
@@ -201,34 +213,35 @@ func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sen
 
 		packetConn, err := net.ListenPacket("ip6:tcp", "")
 		if err != nil {
-			return nil, fmt.Errorf("a:%s", err)
+			return fmt.Errorf("failed to listen on ipv6: %s", err)
 		}
 
 		pktConn := ipv6.NewPacketConn(packetConn)
 		if pktConn == nil {
-			return nil, fmt.Errorf("unable to create IPv6 packet conn")
+			return fmt.Errorf("unable to create IPv6 packet conn")
 		}
 
 		err = pktConn.SetControlMessage(ipv6.FlagDst|ipv6.FlagSrc, true)
 		if err != nil {
-			return nil, fmt.Errorf("z:%s", err)
+			return fmt.Errorf("failed to set control flags: %s", err)
 		}
 
 		if sendSynAck {
 			_, err = pktConn.WriteTo(synBuf, cm, addr)
 			if err != nil {
-				return nil, fmt.Errorf("c:%s", err)
+				return fmt.Errorf("failed to write syn: %s", err)
 			}
+			time.Sleep(synDelay)
 
 			_, err = pktConn.WriteTo(ackBuf, cm, addr)
 			if err != nil {
-				return nil, fmt.Errorf("d:%s", err)
+				return fmt.Errorf("failed to write ack: %s", err)
 			}
 		}
 
 		_, err = pktConn.WriteTo(tcpPayloadBuf.Bytes(), cm, addr)
 		if err != nil {
-			return nil, fmt.Errorf("e:%s", err)
+			return fmt.Errorf("failed to write payload: %s", err)
 		}
 	}
 
@@ -236,7 +249,7 @@ func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sen
 		log.Printf("Sent %s - %s\n", ip.String(), hex.EncodeToString(payload))
 	}
 
-	return &Result{ip: ip}, nil
+	return nil
 }
 
 func getSyn(srcPort, dstPort, seq uint32, options gopacket.SerializeOptions) ([]byte, error) {

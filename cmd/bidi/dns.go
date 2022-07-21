@@ -23,11 +23,11 @@ func (p *dnsProber) registerFlags() {
 	flag.UintVar(&p.qType, "qtype", 1, "[DNS] Type of Query to send (1 = A / 28 = AAAA)")
 }
 
-func (p *dnsProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
+func (p *dnsProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) error {
 
 	out, err := p.buildPayload(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build udp payload: %s", err)
+		return fmt.Errorf("failed to build udp payload: %s", err)
 	}
 
 	addr := net.JoinHostPort(ip.String(), "53")

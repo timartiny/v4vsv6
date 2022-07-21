@@ -40,14 +40,14 @@ func (p *httpProber) buildPayload(name string) ([]byte, error) {
 
 }
 
-func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
+func (p *httpProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) error {
 	out, err := p.buildPayload(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build tls payload: %s", err)
+		return fmt.Errorf("failed to build tls payload: %s", err)
 	}
 
 	addr := net.JoinHostPort(ip.String(), "80")
-	return sendTCP(addr, out, lAddr, p.device, p.r, p.sendSynAndAck, verbose)
+	return sendTCP(addr, out, lAddr, p.device, p.r, p.synDelay, p.sendSynAndAck, verbose)
 }
 
 func (p *httpProber) handlePcap(iface string) {
