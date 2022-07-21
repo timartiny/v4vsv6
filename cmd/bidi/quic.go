@@ -34,10 +34,6 @@ type quicProber struct {
 func (p *quicProber) registerFlags() {
 }
 
-func (p *quicProber) shouldRead() bool {
-	return false
-}
-
 func (p *quicProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
 
 	out, err := p.buildPayload(name)

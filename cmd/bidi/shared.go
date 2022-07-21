@@ -192,35 +192,43 @@ func sendTCP(dst string, payload []byte, lAddr, device string, r *rand.Rand, sen
 			return nil, err
 		}
 	} else {
+
+		cm := new(ipv6.ControlMessage)
+		cm.Src = localIP
+		cm.Dst = ip
+
+		addr, _ := net.ResolveIPAddr("ip6", host)
+
 		packetConn, err := net.ListenPacket("ip6:tcp", "")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("a:%s", err)
 		}
-		var ipHeader *ipv6.ControlMessage
-		err = ipHeader.Parse(ipHeaderBuf.Bytes())
-		if err != nil {
-			return nil, err
-		}
+
 		pktConn := ipv6.NewPacketConn(packetConn)
 		if pktConn == nil {
 			return nil, fmt.Errorf("unable to create IPv6 packet conn")
 		}
 
+		err = pktConn.SetControlMessage(ipv6.FlagDst|ipv6.FlagSrc, true)
+		if err != nil {
+			return nil, fmt.Errorf("z:%s", err)
+		}
+
 		if sendSynAck {
-			_, err = pktConn.WriteTo(synBuf, ipHeader, nil)
+			_, err = pktConn.WriteTo(synBuf, cm, addr)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("c:%s", err)
 			}
 
-			_, err = pktConn.WriteTo(ackBuf, ipHeader, nil)
+			_, err = pktConn.WriteTo(ackBuf, cm, addr)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("d:%s", err)
 			}
 		}
 
-		_, err = pktConn.WriteTo(tcpPayloadBuf.Bytes(), ipHeader, nil)
+		_, err = pktConn.WriteTo(tcpPayloadBuf.Bytes(), cm, addr)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("e:%s", err)
 		}
 	}
 

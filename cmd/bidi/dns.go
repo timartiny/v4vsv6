@@ -16,17 +16,11 @@ import (
 const dnsProbeTypeName = "dns"
 
 type dnsProber struct {
-	qType           uint
-	innerShouldRead bool
-}
-
-func (p *dnsProber) shouldRead() bool {
-	return p.innerShouldRead
+	qType uint
 }
 
 func (p *dnsProber) registerFlags() {
 	flag.UintVar(&p.qType, "qtype", 1, "[DNS] Type of Query to send (1 = A / 28 = AAAA)")
-	flag.BoolVar(&p.innerShouldRead, "dnsRead", false, "[DNS] Should DNS queries wait to read response")
 }
 
 func (p *dnsProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {

@@ -32,10 +32,6 @@ type tlsProber struct {
 func (p *tlsProber) registerFlags() {
 }
 
-func (p *tlsProber) shouldRead() bool {
-	return false
-}
-
 func (p *tlsProber) sendProbe(ip net.IP, name string, lAddr string, verbose bool) (*Result, error) {
 
 	out, err := p.buildPayload(name)

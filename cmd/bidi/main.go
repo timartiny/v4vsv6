@@ -27,8 +27,6 @@ type prober interface {
 	buildPayload(name string) ([]byte, error)
 
 	handlePcap(iface string)
-
-	shouldRead() bool
 }
 
 func worker(p prober, wait time.Duration, verbose bool, lAddr string, ips <-chan string, domains []string, wg *sync.WaitGroup) {
@@ -45,11 +43,6 @@ func worker(p prober, wait time.Duration, verbose bool, lAddr string, ips <-chan
 			if err != nil {
 				log.Printf("Result %s,%s - error: %v\n", ip, domain, err)
 				continue
-			} else if p.shouldRead() {
-				// We expect the sendProbe to report a result if shouldRead is true
-				log.Printf("RESULT %s,%s\n", ip, domain)
-			} else {
-				// No results in this thread; pcap gets results, we just send
 			}
 
 			// Wait here
@@ -77,21 +70,21 @@ func getDomains(fname string) ([]string, error) {
 func main() {
 
 	var probers = map[string]prober{
-		dnsProbeTypeName:  &dnsProber{innerShouldRead: false},
+		dnsProbeTypeName:  &dnsProber{},
 		httpProbeTypeName: &httpProber{},
 		tlsProbeTypeName:  &tlsProber{},
 		quicProbeTypeName: &quicProber{},
 	}
 
 	nWorkers := flag.Uint("workers", 50, "Number worker threads")
-	wait := flag.Duration("wait", 5*time.Second, "Duration to wait for DNS response")
+	wait := flag.Duration("wait", 5*time.Second, "Duration a worker waits after sending a probe")
 	verbose := flag.Bool("verbose", true, "Verbose prints sent/received DNS packets/info")
 	domainf := flag.String("domains", "domains.txt", "File with a list of domains to test")
 	iface := flag.String("iface", "eth0", "Interface to listen on")
 	lAddr := flag.String("laddr", "", "Local address to send packets from - unset uses default interface")
 	proberType := flag.String("type", "dns", "probe type to send")
 	seed := flag.Int64("seed", -1, "[HTTP/TLS/QUIC] seed for random elements of generated packets. default seeded with time.Now.Nano")
-	noSynAck := flag.Bool("nosyn-ack", false, "[HTTP/TLS] disable syn, and ack warm up packets")
+	noSynAck := flag.Bool("nsa", false, "[HTTP/TLS] No Syn Ack (nsa) disable syn, and ack warm up packets for tcp probes")
 	synDelay := flag.Duration("syn-delay", 2*time.Millisecond, "[HTTP/TLS] when syn ack is enabled delay between syn and data")
 
 	for _, p := range probers {
